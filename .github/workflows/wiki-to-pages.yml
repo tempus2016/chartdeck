@@ -66,6 +66,8 @@ jobs:
           test -f _site/index.html || { echo "no index.html - Jekyll did not render"; exit 1; }
           test -f _site/Installation.html || { echo "no Installation.html"; exit 1; }
           test -f _site/assets/css/docs.css || { echo "theme assets missing"; exit 1; }
+          test -s _site/assets/social-preview.png || { echo "social preview image missing"; exit 1; }
+          grep -q 'og:image' _site/index.html || { echo "index lost its og:image"; exit 1; }
           grep -q 'class="ph"' _site/index.html || { echo "hero did not build"; exit 1; }
           echo "$(ls _site/*.html | wc -l) pages built"
 
