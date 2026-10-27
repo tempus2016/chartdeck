@@ -8,6 +8,12 @@ updates:
     labels:
       - dependencies
       - ci
+    groups:
+      # init and analyze must be the same version or CodeQL fails with a configuration
+      # error, so they always move together in one pull request.
+      codeql-action:
+        patterns:
+          - 'github/codeql-action*'
     # Don't bump onto a release that is hours old — a freshly published action
     # version is the one most likely to be yanked or compromised.
     cooldown:
