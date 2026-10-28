@@ -12,6 +12,16 @@ const COLOR_NAMES = Object.keys(PALETTE);
 const CUSTOM = 'custom';
 const DELETE_ICON = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
 const TEXT_SELECTOR = { text: {} };
+const ENTITY_SELECTOR = { entity: { domain: ['sensor', 'input_number', 'number'] } };
+const ICON_ENTITY =
+  'M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z';
+const ICON_NUMBER =
+  'M4,17V9H2V7H6V17H4M22,15C22,16.11 21.1,17 20,17H16V15H20V13H18V11H20V9H16V7H20A2,2 0 0,1 22,9V10.5A1.5,1.5 0 0,1 20.5,12A1.5,1.5 0 0,1 22,13.5V15M14,15V17H8V13C8,11.89 8.9,11 10,11H12V9H8V7H12A2,2 0 0,1 14,9V11C14,12.11 13.1,13 12,13H10V15H14Z';
+
+/** A band start that names an entity rather than a number (numeric text counts as a number). */
+export function isEntityStart(from: unknown): from is string {
+  return typeof from === 'string' && from.trim() !== '' && !Number.isFinite(Number(from));
+}
 
 /** The preset whose bands match exactly, `none` for no bands, otherwise `custom`. */
 export function presetFor(bands: Band[] | undefined): PresetName | 'custom' {
@@ -30,6 +40,7 @@ export class CdBandsEditor extends LitElement {
     bands: { attribute: false },
     unit: { attribute: false },
     _customOpen: { state: true },
+    _entityOpen: { state: true },
   };
 
   static styles = css`
@@ -38,7 +49,7 @@ export class CdBandsEditor extends LitElement {
     }
     .band {
       display: grid;
-      grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto;
+      grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
       gap: 8px;
       align-items: center;
       margin-top: 8px;
@@ -51,7 +62,8 @@ export class CdBandsEditor extends LitElement {
       border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));
       box-sizing: border-box;
     }
-    .custom {
+    .custom,
+    .from-entity {
       grid-column: 2 / -1;
     }
     .add-band {
@@ -75,15 +87,27 @@ export class CdBandsEditor extends LitElement {
   declare unit?: string;
   /** Rows where "Custom…" was chosen but nothing typed yet: the field shows, the config is untouched. */
   declare _customOpen: Set<number>;
+  /** Rows switched to "start from an entity" with no entity picked yet. */
+  declare _entityOpen: Set<number>;
 
   constructor() {
     super();
     this._customOpen = new Set();
+    this._entityOpen = new Set();
   }
 
-  /** New bands (a preset, a YAML edit, a reorder, our own edits) close any half-open custom field. */
+  /** New bands (a preset, a YAML edit, a reorder, our own edits) close any half-open field. */
   protected willUpdate(changed: Map<string, unknown>): void {
-    if (changed.has('bands') && this._customOpen.size) this._customOpen = new Set();
+    if (!changed.has('bands')) return;
+    if (this._customOpen.size) this._customOpen = new Set();
+    if (this._entityOpen.size) this._entityOpen = new Set();
+  }
+
+  /** The number an entity start currently reads, for the greyed-out From box. */
+  private _entityValue(id: string): number | undefined {
+    const state = this.hass?.states[id]?.state;
+    const n = state === undefined || state.trim() === '' ? NaN : Number(state);
+    return Number.isFinite(n) ? n : undefined;
   }
 
   private _selectors?: { key: string; preset: unknown; presetCustom: unknown; color: unknown; from: unknown };
@@ -139,6 +163,27 @@ export class CdBandsEditor extends LitElement {
     this._updateBand(index, 'from', n);
   }
 
+  private _fromEntityChanged(index: number, ev: CustomEvent): void {
+    ev.stopPropagation();
+    const id = ev.detail?.value;
+    // A cleared picker keeps the entity: a band needs a start, and Number mode is one click away.
+    if (typeof id !== 'string' || id === '') return;
+    this._updateBand(index, 'from', id);
+  }
+
+  /** Switch a band between a number start and an entity start. */
+  private _toggleFromMode(index: number): void {
+    const from = this.bands?.[index]?.from;
+    const open = new Set(this._entityOpen);
+    if (isEntityStart(from)) {
+      // Back to a number: keep the start where the entity has it now.
+      this._updateBand(index, 'from', this._entityValue(from) ?? 0);
+    } else if (!open.delete(index)) {
+      open.add(index);
+    }
+    this._entityOpen = open;
+  }
+
   private _colorChanged(index: number, ev: CustomEvent): void {
     ev.stopPropagation();
     const choice = ev.detail?.value as string | undefined;
@@ -182,13 +227,22 @@ export class CdBandsEditor extends LitElement {
     // YAML may hold the threshold as text ("20"); the card reads it as a number, so do the same
     // (but a blank or non-numeric value starts again at 0).
     const raw: unknown = bands[bands.length - 1]?.from;
-    const last = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+    const last =
+      typeof raw === 'number'
+        ? raw
+        : isEntityStart(raw)
+          ? (this._entityValue(raw) ?? NaN)
+          : typeof raw === 'string' && raw.trim() !== ''
+            ? Number(raw)
+            : NaN;
     bands.push({ from: Number.isFinite(last) ? last + 10 : 0, color: 'primary' });
     this._emit(bands);
   }
 
   private _renderBand(band: Band, index: number, selectors: ReturnType<CdBandsEditor['_getSelectors']>) {
     const custom = !isPaletteColor(band.color) || this._customOpen.has(index);
+    const entity = isEntityStart(band.from) ? band.from : undefined;
+    const entityMode = entity !== undefined || this._entityOpen.has(index);
     return html`<div class="band">
       <span class="swatch" style=${styleMap({ '--swatch': baseColor(band.color) })}></span>
       <ha-selector
@@ -197,7 +251,8 @@ export class CdBandsEditor extends LitElement {
         .hass=${this.hass}
         .label=${this._t('editor_band_from')}
         .selector=${selectors.from}
-        .value=${band.from}
+        .value=${entity !== undefined ? this._entityValue(entity) : band.from}
+        .disabled=${entityMode}
         @value-changed=${(ev: CustomEvent) => this._fromChanged(index, ev)}
       ></ha-selector>
       <ha-selector
@@ -219,11 +274,32 @@ export class CdBandsEditor extends LitElement {
         @value-changed=${(ev: CustomEvent) => this._labelChanged(index, ev)}
       ></ha-selector>
       <ha-icon-button
+        class="from-mode"
+        .path=${entityMode ? ICON_NUMBER : ICON_ENTITY}
+        .label=${this._t(entityMode ? 'editor_band_from_number' : 'editor_band_from_entity')}
+        aria-pressed=${entityMode ? 'true' : 'false'}
+        @click=${() => this._toggleFromMode(index)}
+      ></ha-icon-button>
+      <ha-icon-button
         class="remove"
         .path=${DELETE_ICON}
         .label=${this._t('editor_remove_band')}
         @click=${() => this._removeBand(index)}
       ></ha-icon-button>
+      ${
+        entityMode
+          ? html`<ha-selector
+              .required=${false}
+              class="from-entity"
+              data-role="from-entity"
+              .hass=${this.hass}
+              .label=${this._t('editor_band_from_entity_label')}
+              .selector=${ENTITY_SELECTOR}
+              .value=${entity ?? ''}
+              @value-changed=${(ev: CustomEvent) => this._fromEntityChanged(index, ev)}
+            ></ha-selector>`
+          : nothing
+      }
       ${
         custom
           ? html`<ha-selector

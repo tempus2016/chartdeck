@@ -44,14 +44,24 @@ describe('normalizeConfig', () => {
     expect(c.entities[0].severity.map((b) => b.from)).toEqual([0, 50]);
     expect(c.legendBands.map((b) => b.from)).toEqual([0, 50]);
   });
-  it('rejects a band whose from is not a number', () => {
-    expect(() =>
-      normalizeConfig({
-        type: 'x',
-        entities: ['sensor.a'],
-        severity: [{ from: 'low' as any, color: 'red' }],
-      }),
-    ).toThrow(/band 1/i);
+  it('rejects a band whose from is blank or neither a number nor an entity id', () => {
+    for (const from of ['', true, {}]) {
+      expect(() =>
+        normalizeConfig({ type: 'x', entities: ['sensor.a'], severity: [{ from: from as any, color: 'red' }] }),
+      ).toThrow(/band 1.*number or an entity/i);
+    }
+  });
+  it('keeps a band starting at an entity, leaving the order for when it is read', () => {
+    const c = normalizeConfig({
+      type: 'x',
+      entities: ['sensor.a'],
+      severity: [
+        { from: 50, color: 'green' },
+        { from: 'input_number.low', color: 'red' },
+        { from: '0', color: 'amber' },
+      ],
+    });
+    expect(c.legendBands.map((b) => b.from)).toEqual([50, 'input_number.low', 0]);
   });
   it('accepts no entities (editor preview) but rejects bad shapes', () => {
     expect(normalizeConfig({ type: 'x' }).entities).toEqual([]);

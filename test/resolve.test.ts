@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { normalizeConfig } from '../src/config';
-import { resetLimitWarnings, resolveEntities, sortEntities, watchedEntityIds } from '../src/resolve';
+import { resetLimitWarnings, resolveBands, resolveEntities, sortEntities, watchedEntityIds } from '../src/resolve';
 import { makeHass } from './helpers/hass';
 
 const cfg = (entities: unknown[], extra: Record<string, unknown> = {}) =>
@@ -170,6 +170,54 @@ describe('resolve', () => {
       const config = cfg([{ entity: 'sensor.t', attribute: '' }]);
       expect(config.entities[0].attribute).toBeUndefined();
       expect(resolveEntities(config, hass)[0].display).toBe('19.0 °C');
+    });
+  });
+
+  describe('band starts from entities', () => {
+    const bands = [
+      { from: 0, color: 'red' },
+      { from: 'input_number.warn', color: 'amber' },
+      { from: 50, color: 'green' },
+    ];
+
+    it('reads the entity, sorts, and picks the band from it', () => {
+      const hass = makeHass({ 'sensor.a': '30', 'input_number.warn': '25' });
+      const [r] = resolveEntities(cfg([{ entity: 'sensor.a', severity: bands }]), hass);
+      expect(r.bands.map((b) => b.from)).toEqual([0, 25, 50]);
+      expect(r.band.color).toBe('amber');
+      hass.states['input_number.warn'] = { ...hass.states['input_number.warn'], state: '60' };
+      const [moved] = resolveEntities(cfg([{ entity: 'sensor.a', severity: bands }]), hass);
+      expect(moved.bands.map((b) => b.from)).toEqual([0, 50, 60]);
+      expect(moved.band.color).toBe('red');
+    });
+
+    it('leaves out a band whose entity is unusable, warning once', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const hass = makeHass({ 'sensor.a': '30', 'input_number.warn': 'unknown' });
+      const config = cfg([{ entity: 'sensor.a', severity: bands }]);
+      expect(resolveEntities(config, hass)[0].bands.map((b) => b.from)).toEqual([0, 50]);
+      resolveEntities(config, hass);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toMatch(
+        /band start entity "input_number.warn".*leaving that colour band out/,
+      );
+    });
+
+    it('falls back to the default colour when no band can be read', () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect(resolveBands([{ from: 'sensor.gone', color: 'red' }], makeHass({}))).toEqual([
+        { from: -Infinity, color: 'primary' },
+      ]);
+      expect(resolveBands([{ from: 'sensor.gone', color: 'red' }], undefined)).toEqual([
+        { from: -Infinity, color: 'primary' },
+      ]);
+    });
+
+    it('watches band entities on entities and on the card', () => {
+      const config = cfg([{ entity: 'sensor.a', severity: bands }], {
+        severity: [{ from: 'sensor.card_band', color: 'red' }],
+      });
+      expect(watchedEntityIds(config)).toEqual(new Set(['sensor.a', 'input_number.warn', 'sensor.card_band']));
     });
   });
 });
