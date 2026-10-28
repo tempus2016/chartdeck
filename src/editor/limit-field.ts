@@ -98,7 +98,7 @@ export class CdLimitField extends LitElement {
     const t = (key: string) => localize(this.hass, key);
     const mode = this._currentMode;
     return html`<ha-selector
-        .required=${false}
+        .required=${true}
         data-role="mode"
         .hass=${this.hass}
         .label=${this.label}

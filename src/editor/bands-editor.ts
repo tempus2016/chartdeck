@@ -177,7 +177,7 @@ export class CdBandsEditor extends LitElement {
         @value-changed=${(ev: CustomEvent) => this._fromChanged(index, ev)}
       ></ha-selector>
       <ha-selector
-        .required=${false}
+        .required=${true}
         data-role="color"
         .hass=${this.hass}
         .label=${this._t('editor_band_color')}
@@ -221,7 +221,7 @@ export class CdBandsEditor extends LitElement {
     const selectors = this._getSelectors();
     const preset = presetFor(this.bands);
     return html`<ha-selector
-        .required=${false}
+        .required=${true}
         data-role="preset"
         .hass=${this.hass}
         .label=${this._t('editor_preset')}

@@ -457,8 +457,11 @@ describe('editor: optional fields', () => {
     return schema.flatMap((item: Record<string, unknown>) => [item, ...schemaItems(item.schema)]);
   }
 
-  it('marks no field required, so none shows a required asterisk', async () => {
-    // ha-selector defaults to required; every Chartdeck field is optional or always has a value.
+  it('marks only the always-filled dropdowns required, so optional fields show no asterisk', async () => {
+    // ha-selector defaults to required. Limit mode, band colour and band preset always hold a
+    // value (and a non-required HA select grows a clear button that does nothing here), so they
+    // stay required; everything else is optional.
+    const REQUIRED = ['mode', 'color', 'preset'];
     const { editor } = await mount({
       ...raw,
       severity: [
@@ -472,7 +475,10 @@ describe('editor: optional fields', () => {
     const selectors = walk(editor.shadowRoot!, 'ha-selector') as StubElement[];
     const roles = selectors.map((s) => s.dataset.role).filter(Boolean);
     for (const role of ['mode', 'preset', 'from', 'color', 'label', 'custom-color']) expect(roles).toContain(role);
-    for (const s of selectors) expect(s.required, `ha-selector[data-role=${s.dataset.role}]`).toBe(false);
+    for (const s of selectors) {
+      const role = String(s.dataset.role);
+      expect(s.required, `ha-selector[data-role=${role}]`).toBe(REQUIRED.includes(role));
+    }
     const forms = walk(editor.shadowRoot!, 'ha-form') as StubElement[];
     expect(forms.length).toBeGreaterThanOrEqual(4);
     for (const f of forms) {
