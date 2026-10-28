@@ -79,6 +79,29 @@ describe('styles', () => {
   });
 });
 
+describe('bar', () => {
+  it('draws the text in the theme colour with a white copy clipped to the fill', async () => {
+    const card = await mount({ style: 'bar' });
+    const layers = card.shadowRoot!.querySelectorAll('.track .text');
+    expect(layers).toHaveLength(2);
+    expect(layers[0].classList.contains('on-fill')).toBe(false);
+    expect(layers[0].hasAttribute('aria-hidden')).toBe(false);
+    expect(layers[1].classList.contains('on-fill')).toBe(true);
+    expect(layers[1].getAttribute('aria-hidden')).toBe('true');
+    expect(layers[1].textContent).toBe(layers[0].textContent);
+    const css = STYLES.bar.styles.cssText;
+    expect(css).toMatch(/\.style-bar \.text \{[^}]*color: var\(--primary-text-color\)/);
+    expect(css).toMatch(/\.style-bar \.text\.on-fill \{[^}]*color: #fff[^}]*clip-path: inset\(/);
+    expect(css).toMatch(/\.style-bar \.text\.on-fill \{[^}]*transition:[^}]*clip-path/);
+  });
+
+  it('draws no white layer for an unavailable entity', async () => {
+    const card = await mount({ style: 'bar', entities: ['sensor.b'] });
+    expect(card.shadowRoot!.querySelectorAll('.track .text')).toHaveLength(1);
+    expect(q(card, '.on-fill')).toBeNull();
+  });
+});
+
 describe('tank', () => {
   it('renders a tube with a rising fill and a target marker', async () => {
     const card = await mount({ style: 'tank', entities: [{ entity: 'sensor.a', target: 75 }] } as never);

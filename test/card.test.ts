@@ -175,8 +175,8 @@ describe('chartdeck-card', () => {
 
   it('hides name/value/icon/target per show options', async () => {
     const shown = await mount(base({ target: 50 }));
-    expect(qa(shown, '.name')).toHaveLength(2);
-    expect(qa(shown, '.value')).toHaveLength(2);
+    expect(qa(shown, '.text:not(.on-fill) .name')).toHaveLength(2);
+    expect(qa(shown, '.text:not(.on-fill) .value')).toHaveLength(2);
     expect(qa(shown, 'ha-state-icon')).toHaveLength(2);
     expect(qa(shown, '.target')).toHaveLength(2);
     expect(q(shown, '[role=meter]')!.getAttribute('style')).toContain('--target:0.5');

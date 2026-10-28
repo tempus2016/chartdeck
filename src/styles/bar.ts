@@ -56,8 +56,14 @@ export const bar: StyleModule = {
       gap: 8px;
       padding: 0 12px;
       font-size: 14px;
+      color: var(--primary-text-color);
+    }
+    /* A white copy of the text, clipped to the fill so it reads on the colour and the track alike. */
+    .style-bar .text.on-fill {
       color: #fff;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+      clip-path: inset(0 calc((1 - var(--end)) * 100%) 0 calc(var(--start) * 100%));
+      transition: clip-path var(--cd-duration) var(--cd-easing);
     }
     .style-bar .name {
       overflow: hidden;
@@ -71,10 +77,12 @@ export const bar: StyleModule = {
     }
     .style-bar .unavailable .text {
       color: var(--secondary-text-color);
-      text-shadow: none;
     }
   `,
   render(e, { show, hass }) {
+    const text = html`${show.name ? html`<span class="name">${e.name}</span>` : nothing}${
+      show.value ? html`<span class="value">${e.display}</span>` : nothing
+    }`;
     return html`
       ${
         show.icon
@@ -89,10 +97,8 @@ export const bar: StyleModule = {
       <div class="track">
         <div class="fill"></div>
         ${show.target && e.targetPosition !== null && e.available ? html`<div class="target"></div>` : nothing}
-        <div class="text">
-          ${show.name ? html`<span class="name">${e.name}</span>` : nothing}
-          ${show.value ? html`<span class="value">${e.display}</span>` : nothing}
-        </div>
+        <div class="text">${text}</div>
+        ${e.available ? html`<div class="text on-fill" aria-hidden="true">${text}</div>` : nothing}
       </div>
     `;
   },
