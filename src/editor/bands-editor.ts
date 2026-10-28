@@ -81,6 +81,11 @@ export class CdBandsEditor extends LitElement {
     this._customOpen = new Set();
   }
 
+  /** New bands (a preset, a YAML edit, a reorder, our own edits) close any half-open custom field. */
+  protected willUpdate(changed: Map<string, unknown>): void {
+    if (changed.has('bands') && this._customOpen.size) this._customOpen = new Set();
+  }
+
   private _selectors?: { key: string; preset: unknown; presetCustom: unknown; color: unknown; from: unknown };
 
   private _t(key: string): string {
@@ -167,7 +172,6 @@ export class CdBandsEditor extends LitElement {
   }
 
   private _removeBand(index: number): void {
-    this._customOpen = new Set();
     const bands = [...(this.bands ?? [])];
     bands.splice(index, 1);
     this._emit(bands);

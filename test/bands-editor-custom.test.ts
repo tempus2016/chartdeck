@@ -50,4 +50,20 @@ describe('choosing a custom band colour', () => {
     expect(events).toEqual([]);
     expect(role(el, 'custom-color')).toBeNull();
   });
+
+  it('forgets an open custom field when the bands change (preset, YAML, reorder)', async () => {
+    const { el } = await mount([
+      { from: 0, color: 'green' },
+      { from: 50, color: 'red' },
+    ]);
+    pick(role(el, 'color')!, 'custom');
+    await el.updateComplete;
+    expect(role(el, 'custom-color')).not.toBeNull();
+    el.bands = [
+      { from: 0, color: 'blue' },
+      { from: 50, color: 'red' },
+    ];
+    await el.updateComplete;
+    expect(role(el, 'custom-color')).toBeNull();
+  });
 });
