@@ -60,10 +60,10 @@ export const segmented: StyleModule = {
       background: linear-gradient(180deg, var(--c-start), var(--c-end));
       opacity: 0;
       transition: opacity calc(var(--cd-duration) / 3) var(--cd-easing);
-      transition-delay: calc(var(--i) * 45ms);
     }
     .style-segmented .cell.on::before {
       opacity: 1;
+      transition-delay: calc(var(--i) * 45ms);
     }
     :host(:not([ready])) .style-segmented .cell::before {
       opacity: 0;

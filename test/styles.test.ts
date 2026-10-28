@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import '../src/chartdeck-card';
-import type { ChartdeckCard } from '../src/chartdeck-card';
+import { ChartdeckCard } from '../src/chartdeck-card';
 import { litCells } from '../src/styles/segmented';
 import { STYLES } from '../src/styles';
 import { STYLE_NAMES } from '../src/types';
@@ -97,5 +97,15 @@ describe('tank', () => {
     const card = await mount({ style: 'tank', entities: ['sensor.a', 'sensor.a', 'sensor.a', 'sensor.a'] });
     expect(card.getGridOptions().columns).toBe(12);
     expect(card.getGridOptions().rows).toBe(4);
+  });
+});
+
+describe('static mode', () => {
+  it('marks the host static and the shared reset covers pseudo-elements', async () => {
+    const card = await mount({ style: 'segmented', animate: false });
+    expect(card.hasAttribute('static')).toBe(true);
+    const css = (ChartdeckCard.styles as { cssText: string }[]).map((s) => s.cssText).join('');
+    expect(css).toMatch(/:host\(\[static\]\) \.entity \*::before/);
+    expect(css).toMatch(/:host\(\[static\]\) \.entity \*::after/);
   });
 });

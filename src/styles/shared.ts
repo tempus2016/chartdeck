@@ -20,7 +20,9 @@ export const shared = css`
     --pos: 0 !important;
   }
   :host([static]) .entity,
-  :host([static]) .entity * {
+  :host([static]) .entity *,
+  :host([static]) .entity *::before,
+  :host([static]) .entity *::after {
     transition: none !important;
     animation: none !important;
   }

@@ -4,7 +4,7 @@ import type { StyleModule } from './index';
 /** Vertical tank: a 40 x 140 tube that fills from the bottom. */
 export const tank: StyleModule = {
   layout: 'tiles',
-  height: 200,
+  height: 230,
   tilesPerRow: 4,
   styles: css`
     .style-tank .entity {
