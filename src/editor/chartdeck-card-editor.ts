@@ -7,6 +7,7 @@ import type { Band, CardConfig, HomeAssistant, Limit, StyleName } from '../types
 import { fireConfigChanged, setOption } from './edit';
 import {
   ACTION_FIELDS,
+  COLOUR_TOGGLE_FIELDS,
   DISPLAY_FIELDS,
   DISPLAY_TOGGLE_FIELDS,
   TITLE_FIELDS,
@@ -200,14 +201,14 @@ export class ChartdeckCardEditor extends LitElement {
     );
   }
 
-  /** Severity bands. */
+  /** The icon-colour switch, then the severity bands. */
   protected renderColours(): unknown {
-    return html`<cd-bands-editor
-      .hass=${this.hass}
-      .bands=${this._config?.severity as Band[] | undefined}
-      .unit=${this._config?.unit ?? this._firstEntityUnit()}
-      @value-changed=${(ev: CustomEvent) => this._subChanged(['severity'], ev)}
-    ></cd-bands-editor>`;
+    return html`${this._toggles(COLOUR_TOGGLE_FIELDS)}<cd-bands-editor
+        .hass=${this.hass}
+        .bands=${this._config?.severity as Band[] | undefined}
+        .unit=${this._config?.unit ?? this._firstEntityUnit()}
+        @value-changed=${(ev: CustomEvent) => this._subChanged(['severity'], ev)}
+      ></cd-bands-editor>`;
   }
 
   /** The legend and card-wide bands use the first entity's unit when the card sets none:
@@ -242,32 +243,38 @@ export class ChartdeckCardEditor extends LitElement {
   }
 
   protected renderDisplay(): TemplateResult {
-    // ha-form spaces every field 24 px apart, which turns six switches into a tall column, so
-    // they are compact label + switch rows here and only the inputs go through ha-form.
-    const data = formData(this._config!, DISPLAY_TOGGLE_FIELDS);
-    return html`<div class="toggles">
-        ${DISPLAY_TOGGLE_FIELDS.map(({ name }) => {
-          const label = this._label(`editor_${name}`);
-          const on = data[name] === true;
-          // ha-switch isn't labelable, so it carries its own name and the text toggles it too.
-          return html`<div class="toggle">
-            <span @click=${() => this._toggle(name, !on)}>${label}</span
-            ><ha-switch
-              data-name=${name}
-              aria-label=${label}
-              .checked=${live(on)}
-              @change=${(ev: Event) => this._toggle(name, (ev.target as HTMLInputElement).checked)}
-            ></ha-switch>
-          </div>`;
-        })}
-      </div>
-      ${this._form('display', displaySchema(this.hass), DISPLAY_FIELDS)}`;
+    return html`${this._toggles(DISPLAY_TOGGLE_FIELDS)}
+    ${this._form('display', displaySchema(this.hass), DISPLAY_FIELDS)}`;
   }
 
-  private _toggle(name: string, checked: boolean): void {
+  /**
+   * On/off options as compact label + switch rows: ha-form spaces every field 24 px apart, which
+   * turns a few switches into a tall column, so only inputs go through ha-form.
+   */
+  private _toggles(fields: FieldBinding[]): TemplateResult {
+    const data = formData(this._config!, fields);
+    return html`<div class="toggles">
+      ${fields.map(({ name }) => {
+        const label = this._label(`editor_${name}`);
+        const on = data[name] === true;
+        // ha-switch isn't labelable, so it carries its own name and the text toggles it too.
+        return html`<div class="toggle">
+          <span @click=${() => this._toggle(fields, name, !on)}>${label}</span
+          ><ha-switch
+            data-name=${name}
+            aria-label=${label}
+            .checked=${live(on)}
+            @change=${(ev: Event) => this._toggle(fields, name, (ev.target as HTMLInputElement).checked)}
+          ></ha-switch>
+        </div>`;
+      })}
+    </div>`;
+  }
+
+  private _toggle(fields: FieldBinding[], name: string, checked: boolean): void {
     if (!this._config) return;
-    const data = formData(this._config, DISPLAY_TOGGLE_FIELDS);
-    this._commit(applyFormData(this._config, DISPLAY_TOGGLE_FIELDS, { ...data, [name]: checked }));
+    const data = formData(this._config, fields);
+    this._commit(applyFormData(this._config, fields, { ...data, [name]: checked }));
   }
 
   protected renderActions(): TemplateResult {

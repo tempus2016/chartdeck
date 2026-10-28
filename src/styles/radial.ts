@@ -1,6 +1,7 @@
 import { css, html, nothing, svg } from 'lit';
 import { solidColor } from '../bands';
 import { arcPath, polar, sweepAngles } from '../geometry';
+import { iconOverride } from '../resolve';
 import { fitStatusText } from '../status-text';
 import type { StyleModule } from './index';
 
@@ -224,7 +225,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
                   class="icon ${show.value ? '' : 'centre'}"
                   .hass=${hass}
                   .stateObj=${e.stateObj}
-                  .icon=${e.config.icon}
+                  .icon=${iconOverride(e)}
                 ></ha-state-icon>`
               : nothing
           }

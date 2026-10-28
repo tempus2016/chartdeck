@@ -153,6 +153,7 @@ export function normalizeConfig(raw: CardConfig): NormalizedConfig {
     show,
     sort,
     animate: raw.animate !== false,
+    colorIcon: raw.color_icon === true,
     legendBands: normalizeBands(raw.severity) ?? DEFAULT_BANDS,
   };
   if (raw.title !== undefined) config.title = raw.title;

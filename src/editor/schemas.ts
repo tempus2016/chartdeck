@@ -22,6 +22,9 @@ export const DISPLAY_TOGGLE_FIELDS: FieldBinding[] = [
   { name: 'animate', path: ['animate'], default: true },
 ];
 
+/** The Colours section's switch, drawn like the Display ones. */
+export const COLOUR_TOGGLE_FIELDS: FieldBinding[] = [{ name: 'color_icon', path: ['color_icon'], default: false }];
+
 /** The rest of the Display section, in an ha-form. */
 export const DISPLAY_FIELDS: FieldBinding[] = [
   { name: 'columns', path: ['columns'] },

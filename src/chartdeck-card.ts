@@ -253,7 +253,9 @@ export class ChartdeckCard extends LitElement {
       `--start:${e.span[0]};--end:${e.span[1]};--pos:${e.position};--target:${e.targetPosition ?? 0};` +
       `--c-start:${stops.start};--c-end:${stops.end}`;
     return html`<div
-      class="entity ${interactive ? 'interactive' : ''} ${e.available ? '' : 'unavailable'}"
+      class="entity ${interactive ? 'interactive' : ''} ${e.available ? '' : 'unavailable'} ${
+        config.colorIcon && e.available ? 'icon-band' : ''
+      }"
       data-index=${index}
       role="meter"
       aria-valuenow=${e.available ? String(e.value) : nothing}

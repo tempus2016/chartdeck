@@ -22,6 +22,7 @@ const ICON_NUMBER =
 export function isEntityStart(from: unknown): from is string {
   return typeof from === 'string' && from.trim() !== '' && !Number.isFinite(Number(from));
 }
+const ICON_SELECTOR = { icon: {} };
 
 /** The preset whose bands match exactly, `none` for no bands, otherwise `custom`. */
 export function presetFor(bands: Band[] | undefined): PresetName | 'custom' {
@@ -47,12 +48,41 @@ export class CdBandsEditor extends LitElement {
     :host {
       display: block;
     }
+    /* Two lines per band: where it starts and its colour, then its label and icon. */
     .band {
       display: grid;
-      grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto;
+      grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        'swatch from color mode remove'
+        '. label icon icon icon';
       gap: 8px;
       align-items: center;
-      margin-top: 8px;
+      margin-top: 12px;
+    }
+    .band + .band {
+      padding-top: 12px;
+      border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));
+    }
+    .swatch {
+      grid-area: swatch;
+    }
+    [data-role='from'] {
+      grid-area: from;
+    }
+    [data-role='color'] {
+      grid-area: color;
+    }
+    [data-role='label'] {
+      grid-area: label;
+    }
+    [data-role='icon'] {
+      grid-area: icon;
+    }
+    .from-mode {
+      grid-area: mode;
+    }
+    .remove {
+      grid-area: remove;
     }
     .swatch {
       width: 20px;
@@ -62,6 +92,7 @@ export class CdBandsEditor extends LitElement {
       border: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));
       box-sizing: border-box;
     }
+    /* Optional extra lines go below the two named ones, so a band without them has no gap. */
     .custom,
     .from-entity {
       grid-column: 2 / -1;
@@ -211,6 +242,11 @@ export class CdBandsEditor extends LitElement {
     this._updateBand(index, 'color', value);
   }
 
+  private _iconChanged(index: number, ev: CustomEvent): void {
+    ev.stopPropagation();
+    this._updateBand(index, 'icon', ev.detail?.value);
+  }
+
   private _labelChanged(index: number, ev: CustomEvent): void {
     ev.stopPropagation();
     this._updateBand(index, 'label', ev.detail?.value);
@@ -272,6 +308,15 @@ export class CdBandsEditor extends LitElement {
         .selector=${TEXT_SELECTOR}
         .value=${band.label ?? ''}
         @value-changed=${(ev: CustomEvent) => this._labelChanged(index, ev)}
+      ></ha-selector>
+      <ha-selector
+        .required=${false}
+        data-role="icon"
+        .hass=${this.hass}
+        .label=${this._t('editor_band_icon')}
+        .selector=${ICON_SELECTOR}
+        .value=${band.icon ?? ''}
+        @value-changed=${(ev: CustomEvent) => this._iconChanged(index, ev)}
       ></ha-selector>
       <ha-icon-button
         class="from-mode"
