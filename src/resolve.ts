@@ -50,6 +50,33 @@ function parseNumber(state: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Decimals an attribute was reported with, up to 2: attributes have no display precision. */
+function reportedDecimals(raw: unknown): number {
+  const text = String(raw);
+  const dot = text.indexOf('.');
+  return dot === -1 || /e/i.test(text) ? 0 : Math.min(2, text.length - dot - 1);
+}
+
+/** The raw value an entity is drawn from: its state, or the configured attribute. */
+function rawValue(entity: MergedEntity, stateObj: HassEntity | undefined): unknown {
+  if (!stateObj) return undefined;
+  return entity.attribute ? stateObj.attributes?.[entity.attribute] : stateObj.state;
+}
+
+function toValue(raw: unknown): number | null {
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  return typeof raw === 'string' ? parseNumber(raw) : null;
+}
+
+/** What to show when there is no number: the attribute's text, else the entity's state. */
+function statusText(entity: MergedEntity, stateObj: HassEntity, raw: unknown, hass: HomeAssistant): string {
+  const attribute = entity.attribute;
+  if (attribute && typeof raw === 'string' && raw.trim() !== '') {
+    return hass.formatEntityAttributeValue?.(stateObj, attribute) ?? raw;
+  }
+  return hass.formatEntityState?.(stateObj) ?? localize(hass, 'unavailable');
+}
+
 function resolveLimit(limit: unknown, hass: HomeAssistant): number | null {
   if (isUnset(limit)) return null;
   if (typeof limit === 'number') return Number.isFinite(limit) ? limit : null;
@@ -66,13 +93,18 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
   const entityId = entity.entity;
   const stateObj = hass.states[entityId];
   const name = entity.name ?? stateObj?.attributes?.friendly_name ?? entityId;
-  const unit = entity.unit ?? stateObj?.attributes?.unit_of_measurement ?? '';
-  const decimals = isUnset(entity.decimals) ? defaultDecimals(hass, entityId, unit) : (entity.decimals as number);
+  // The sensor's unit and display precision describe its state, not its attributes.
+  const unit = entity.unit ?? (entity.attribute ? '' : (stateObj?.attributes?.unit_of_measurement ?? ''));
+  const raw = rawValue(entity, stateObj);
+  const value = toValue(raw);
+  const available = value !== null;
+  let decimals: number;
+  if (!isUnset(entity.decimals)) decimals = entity.decimals as number;
+  else if (entity.attribute) decimals = available ? reportedDecimals(raw) : 0;
+  else decimals = defaultDecimals(hass, entityId, unit);
   const min = resolveLimit(entity.min, hass) ?? 0;
   const max = resolveLimit(entity.max, hass) ?? 100;
   const target = resolveLimit(entity.target, hass);
-  const value = parseNumber(stateObj?.state);
-  const available = value !== null;
 
   let valueText = '';
   let display: string;
@@ -82,7 +114,7 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
   } else if (!stateObj) {
     display = localize(hass, 'entity_not_found');
   } else {
-    display = hass.formatEntityState?.(stateObj) ?? localize(hass, 'unavailable');
+    display = statusText(entity, stateObj, raw, hass);
   }
 
   return {

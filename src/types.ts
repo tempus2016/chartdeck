@@ -27,6 +27,8 @@ export interface EntityOptions {
 }
 export interface EntityConfig extends EntityOptions {
   entity: string;
+  /** Read this attribute as the value instead of the state. */
+  attribute?: string;
 }
 export interface ShowOptions {
   name: boolean;
@@ -49,6 +51,7 @@ export interface CardConfig extends EntityOptions {
 /** Card-level options overlaid by the entity's own. */
 export interface MergedEntity extends EntityOptions {
   entity: string;
+  attribute?: string;
   min: Limit;
   max: Limit;
   severity: Band[];
@@ -82,4 +85,5 @@ export interface HomeAssistant {
   language?: string;
   themes?: { darkMode?: boolean; theme?: string };
   formatEntityState?(stateObj: HassEntity, state?: string): string;
+  formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;
 }

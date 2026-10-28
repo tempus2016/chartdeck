@@ -215,7 +215,7 @@ export class ChartdeckCardEditor extends LitElement {
   private _firstEntityUnit(): string | undefined {
     const first = this._config?.entities?.[0];
     if (typeof first === 'string') return sensorUnit(this.hass, first);
-    return first?.unit ?? sensorUnit(this.hass, first?.entity);
+    return first?.unit ?? sensorUnit(this.hass, first?.entity, first?.attribute);
   }
 
   private _selectStyle(style: StyleName): void {

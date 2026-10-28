@@ -5,9 +5,11 @@ import type { CardConfig, EntityConfig, HomeAssistant, Limit } from '../types';
 import { addEntity, entityId, moveEntity, removeEntity, setEntityOption } from './edit';
 import {
   ENTITY_ACTION_FIELDS,
+  ENTITY_ATTRIBUTE_FIELDS,
   ENTITY_TEXT_FIELDS,
   applyFormData,
   entityActionsSchema,
+  entityAttributeSchema,
   entityTextSchema,
   formData,
 } from './schemas';
@@ -23,9 +25,16 @@ const ICON_DELETE = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2
 const ICON_CHEVRON = 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z';
 const LIMITS = ['min', 'max', 'target'] as const;
 
-/** The unit a sensor reports, which the card shows when no unit is configured. */
-export function sensorUnit(hass: HomeAssistant | undefined, id: string | undefined): string | undefined {
-  const unit = id ? hass?.states[id]?.attributes?.unit_of_measurement : undefined;
+/**
+ * The unit a sensor reports, which the card shows when no unit is configured. It belongs to the
+ * state, so an entity read from an attribute has none.
+ */
+export function sensorUnit(
+  hass: HomeAssistant | undefined,
+  id: string | undefined,
+  attribute?: string,
+): string | undefined {
+  const unit = id && !attribute ? hass?.states[id]?.attributes?.unit_of_measurement : undefined;
   return typeof unit === 'string' && unit ? unit : undefined;
 }
 
@@ -190,6 +199,7 @@ export class CdEntitiesEditor extends LitElement {
       fn(ev.detail?.value);
     };
     return html`<div class="overrides">
+      ${this._form('entity-attribute', index, own, entityAttributeSchema(own.entity), ENTITY_ATTRIBUTE_FIELDS)}
       ${this._form('entity-text', index, own, entityTextSchema(), ENTITY_TEXT_FIELDS)}
       <ha-icon-picker
         .hass=${this.hass}
@@ -211,7 +221,7 @@ export class CdEntitiesEditor extends LitElement {
       <cd-bands-editor
         .hass=${this.hass}
         .bands=${own.severity}
-        .unit=${own.unit ?? this.unit ?? sensorUnit(this.hass, own.entity)}
+        .unit=${own.unit ?? this.unit ?? sensorUnit(this.hass, own.entity, own.attribute)}
         @value-changed=${stop((v) => this._set(index, 'severity', v))}
       ></cd-bands-editor>
       ${this._form('entity-actions', index, own, entityActionsSchema(), ENTITY_ACTION_FIELDS)}

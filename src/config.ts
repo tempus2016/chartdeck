@@ -78,6 +78,9 @@ function mergeEntity(raw: string | EntityConfig, card: EntityOptions, index: num
   if (!own || typeof own !== 'object' || typeof own.entity !== 'string' || !own.entity) {
     throw new Error(`Entity ${index + 1} needs an "entity" id`);
   }
+  if (own.attribute !== undefined && own.attribute !== null && typeof own.attribute !== 'string') {
+    throw new Error(`Entity ${index + 1}: "attribute" must be an attribute name`);
+  }
   const min = pick(toLimit(own.min, 'min'), toLimit(card.min, 'min')) ?? 0;
   const max = pick(toLimit(own.max, 'max'), toLimit(card.max, 'max')) ?? 100;
   if (typeof min === 'number' && typeof max === 'number' && min >= max) {
@@ -107,6 +110,7 @@ function mergeEntity(raw: string | EntityConfig, card: EntityOptions, index: num
   if (unit !== undefined) merged.unit = unit;
   if (target !== undefined) merged.target = target;
   if (decimals !== undefined) merged.decimals = decimals;
+  if (!own.attribute) delete merged.attribute;
   return merged;
 }
 

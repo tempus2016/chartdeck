@@ -97,4 +97,79 @@ describe('resolve', () => {
     const [r] = resolveEntities(cfg([{ entity: 'sensor.a', min: -100, max: 100 }]), hass);
     expect(r.span).toEqual([0.25, 0.5]);
   });
+
+  describe('value from an attribute', () => {
+    const climate = {
+      'climate.lounge': ['heat', { current_temperature: 20.5, temperature: 21, friendly_name: 'Lounge' }] as [
+        string,
+        Record<string, unknown>,
+      ],
+      'sensor.t': ['19', { unit_of_measurement: '°C' }] as [string, Record<string, unknown>],
+    };
+
+    it('reads a numeric attribute with the decimals it was reported with', () => {
+      const hass = makeHass(climate);
+      const [r] = resolveEntities(cfg([{ entity: 'climate.lounge', attribute: 'current_temperature', max: 30 }]), hass);
+      expect(r.available).toBe(true);
+      expect(r.value).toBe(20.5);
+      expect(r.decimals).toBe(1);
+      expect(r.display).toBe('20.5');
+      expect(r.position).toBeCloseTo(20.5 / 30);
+      expect(r.name).toBe('Lounge');
+    });
+
+    it('reads numeric strings, and caps reported decimals at 2', () => {
+      const hass = makeHass({ 'media_player.k': ['playing', { volume_level: 0.123456, level: '42' }] });
+      const [vol, level] = resolveEntities(
+        cfg([
+          { entity: 'media_player.k', attribute: 'volume_level', max: 1 },
+          { entity: 'media_player.k', attribute: 'level' },
+        ]),
+        hass,
+      );
+      expect(vol.display).toBe('0.12');
+      expect(level.value).toBe(42);
+      expect(level.display).toBe('42');
+    });
+
+    it("ignores the state's unit but keeps a configured unit and decimals", () => {
+      const hass = makeHass({ 'sensor.t': ['19', { unit_of_measurement: '°C', setpoint: 21 }] });
+      const [plain, set] = resolveEntities(
+        cfg([
+          { entity: 'sensor.t', attribute: 'setpoint' },
+          { entity: 'sensor.t', attribute: 'setpoint', unit: '°C', decimals: 1 },
+        ]),
+        hass,
+      );
+      expect(plain.unit).toBe('');
+      expect(plain.display).toBe('21');
+      expect(set.display).toBe('21.0 °C');
+    });
+
+    it("shows the entity's state when the attribute is missing, and an attribute's own text", () => {
+      const hass = makeHass({ 'media_player.k': ['off', { mode: 'eco' }] });
+      const [missing, text] = resolveEntities(
+        cfg([
+          { entity: 'media_player.k', attribute: 'volume_level' },
+          { entity: 'media_player.k', attribute: 'mode' },
+        ]),
+        hass,
+      );
+      expect(missing.available).toBe(false);
+      expect(missing.display).toBe('off');
+      expect(text.available).toBe(false);
+      expect(text.display).toBe('eco');
+      hass.formatEntityAttributeValue = (_s, attr) => `${attr}: Eco`;
+      expect(resolveEntities(cfg([{ entity: 'media_player.k', attribute: 'mode' }]), hass)[0].display).toBe(
+        'mode: Eco',
+      );
+    });
+
+    it('treats an empty attribute as the state', () => {
+      const hass = makeHass(climate);
+      const config = cfg([{ entity: 'sensor.t', attribute: '' }]);
+      expect(config.entities[0].attribute).toBeUndefined();
+      expect(resolveEntities(config, hass)[0].display).toBe('19.0 °C');
+    });
+  });
 });
