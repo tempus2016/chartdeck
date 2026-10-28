@@ -1,4 +1,6 @@
 import { bandFor } from './bands';
+import { mergeEntity } from './config';
+import { matchEntities } from './fill';
 import { defaultDecimals, formatNumber, withUnit } from './format';
 import { localize } from './localize';
 import { fillSpan, position } from './scale';
@@ -164,8 +166,18 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
   };
 }
 
+/** Ids the card's include rule adds, leaving out ones already listed. */
+export function matchedIds(config: NormalizedConfig, hass: HomeAssistant): string[] {
+  if (!config.include) return [];
+  const listed = new Set(config.entities.map((e) => e.entity));
+  return matchEntities(config.include, config.exclude, hass).filter((id) => !listed.has(id));
+}
+
+/** The listed entities, then matched ones with the card's options, less unavailable ones if hidden. */
 export function resolveEntities(config: NormalizedConfig, hass: HomeAssistant): ResolvedEntity[] {
-  return config.entities.map((e) => resolveOne(e, hass));
+  const matched = matchedIds(config, hass).map((id, i) => mergeEntity(id, config.cardOptions, i));
+  const resolved = [...config.entities, ...matched].map((e) => resolveOne(e, hass));
+  return config.hideUnavailable ? resolved.filter((e) => e.available) : resolved;
 }
 
 export function sortEntities(list: ResolvedEntity[], mode: SortMode): ResolvedEntity[] {

@@ -1,3 +1,4 @@
+import { normalizeRule } from './fill';
 import { STYLE_NAMES } from './types';
 import type {
   ActionConfig,
@@ -82,7 +83,8 @@ function pick<T>(own: T | undefined, card: T | undefined): T | undefined {
   return own !== undefined ? own : card;
 }
 
-function mergeEntity(raw: string | EntityConfig, card: EntityOptions, index: number): MergedEntity {
+/** An entity with the card's options under its own. */
+export function mergeEntity(raw: string | EntityConfig, card: EntityOptions, index: number): MergedEntity {
   const own: EntityConfig = typeof raw === 'string' ? { entity: raw } : raw;
   if (!own || typeof own !== 'object' || typeof own.entity !== 'string' || !own.entity) {
     throw new Error(`Entity ${index + 1} needs an "entity" id`);
@@ -147,9 +149,16 @@ export function normalizeConfig(raw: CardConfig): NormalizedConfig {
     ...raw.show,
   };
   const columns = toInteger(raw.columns, 'columns', 1);
+  const limit = toInteger(raw.limit, 'limit', 1);
+  const include = normalizeRule(raw.include, 'include');
+  const exclude = normalizeRule(raw.exclude, 'exclude');
+  // Matched entities only take the card's options, so check those now rather than mid-render.
+  if (include) mergeEntity('sensor.chartdeck_check', raw, 0);
   const config: NormalizedConfig = {
     style,
     entities,
+    hideUnavailable: raw.hide_unavailable === true,
+    cardOptions: raw,
     show,
     sort,
     animate: raw.animate !== false,
@@ -158,5 +167,8 @@ export function normalizeConfig(raw: CardConfig): NormalizedConfig {
   };
   if (raw.title !== undefined) config.title = raw.title;
   if (columns !== undefined) config.columns = columns;
+  if (limit !== undefined) config.limit = limit;
+  if (include) config.include = include;
+  if (exclude) config.exclude = exclude;
   return config;
 }

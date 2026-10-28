@@ -7,7 +7,7 @@ import { normalizeConfig } from './config';
 import './editor/chartdeck-card-editor';
 import { formatNumber } from './format';
 import { localize } from './localize';
-import { resolveBands, resolveEntities, sortEntities, watchedEntityIds } from './resolve';
+import { matchedIds, resolveBands, resolveEntities, sortEntities, watchedEntityIds } from './resolve';
 import type { ResolvedEntity } from './resolve';
 import { STYLES } from './styles/index';
 import type { StyleModule } from './styles/index';
@@ -67,6 +67,8 @@ export class ChartdeckCard extends LitElement {
   declare _config?: NormalizedConfig;
 
   private _watched = new Set<string>();
+  /** Ids the include rule matched at the last render, to notice entities arriving or leaving. */
+  private _matched: string[] = [];
   /** Entities as last rendered, indexed by each `.entity` element's data-index. */
   private _items: ResolvedEntity[] = [];
   private _detachers = new Map<HTMLElement, () => void>();
@@ -111,7 +113,7 @@ export class ChartdeckCard extends LitElement {
   /** Legend items, formatted with the first entity's decimals and unit. */
   private _legend(first?: ResolvedEntity): { color: string; text: string }[] {
     const config = this._config;
-    if (!config?.show.legend || config.entities.length === 0) return [];
+    if (!config?.show.legend || this._count() === 0) return [];
     const decimals = first?.decimals ?? 1;
     return legendItems(
       resolveBands(config.legendBands, this.hass),
@@ -120,12 +122,17 @@ export class ChartdeckCard extends LitElement {
     );
   }
 
+  /** How many entities the card shows: as last drawn, or as listed before the first draw. */
+  private _count(): number {
+    return this.hasUpdated && this.hass ? this._items.length : (this._config?.entities.length ?? 0);
+  }
+
   /** Estimated content height in px (see the sizing rules). */
   private _contentHeight(): number {
     const config = this._config;
     if (!config) return 0;
     const style = this._style;
-    const n = config.entities.length;
+    const n = this._count();
     const perRow =
       config.columns !== undefined
         ? Math.min(config.columns, columnsThatFit(style))
@@ -151,7 +158,7 @@ export class ChartdeckCard extends LitElement {
    * that is too small lets the card spill over the one below it.
    */
   getGridOptions(): { columns: number; rows: 'auto'; min_columns: number; min_rows: number } {
-    const n = this._config?.entities.length ?? 0;
+    const n = this._count();
     const rows = this._style.layout === 'rows';
     const columns = rows || n <= 1 ? 6 : 12;
     // Row styles need half a section: at 3 columns the icon, cells and value can't fit.
@@ -166,6 +173,13 @@ export class ChartdeckCard extends LitElement {
     if (!prev || !next) return true;
     for (const id of this._watched) {
       if (prev.states[id] !== next.states[id]) return true;
+    }
+    if (this._config?.include) {
+      const matched = matchedIds(this._config, next);
+      if (matched.length !== this._matched.length || matched.some((id, i) => id !== this._matched[i])) return true;
+      for (const id of matched) {
+        if (prev.states[id] !== next.states[id]) return true;
+      }
     }
     return (
       prev.themes?.darkMode !== next.themes?.darkMode ||
@@ -278,14 +292,18 @@ export class ChartdeckCard extends LitElement {
     let first: ResolvedEntity | undefined;
     // Longest value text (characters), so row styles can give every row the same value width.
     let valueCh: number | undefined;
-    if (config.entities.length === 0) {
+    const resolved = hass ? resolveEntities(config, hass) : [];
+    this._matched = hass ? matchedIds(config, hass) : [];
+    if (config.entities.length === 0 && !config.include) {
       this._items = [];
       body = html`<div class="hint">${localize(hass, 'no_entities')}</div>`;
     } else if (!hass) {
       this._items = [];
       body = nothing;
+    } else if (resolved.length === 0) {
+      this._items = [];
+      body = html`<div class="hint">${localize(hass, config.include ? 'no_matches' : 'none_available')}</div>`;
     } else {
-      const resolved = resolveEntities(config, hass);
       first = resolved[0];
       // Key rows by entity id (config position breaks ties for a repeated id) so a re-sort moves
       // each entity's element rather than redrawing another entity's value into it.
@@ -295,10 +313,10 @@ export class ChartdeckCard extends LitElement {
         keys.set(e, seen.has(e.entityId) ? `${e.entityId}#${i}` : e.entityId);
         seen.add(e.entityId);
       });
-      this._items = sortEntities(resolved, config.sort);
+      this._items = sortEntities(resolved, config.sort).slice(0, config.limit);
       // Only real values set the shared width; status text ("Unavailable") widening every row
       // would squeeze all the cells.
-      const values = resolved.filter((e) => e.available).map((e) => e.display.length);
+      const values = this._items.filter((e) => e.available).map((e) => e.display.length);
       valueCh = values.length ? Math.max(...values) : undefined;
       const tiles = style.layout === 'tiles';
       const grid = columnsTemplate(style, config.columns);

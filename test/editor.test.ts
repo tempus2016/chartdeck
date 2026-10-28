@@ -395,6 +395,55 @@ describe('editor: icon follows the band', () => {
   });
 });
 
+describe('editor: fill from rules', () => {
+  it('writes include keys as lists, shows YAML single values as lists, and drops emptied keys', async () => {
+    const { editor, events } = await mount({ ...raw, include: { area: 'kitchen' } });
+    const include = form(editor, 'include');
+    expect(include.data).toEqual({ include_area: ['kitchen'] });
+    change(include, { include_area: ['kitchen'] });
+    expect(events).toHaveLength(0);
+    change(include, { include_area: ['kitchen'], include_device_class: ['temperature'] });
+    expect(events.at(-1)!.include).toEqual({ area: 'kitchen', device_class: ['temperature'] });
+    editor.setConfig(events.at(-1)!);
+    await settle(editor);
+    change(form(editor, 'include'), { include_area: [], include_device_class: ['temperature'] });
+    expect(events.at(-1)!.include).toEqual({ device_class: ['temperature'] });
+    editor.setConfig(events.at(-1)!);
+    await settle(editor);
+    change(form(editor, 'include'), {});
+    expect(events.at(-1)).toEqual(raw);
+  });
+
+  it("offers this home's device classes and domains, and an entity picker only for exclude", async () => {
+    const { editor } = await mount(raw);
+    editor.hass = makeHass({ 'sensor.a': ['1', { device_class: 'battery' }], 'input_number.b': '2' });
+    await settle(editor);
+    const names = (section: string) => (form(editor, section).schema as { name: string }[]).map((f) => f.name);
+    expect(names('include')).not.toContain('include_entity');
+    expect(names('exclude')).toContain('exclude_entity');
+    const schema = form(editor, 'include').schema as {
+      name: string;
+      selector: Record<string, { options?: string[] }>;
+    }[];
+    expect(schema.find((f) => f.name === 'include_device_class')!.selector.select.options).toEqual(['battery']);
+    expect(schema.find((f) => f.name === 'include_domain')!.selector.select.options).toEqual([
+      'input_number',
+      'sensor',
+    ]);
+    const label = (form(editor, 'include').computeLabel as (s: { name: string }) => string)({ name: 'include_area' });
+    expect(label).toBe('Areas');
+  });
+
+  it('sets hide_unavailable and limit from Display', async () => {
+    const { editor, events } = await mount(raw);
+    flip(toggle(editor, 'hide_unavailable'), true);
+    expect(events.at(-1)).toMatchObject({ hide_unavailable: true });
+    await settle(editor);
+    change(form(editor, 'display'), { ...(form(editor, 'display').data as Record<string, unknown>), limit: 5 });
+    expect(events.at(-1)).toMatchObject({ limit: 5 });
+  });
+});
+
 describe('editor: entities', () => {
   const list = (editor: Editor) =>
     editor.shadowRoot!.querySelector('.section-entities cd-entities-editor') as StubElement;
@@ -576,6 +625,7 @@ describe('editor: schemas', () => {
       'show_target',
       'show_legend',
       'animate',
+      'hide_unavailable',
     ]);
     expect(rows[4].textContent!.trim()).toBe('Show legend');
     const schema = form(editor, 'display').schema as { name: string }[];
