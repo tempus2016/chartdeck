@@ -13,8 +13,11 @@ import {
   TITLE_FIELDS,
   actionsSchema,
   applyFormData,
+  deepEqual,
   displaySchema,
   formData,
+  RULE_FIELDS,
+  ruleSchema,
   titleSchema,
 } from './schemas';
 import type { FieldBinding } from './schemas';
@@ -82,6 +85,15 @@ export class ChartdeckCardEditor extends LitElement {
     .toggle span {
       flex: 1;
       cursor: pointer;
+    }
+    .rules-heading {
+      margin: 16px 0 4px;
+      font-weight: 500;
+    }
+    .rules-help {
+      margin: 0 0 8px;
+      color: var(--secondary-text-color);
+      font-size: 0.875em;
     }
     .section-limits {
       display: flex;
@@ -171,15 +183,58 @@ export class ChartdeckCardEditor extends LitElement {
     this._commit(setOption(this._config, path, ev.detail?.value));
   }
 
-  /** Entity list, pickers and per-entity overrides. */
+  /** Entity list, pickers and per-entity overrides, then the rules that add more. */
   protected renderEntities(): unknown {
     return html`<cd-entities-editor
-      .hass=${this.hass}
-      .entities=${this._config?.entities ?? []}
-      .unit=${this._config?.unit}
-      @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
-    ></cd-entities-editor>`;
+        .hass=${this.hass}
+        .entities=${this._config?.entities ?? []}
+        .unit=${this._config?.unit}
+        @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
+      ></cd-entities-editor>
+      ${this._ruleForm('include')} ${this._ruleForm('exclude')}`;
   }
+
+  /** ha-form data for a rule: each key as a list, since the pickers are all multiple. */
+  private _ruleData(field: 'include' | 'exclude'): Record<string, string[]> {
+    const rule = this._config?.[field];
+    const data: Record<string, string[]> = {};
+    if (!rule || typeof rule !== 'object') return data;
+    for (const [key, value] of Object.entries(rule)) {
+      data[`${field}_${key}`] = Array.isArray(value) ? value : [value];
+    }
+    return data;
+  }
+
+  private _ruleChanged(field: 'include' | 'exclude', ev: CustomEvent): void {
+    ev.stopPropagation();
+    if (!this._config) return;
+    const value = (ev.detail?.value ?? {}) as Record<string, unknown>;
+    const before = this._ruleData(field);
+    let next = this._config;
+    for (const key of RULE_FIELDS[field]) {
+      const name = `${field}_${key}`;
+      const list = Array.isArray(value[name]) ? (value[name] as string[]) : [];
+      if (deepEqual(before[name] ?? [], list)) continue;
+      next = setOption(next, [field, key], list.length ? list : undefined);
+    }
+    if (next !== this._config) this._commit(next);
+  }
+
+  private _ruleForm(field: 'include' | 'exclude'): TemplateResult {
+    return html`<div class="rules-heading">${this._label(`editor_${field}_heading`)}</div>
+      <p class="rules-help">${this._label(`editor_${field}_help`)}</p>
+      <ha-form
+        data-section=${field}
+        .hass=${this.hass}
+        .data=${this._ruleData(field)}
+        .schema=${ruleSchema(field, this.hass)}
+        .computeLabel=${this._computeRuleLabel}
+        @value-changed=${(ev: CustomEvent) => this._ruleChanged(field, ev)}
+      ></ha-form>`;
+  }
+
+  private _computeRuleLabel = (schema: { name: string }): string =>
+    localize(this.hass, `editor_rule_${schema.name.slice(schema.name.indexOf('_') + 1)}`);
 
   /** Card-level min, max and target. */
   protected renderLimits(): unknown {

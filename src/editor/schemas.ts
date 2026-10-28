@@ -20,6 +20,7 @@ export const DISPLAY_TOGGLE_FIELDS: FieldBinding[] = [
   { name: 'show_target', path: ['show', 'target'], default: true },
   { name: 'show_legend', path: ['show', 'legend'], default: false },
   { name: 'animate', path: ['animate'], default: true },
+  { name: 'hide_unavailable', path: ['hide_unavailable'], default: false },
 ];
 
 /** The Colours section's switch, drawn like the Display ones. */
@@ -29,6 +30,7 @@ export const COLOUR_TOGGLE_FIELDS: FieldBinding[] = [{ name: 'color_icon', path:
 export const DISPLAY_FIELDS: FieldBinding[] = [
   { name: 'columns', path: ['columns'] },
   { name: 'sort', path: ['sort'], default: 'none' },
+  { name: 'limit', path: ['limit'] },
   { name: 'decimals', path: ['decimals'] },
   { name: 'unit', path: ['unit'] },
 ];
@@ -113,11 +115,62 @@ function buildDisplaySchema(hass?: HomeAssistant) {
             },
           },
         },
+        { name: 'limit', selector: { number: { min: 1, mode: 'box' } } },
         { name: 'decimals', selector: { number: { min: 0, max: 20, mode: 'box' } } },
         { name: 'unit', selector: { text: {} } },
       ],
     },
   ];
+}
+
+/** The keys each rule form offers, in order. */
+export const RULE_FIELDS = {
+  include: ['device_class', 'area', 'floor', 'label', 'domain'],
+  exclude: ['entity', 'device_class', 'area', 'floor', 'label', 'domain'],
+} as const;
+
+/** Device classes and domains present in this home, offered (with typing allowed) in the rule forms. */
+function ruleOptions(hass?: HomeAssistant): { deviceClasses: string[]; domains: string[] } {
+  const deviceClasses = new Set<string>();
+  const domains = new Set<string>();
+  for (const state of Object.values(hass?.states ?? {})) {
+    const dc = state.attributes?.device_class;
+    if (typeof dc === 'string' && dc) deviceClasses.add(dc);
+    domains.add(state.entity_id.slice(0, state.entity_id.indexOf('.')));
+  }
+  return { deviceClasses: [...deviceClasses].sort(), domains: [...domains].sort() };
+}
+
+function ruleSelector(key: string, options: { deviceClasses: string[]; domains: string[] }) {
+  const pick = (values: string[]) => ({
+    select: { multiple: true, custom_value: true, mode: 'dropdown', options: values },
+  });
+  switch (key) {
+    case 'device_class':
+      return pick(options.deviceClasses);
+    case 'domain':
+      return pick(options.domains);
+    case 'entity':
+      return { entity: { multiple: true } };
+    default:
+      return { [key]: { multiple: true } };
+  }
+}
+
+const ruleCache = new Map<string, { key: string; schema: unknown[] }>();
+
+/** The include or exclude form, rebuilt only when the home's device classes or domains change. */
+export function ruleSchema(field: 'include' | 'exclude', hass?: HomeAssistant) {
+  const options = ruleOptions(hass);
+  const key = `${options.deviceClasses.join()}|${options.domains.join()}`;
+  const cached = ruleCache.get(field);
+  if (cached?.key === key) return cached.schema;
+  const schema = RULE_FIELDS[field].map((name) => ({
+    name: `${field}_${name}`,
+    selector: ruleSelector(name, options),
+  }));
+  ruleCache.set(field, { key, schema });
+  return schema;
 }
 
 let displayCache: { language: string; schema: ReturnType<typeof buildDisplaySchema> } | undefined;

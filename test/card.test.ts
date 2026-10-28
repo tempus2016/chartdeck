@@ -273,6 +273,48 @@ describe('chartdeck-card', () => {
     expect(qa(coloured, '.entity').map((e) => e.classList.contains('icon-band'))).toEqual([true, false]);
   });
 
+  it('fills from rules: updates when a match changes or arrives, and keeps the top N', async () => {
+    const battery = (id: string, v: string) => ({
+      entity_id: id,
+      state: v,
+      attributes: { device_class: 'battery', unit_of_measurement: '%', friendly_name: id.slice(7).toUpperCase() },
+    });
+    const hass = makeHass({ 'sensor.x': '5' });
+    hass.states['sensor.a'] = battery('sensor.a', '30');
+    hass.states['sensor.b'] = battery('sensor.b', '70');
+    const card = await mount(
+      { type: 'custom:chartdeck-card', include: { device_class: 'battery' }, sort: 'descending', limit: 2 },
+      hass,
+    );
+    const labels = () => qa(card, '.entity').map((e) => e.getAttribute('aria-label'));
+    expect(labels()).toEqual(['B, 70 %', 'A, 30 %']);
+
+    const step = (prev: HomeAssistant, id: string, state: HomeAssistant['states'][string]) => {
+      const next = { ...prev, states: { ...prev.states, [id]: state } };
+      card.hass = next;
+      return { next, update: card.shouldUpdate(new Map([['hass', prev]])) };
+    };
+    const unrelated = step(hass, 'sensor.x', { ...hass.states['sensor.x'], state: '6' });
+    expect(unrelated.update).toBe(false);
+    const changed = step(unrelated.next, 'sensor.a', battery('sensor.a', '90'));
+    expect(changed.update).toBe(true);
+    await card.updateComplete;
+    const arrived = step(changed.next, 'sensor.c', battery('sensor.c', '99'));
+    expect(arrived.update).toBe(true);
+    await card.updateComplete;
+    expect(labels()).toEqual(['C, 99 %', 'A, 90 %']);
+  });
+
+  it('says when a rule matches nothing, or every entity is hidden as unavailable', async () => {
+    const none = await mount({ type: 'custom:chartdeck-card', include: { device_class: 'moisture' } });
+    expect(q(none, '.hint')!.textContent).toBe('No entities match right now.');
+    const hidden = await mount(
+      { type: 'custom:chartdeck-card', entities: ['sensor.u'], hide_unavailable: true },
+      makeHass({ 'sensor.u': 'unavailable' }),
+    );
+    expect(q(hidden, '.hint')!.textContent).toBe('None of these entities are available.');
+  });
+
   it('hides name/value/icon/target per show options', async () => {
     const shown = await mount(base({ target: 50 }));
     expect(qa(shown, '.text:not(.on-fill) .name')).toHaveLength(2);

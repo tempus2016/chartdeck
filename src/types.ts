@@ -1,3 +1,4 @@
+import type { Rule } from './fill';
 export type StyleName = 'bar' | 'thin' | 'segmented' | 'tank' | 'ring' | 'needle' | 'arc';
 export const STYLE_NAMES: StyleName[] = ['bar', 'thin', 'segmented', 'tank', 'ring', 'needle', 'arc'];
 export type SortMode = 'none' | 'ascending' | 'descending';
@@ -46,6 +47,13 @@ export interface ShowOptions {
 }
 export interface CardConfig extends EntityOptions {
   type: string;
+  /** Also show every entity matching these. */
+  include?: Record<string, string | string[]>;
+  /** Leave out matched entities matching any of these. */
+  exclude?: Record<string, string | string[]>;
+  hide_unavailable?: boolean;
+  /** Show at most this many, after sorting. */
+  limit?: number;
   title?: string;
   style?: StyleName;
   entities?: (string | EntityConfig)[];
@@ -70,6 +78,12 @@ export interface MergedEntity extends EntityOptions {
 }
 export interface NormalizedConfig {
   title?: string;
+  include?: Rule;
+  exclude?: Rule;
+  hideUnavailable: boolean;
+  limit?: number;
+  /** The card's own options, which matched entities inherit. */
+  cardOptions: EntityOptions;
   style: StyleName;
   entities: MergedEntity[];
   show: ShowOptions;
@@ -90,7 +104,20 @@ export interface HassEntity {
 }
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
-  entities?: Record<string, { entity_id: string; display_precision?: number; icon?: string }>;
+  entities?: Record<
+    string,
+    {
+      entity_id: string;
+      display_precision?: number;
+      icon?: string;
+      device_id?: string | null;
+      area_id?: string | null;
+      labels?: string[];
+      hidden?: boolean;
+    }
+  >;
+  devices?: Record<string, { id: string; area_id?: string | null; labels?: string[] }>;
+  areas?: Record<string, { area_id: string; floor_id?: string | null }>;
   locale?: { language: string; number_format?: string };
   language?: string;
   themes?: { darkMode?: boolean; theme?: string };
