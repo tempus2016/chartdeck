@@ -164,6 +164,22 @@ describe('chartdeck-card-editor', () => {
     expect(events.at(-1)).toMatchObject({ animate: false });
   });
 
+  it('names each switch for screen readers and toggles it from its label text', async () => {
+    const { editor, events } = await mount({ type: 'custom:chartdeck-card', entities: ['sensor.a'] });
+    expect(toggle(editor, 'show_legend').getAttribute('aria-label')).toBe('Show legend');
+    const row = toggle(editor, 'show_legend').closest('.toggle')!;
+    (row.querySelector('span') as HTMLElement).click();
+    expect(events.at(-1)!.show).toEqual({ legend: true });
+  });
+
+  it('a Display form change leaves the switch settings alone', async () => {
+    const start = { ...raw, show: { name: false }, animate: false } as CardConfig;
+    const { editor, events } = await mount(start);
+    const f = form(editor, 'display');
+    change(f, { ...(f.data as Record<string, unknown>), sort: 'descending' });
+    expect(events.at(-1)).toEqual({ ...start, sort: 'descending' });
+  });
+
   it('shows explicit YAML values on the toggles and keeps the others when one changes', async () => {
     const { editor, events } = await mount({ ...raw, show: { name: false } } as CardConfig);
     expect(toggle(editor, 'show_name').checked).toBe(false);
