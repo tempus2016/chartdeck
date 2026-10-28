@@ -235,6 +235,25 @@ describe('chartdeck-card', () => {
     expect(q(noBands, '.legend')).toBeNull();
   });
 
+  it('moves the legend and the colours when a band start entity changes', async () => {
+    const severity = [
+      { from: 0, color: 'green' },
+      { from: 'sensor.cap', color: 'red' },
+    ];
+    const card = await mount(base({ severity, show: { legend: true } }));
+    const legend = () => qa(card, '.legend .legend-item').map((i) => i.textContent!.trim());
+    expect(legend()).toEqual(['0.0–200.0 W', '200.0 W+']);
+    const next = states();
+    next.states['sensor.cap'] = { ...next.states['sensor.cap'], state: '50' };
+    const prev = card.hass!;
+    card.hass = next;
+    expect(card.shouldUpdate(new Map([['hass', prev]]))).toBe(true);
+    await card.updateComplete;
+    expect(legend()).toEqual(['0.0–50.0 W', '50.0 W+']);
+    const solar = qa(card, '.entity').find((e) => e.getAttribute('aria-label')!.startsWith('Solar'))!;
+    expect((solar as HTMLElement).style.getPropertyValue('--c-start')).toContain('--error-color');
+  });
+
   it('hides name/value/icon/target per show options', async () => {
     const shown = await mount(base({ target: 50 }));
     expect(qa(shown, '.text:not(.on-fill) .name')).toHaveLength(2);

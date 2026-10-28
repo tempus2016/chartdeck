@@ -1,4 +1,4 @@
-import type { Band } from './types';
+import type { ResolvedBand } from './types';
 
 export type PaletteName = 'primary' | 'green' | 'amber' | 'red' | 'blue' | 'purple' | 'grey';
 
@@ -74,7 +74,7 @@ export function onFillText(color: string): 'dark' | 'light' | 'theme' {
 }
 
 /** Last band with from <= value; below the first band, the first. Bands are sorted ascending. */
-export function bandFor(value: number, bands: Band[]): Band {
+export function bandFor(value: number, bands: ResolvedBand[]): ResolvedBand {
   let found = bands[0];
   for (const band of bands) {
     if (band.from <= value) found = band;
@@ -84,7 +84,7 @@ export function bandFor(value: number, bands: Band[]): Band {
 }
 
 export function legendItems(
-  bands: Band[],
+  bands: ResolvedBand[],
   format: (n: number) => string,
   unit: string,
 ): { color: string; text: string }[] {
@@ -106,7 +106,7 @@ export function legendItems(
   return items;
 }
 
-export const BAND_PRESETS: Record<'battery' | 'usage' | 'temperature' | 'none', Band[] | undefined> = {
+export const BAND_PRESETS: Record<'battery' | 'usage' | 'temperature' | 'none', ResolvedBand[] | undefined> = {
   battery: [
     { from: 0, color: 'red', label: 'Low' },
     { from: 20, color: 'amber' },

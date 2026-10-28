@@ -7,7 +7,7 @@ import { normalizeConfig } from './config';
 import './editor/chartdeck-card-editor';
 import { formatNumber } from './format';
 import { localize } from './localize';
-import { resolveEntities, sortEntities, watchedEntityIds } from './resolve';
+import { resolveBands, resolveEntities, sortEntities, watchedEntityIds } from './resolve';
 import type { ResolvedEntity } from './resolve';
 import { STYLES } from './styles/index';
 import type { StyleModule } from './styles/index';
@@ -113,7 +113,11 @@ export class ChartdeckCard extends LitElement {
     const config = this._config;
     if (!config?.show.legend || config.entities.length === 0) return [];
     const decimals = first?.decimals ?? 1;
-    return legendItems(config.legendBands, (n) => formatNumber(n, decimals, this.hass), first?.unit ?? '');
+    return legendItems(
+      resolveBands(config.legendBands, this.hass),
+      (n) => formatNumber(n, decimals, this.hass),
+      first?.unit ?? '',
+    );
   }
 
   /** Estimated content height in px (see the sizing rules). */

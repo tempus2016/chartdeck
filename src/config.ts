@@ -8,11 +8,12 @@ import type {
   Limit,
   MergedEntity,
   NormalizedConfig,
+  ResolvedBand,
   ShowOptions,
   SortMode,
 } from './types';
 
-export const DEFAULT_BANDS: Band[] = [{ from: -Infinity, color: 'primary' }];
+export const DEFAULT_BANDS: ResolvedBand[] = [{ from: -Infinity, color: 'primary' }];
 
 const SORT_MODES: SortMode[] = ['none', 'ascending', 'descending'];
 
@@ -50,15 +51,23 @@ function normalizeBands(raw: unknown): Band[] | undefined {
   if (!Array.isArray(raw)) throw new Error('"severity" must be a list of bands');
   if (raw.length === 0) return undefined;
   const bands = raw.map((b, i) => {
-    const from = toNumber(b?.from);
-    if (from === undefined) throw new Error(`Severity band ${i + 1}: "from" must be a number`);
+    let from: Limit | undefined;
+    try {
+      from = toLimit(b?.from, 'from');
+    } catch {
+      from = undefined;
+    }
+    if (from === undefined) throw new Error(`Severity band ${i + 1}: "from" must be a number or an entity id`);
     if (typeof b.color !== 'string' || !b.color) {
       throw new Error(`Severity band ${i + 1}: "color" is required`);
     }
     const band: Band = { ...b, from };
     return band;
   });
-  return bands.sort((a, b) => a.from - b.from);
+  // Bands starting at an entity are sorted once their states are read (see resolveBands).
+  return bands.every((b) => typeof b.from === 'number')
+    ? bands.sort((a, b) => (a.from as number) - (b.from as number))
+    : bands;
 }
 
 function normalizeAction(raw: unknown, fallback: string, field: string): ActionConfig {

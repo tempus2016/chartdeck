@@ -2,7 +2,7 @@ import { css, html, nothing, svg } from 'lit';
 import { baseColor } from '../bands';
 import { arcPath, needlePath, polar } from '../geometry';
 import { fitStatusText } from '../status-text';
-import type { Band } from '../types';
+import type { ResolvedBand } from '../types';
 import type { StyleModule } from './index';
 import { iconOverride } from '../resolve';
 
@@ -18,7 +18,11 @@ const num = (x: number) => String(Math.round(x * 1000) / 1000 + 0);
  * Each band's [from, nextFrom) clipped to [min, max] and mapped to 0..1; empty segments are dropped.
  * The first band also covers everything below its `from`, matching bandFor().
  */
-export function bandSegments(bands: Band[], min: number, max: number): { from: number; to: number; color: string }[] {
+export function bandSegments(
+  bands: ResolvedBand[],
+  min: number,
+  max: number,
+): { from: number; to: number; color: string }[] {
   const range = max - min;
   const out: { from: number; to: number; color: string }[] = [];
   if (!(range > 0)) return out;
@@ -136,7 +140,7 @@ export const needle: StyleModule = {
     }
   `,
   render(e, { show, hass }) {
-    const segs = bandSegments(e.config.severity, e.min, e.max);
+    const segs = bandSegments(e.bands, e.min, e.max);
     const arcs = segs.map((s, i) => {
       const a0 = -90 + 180 * s.from + (i > 0 ? GAP : 0);
       const a1 = -90 + 180 * s.to - (i < segs.length - 1 ? GAP : 0);

@@ -4,9 +4,14 @@ export type SortMode = 'none' | 'ascending' | 'descending';
 /** A number, or a string naming an entity whose state supplies the number. */
 export type Limit = number | string;
 export interface Band {
-  from: number;
+  /** Where the band starts: a number, or an entity whose state supplies it. */
+  from: Limit;
   color: string;
   label?: string;
+}
+/** A band with its start read: what the card draws with. */
+export interface ResolvedBand extends Band {
+  from: number;
 }
 export interface ActionConfig {
   action: string;
