@@ -189,15 +189,17 @@ export class ChartdeckCardEditor extends LitElement {
     return html`<cd-bands-editor
       .hass=${this.hass}
       .bands=${this._config?.severity as Band[] | undefined}
-      .unit=${this._config?.unit ?? sensorUnit(this.hass, this._firstEntityId())}
+      .unit=${this._config?.unit ?? this._firstEntityUnit()}
       @value-changed=${(ev: CustomEvent) => this._subChanged(['severity'], ev)}
     ></cd-bands-editor>`;
   }
 
-  /** The legend and card-wide bands use the first entity's unit when the card sets none. */
-  private _firstEntityId(): string | undefined {
+  /** The legend and card-wide bands use the first entity's unit when the card sets none:
+   *  its own override, else its sensor's. */
+  private _firstEntityUnit(): string | undefined {
     const first = this._config?.entities?.[0];
-    return typeof first === 'string' ? first : first?.entity;
+    if (typeof first === 'string') return sensorUnit(this.hass, first);
+    return first?.unit ?? sensorUnit(this.hass, first?.entity);
   }
 
   private _selectStyle(style: StyleName): void {

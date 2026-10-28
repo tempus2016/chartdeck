@@ -54,5 +54,7 @@ describe('colour band thresholds show the unit the card displays', () => {
   it("card-wide: the card's unit, else the first entity's sensor unit", async () => {
     expect(cardBands(await mount({ entities: ['sensor.a'], unit: 'W' })).unit).toBe('W');
     expect(cardBands(await mount({ entities: ['sensor.a'] })).unit).toBe('%');
+    // Same as the legend: the first entity's own unit override wins over its sensor's.
+    expect(cardBands(await mount({ entities: [{ entity: 'sensor.a', unit: 'kW' }] })).unit).toBe('kW');
   });
 });
