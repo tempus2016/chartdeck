@@ -24,6 +24,14 @@ const STROKE = 11;
 /** A short plain number for inline style (no float noise, no -0). */
 const num = (x: number) => String(Math.round(x * 1000) / 1000 + 0);
 
+/**
+ * Centre value size: 22 when it fits, smaller for long numbers. At about half an em per
+ * character this keeps the text within ~62 units, inside the 68-unit disc.
+ */
+function valueFontSize(text: string): number {
+  return Math.min(22, Math.floor(124 / Math.max(1, text.length)));
+}
+
 /** Ring (360) and three-quarter arc (270) gauges share one drawing. */
 export function radialStyle(sweep: 360 | 270): StyleModule {
   const [a0, a1] = sweepAngles(sweep, [0, 1]);
@@ -122,6 +130,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
       const dash = `stroke-dasharray: ${num((e.span[1] - e.span[0]) * 100)} 100; stroke-dashoffset: ${num(-e.span[0] * 100)}`;
       const solid = solidColor(e.band.color);
       const shift = show.icon ? 6 : 0;
+      const size = valueFontSize(e.valueText);
       let tick = nothing as unknown;
       if (show.target && e.targetPosition !== null && e.available) {
         const deg = sweepAngles(sweep, [e.targetPosition, e.targetPosition])[0];
@@ -156,7 +165,13 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
               e.available
                 ? svg`${
                     show.value
-                      ? svg`<text class="value" x=${CX} y=${CY + 4 + shift} text-anchor="middle">${e.valueText}</text>
+                      ? svg`<text
+                        class="value"
+                        x=${CX}
+                        y=${CY + 4 + shift}
+                        text-anchor="middle"
+                        style=${size < 22 ? `font-size: ${size}px` : nothing}
+                      >${e.valueText}</text>
                       <text class="unit" x=${CX} y=${CY + 20 + shift} text-anchor="middle">${e.unit}</text>`
                       : nothing
                   }`

@@ -216,6 +216,29 @@ describe('ring and arc', () => {
     expect(q(card, '.value-arc')!.classList.contains('empty')).toBe(true);
   });
 
+  it('shrinks a long centre value so it stays inside the dial', async () => {
+    // The disc inside the ring is 68 units across; at 22px "123,456.78" is ~107 units wide
+    // and was drawn over the ring itself.
+    const card = document.createElement('chartdeck-card') as Card;
+    card.setConfig({
+      type: 'custom:chartdeck-card',
+      style: 'ring',
+      entities: [{ entity: 'sensor.big', max: 200000, decimals: 2 }, 'sensor.a'],
+    } as never);
+    card.hass = makeHass({
+      'sensor.big': ['123456.78', { unit_of_measurement: 'kWh' }],
+      'sensor.a': ['42', { unit_of_measurement: '%' }],
+    });
+    document.body.appendChild(card);
+    await card.updateComplete;
+    const [big, small] = [...card.shadowRoot!.querySelectorAll<SVGTextElement>('text.value')];
+    expect(big.textContent).toBe('123,456.78');
+    const size = parseFloat(big.getAttribute('style')!.match(/font-size:\s*([\d.]+)px/)![1]);
+    // About half an em per character: the text must fit in ~62 of the disc's 68 units.
+    expect(size * 0.5 * big.textContent!.length).toBeLessThanOrEqual(62);
+    expect(small.getAttribute('style')).toBeNull();
+  });
+
   it('draws a target tick and shows no value arc when unavailable', async () => {
     const t = await mount({ style: 'arc', entities: [{ entity: 'sensor.a', target: 75 }] } as never);
     expect(q(t, '.tick')).not.toBeNull();
