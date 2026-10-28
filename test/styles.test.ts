@@ -426,7 +426,21 @@ describe('needle without its value', () => {
     expect(q(shown, '.needle-gauge svg')!.getAttribute('viewBox')).toBe('0 0 130 104');
     const na = await mount({ style: 'needle', entities: ['sensor.b'] });
     expect(q(na, '.needle-gauge svg')!.getAttribute('viewBox')).toBe('0 0 130 104');
-    expect(q(na, '.na')!.getAttribute('y')).toBe('94');
+    expect([...q(na, '.na')!.querySelectorAll('tspan')].map((t) => t.getAttribute('y'))).toEqual(['94']);
+  });
+
+  it('fits a long status under a full-height needle instead of spilling past the tile', async () => {
+    const long = 'A really quite extraordinarily long status';
+    const card = document.createElement('chartdeck-card') as Card;
+    card.setConfig({ type: 'custom:chartdeck-card', style: 'needle', entities: ['sensor.x'] });
+    card.hass = makeHass({ 'sensor.x': 'weird' }, { formatEntityState: () => long });
+    document.body.appendChild(card);
+    await card.updateComplete;
+    const na = q(card, '.na')!;
+    const size = parseFloat(na.getAttribute('style')!.match(/font-size: ([\d.]+)px/)![1]);
+    const lines = [...na.querySelectorAll('tspan')].map((t) => t.textContent!);
+    expect(lines.length).toBe(2);
+    expect(Math.max(...lines.map((l) => l.length)) * 0.58 * size).toBeLessThanOrEqual(126);
   });
 
   it('closes up unavailable and missing needles too, with their status inside the dial', async () => {

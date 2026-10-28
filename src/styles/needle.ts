@@ -35,8 +35,17 @@ export function bandSegments(bands: Band[], min: number, max: number): { from: n
  * fit between the ticks, the last line's baseline at y 55 (just above the hub).
  */
 function statusInDial(text: string) {
-  const { lines, size } = fitStatusText(text, 58, 11, 7);
-  const top = 55 - (lines.length - 1) * 1.2 * size;
+  return statusLines(text, 58, 11, 7, 55);
+}
+
+/** Status text in the value's place under a full-height gauge, fitted to the tile's width. */
+function statusBelow(text: string) {
+  return statusLines(text, 126, 12, 8, 94);
+}
+
+function statusLines(text: string, width: number, max: number, min: number, lastBaseline: number) {
+  const { lines, size } = fitStatusText(text, width, max, min);
+  const top = lastBaseline - (lines.length - 1) * 1.2 * size;
   return svg`<text class="na" text-anchor="middle" style="font-size: ${size}px">${lines.map(
     (line, i) => svg`<tspan x=${CX} y=${num(top + i * 1.2 * size)}>${line}</tspan>`,
   )}</text>`;
@@ -157,7 +166,7 @@ export const needle: StyleModule = {
               : nothing
             : compact
               ? statusInDial(e.display)
-              : svg`<text class="na" x=${CX} y="94" text-anchor="middle">${e.display}</text>`
+              : statusBelow(e.display)
         }
       </svg>
       ${
