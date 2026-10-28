@@ -34,9 +34,13 @@ export interface ResolvedEntity {
 
 const warned = new Set<string>();
 
-/** The icon override: the configured one, or a placeholder for a missing entity so its row keeps its icon slot. */
+/**
+ * The icon override: the current band's icon (only while there is a real value), else the
+ * configured one, else a placeholder for a missing entity so its row keeps its icon slot.
+ */
 export function iconOverride(e: ResolvedEntity): string | undefined {
-  return e.config.icon ?? (e.stateObj ? undefined : 'mdi:help-circle-outline');
+  const band = e.available ? e.band.icon : undefined;
+  return band ?? e.config.icon ?? (e.stateObj ? undefined : 'mdi:help-circle-outline');
 }
 
 export function resetLimitWarnings(): void {

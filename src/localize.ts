@@ -59,6 +59,8 @@ const STRINGS: Record<string, Record<string, string>> = {
     editor_band_color: 'Colour',
     editor_band_custom_color: 'CSS colour',
     editor_band_label: 'Label',
+    editor_band_icon: 'Icon',
+    editor_color_icon: 'Colour icons to match their band',
     editor_color_primary: 'Primary',
     editor_color_green: 'Green',
     editor_color_amber: 'Amber',

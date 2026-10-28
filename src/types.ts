@@ -8,6 +8,8 @@ export interface Band {
   from: Limit;
   color: string;
   label?: string;
+  /** Icon shown while the value is in this band. */
+  icon?: string;
 }
 /** A band with its start read: what the card draws with. */
 export interface ResolvedBand extends Band {
@@ -51,6 +53,8 @@ export interface CardConfig extends EntityOptions {
   sort?: SortMode;
   columns?: number;
   animate?: boolean;
+  /** Colour each icon with its current band's colour. */
+  color_icon?: boolean;
   [key: string]: unknown;
 }
 /** Card-level options overlaid by the entity's own. */
@@ -72,6 +76,7 @@ export interface NormalizedConfig {
   sort: SortMode;
   columns?: number;
   animate: boolean;
+  colorIcon: boolean;
   /** Card-level bands, for the legend. */
   legendBands: Band[];
 }

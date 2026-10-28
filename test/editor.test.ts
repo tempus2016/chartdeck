@@ -369,6 +369,32 @@ describe('editor: colours', () => {
   });
 });
 
+describe('editor: icon follows the band', () => {
+  it('the Colours switch writes color_icon and removes it when turned off', async () => {
+    const { editor, events } = await mount(raw);
+    const sw = editor.shadowRoot!.querySelector('.section-colours ha-switch[data-name="color_icon"]') as HTMLElement & {
+      checked: boolean;
+    };
+    expect(sw.checked).toBe(false);
+    flip(sw, true);
+    expect(events.at(-1)).toEqual({ ...raw, color_icon: true });
+    await settle(editor);
+    flip(sw, false);
+    expect(events.at(-1)).toEqual(raw);
+  });
+
+  it('sets and clears a band icon', async () => {
+    const severity = [{ from: 0, color: 'red' }];
+    const { editor, events } = await mount({ ...raw, severity });
+    const bandsEl = editor.shadowRoot!.querySelector('.section-colours cd-bands-editor') as StubElement;
+    pick(deep(bandsEl, 'ha-selector[data-role="icon"]'), 'mdi:battery-alert');
+    expect(events.at(-1)!.severity).toEqual([{ from: 0, color: 'red', icon: 'mdi:battery-alert' }]);
+    await settle(editor);
+    pick(deep(bandsEl, 'ha-selector[data-role="icon"]'), '');
+    expect(events.at(-1)!.severity).toEqual(severity);
+  });
+});
+
 describe('editor: entities', () => {
   const list = (editor: Editor) =>
     editor.shadowRoot!.querySelector('.section-entities cd-entities-editor') as StubElement;
@@ -542,7 +568,7 @@ describe('editor: optional fields', () => {
 describe('editor: schemas', () => {
   it('lists the show toggles one per row as compact label + switch rows', async () => {
     const { editor } = await mount(raw);
-    const rows = [...editor.shadowRoot!.querySelectorAll('.toggles .toggle')];
+    const rows = [...editor.shadowRoot!.querySelectorAll('.section-display .toggles .toggle')];
     expect(rows.map((r) => r.querySelector('ha-switch')!.getAttribute('data-name'))).toEqual([
       'show_name',
       'show_value',

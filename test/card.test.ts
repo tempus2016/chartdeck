@@ -254,6 +254,25 @@ describe('chartdeck-card', () => {
     expect((solar as HTMLElement).style.getPropertyValue('--c-start')).toContain('--error-color');
   });
 
+  it("swaps in the band's icon and, with color_icon, colours icons by band", async () => {
+    const severity = [
+      { from: 0, color: 'green', icon: 'mdi:battery-high' },
+      { from: 60, color: 'red' },
+    ];
+    const card = await mount(
+      base({ entities: ['sensor.load', { entity: 'sensor.solar', icon: 'mdi:solar-power' }, 'sensor.u'], severity }),
+      makeHass({ 'sensor.load': '42', 'sensor.solar': '80', 'sensor.u': 'unavailable' }),
+    );
+    const icons = qa(card, 'ha-state-icon') as (HTMLElement & { icon?: string })[];
+    expect(icons.map((i) => i.icon)).toEqual(['mdi:battery-high', 'mdi:solar-power', undefined]);
+    expect(qa(card, '.entity.icon-band')).toHaveLength(0);
+    const coloured = await mount(
+      base({ entities: ['sensor.load', 'sensor.u'], severity, color_icon: true }),
+      makeHass({ 'sensor.load': '42', 'sensor.u': 'unavailable' }),
+    );
+    expect(qa(coloured, '.entity').map((e) => e.classList.contains('icon-band'))).toEqual([true, false]);
+  });
+
   it('hides name/value/icon/target per show options', async () => {
     const shown = await mount(base({ target: 50 }));
     expect(qa(shown, '.text:not(.on-fill) .name')).toHaveLength(2);

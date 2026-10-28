@@ -37,6 +37,10 @@ export const shared = css`
     transition: none !important;
     animation: none !important;
   }
+  /* color_icon: the icon takes the current band's colour (every style's icon has the .icon class). */
+  .entity.icon-band .icon {
+    color: var(--c-start);
+  }
   /* Unavailable: every style draws an empty mark and greys the value text; the name keeps its colour. */
   .entity.unavailable .value {
     color: var(--secondary-text-color);
