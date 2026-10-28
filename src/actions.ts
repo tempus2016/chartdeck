@@ -42,6 +42,7 @@ export function attachActions(el: HTMLElement, getConfig: () => ActionsConfig): 
 
   const onDown = (ev: Event): void => {
     const e = ev as MouseEvent;
+    if (e.button > 0) return;
     active = true;
     held = false;
     startX = e.clientX;
@@ -100,9 +101,13 @@ export function attachActions(el: HTMLElement, getConfig: () => ActionsConfig): 
 
   const onKey = (ev: Event): void => {
     const e = ev as KeyboardEvent;
-    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.repeat || (e.key !== 'Enter' && e.key !== ' ')) return;
     if (e.key === ' ') e.preventDefault();
     fire('tap');
+  };
+
+  const onContextMenu = (ev: Event): void => {
+    if (isSet(getConfig().hold_action)) ev.preventDefault();
   };
 
   el.addEventListener('pointerdown', onDown);
@@ -111,6 +116,7 @@ export function attachActions(el: HTMLElement, getConfig: () => ActionsConfig): 
   el.addEventListener('pointercancel', onCancel);
   el.addEventListener('pointerleave', onCancel);
   el.addEventListener('keydown', onKey);
+  el.addEventListener('contextmenu', onContextMenu);
 
   return () => {
     clearHold();
@@ -122,5 +128,6 @@ export function attachActions(el: HTMLElement, getConfig: () => ActionsConfig): 
     el.removeEventListener('pointercancel', onCancel);
     el.removeEventListener('pointerleave', onCancel);
     el.removeEventListener('keydown', onKey);
+    el.removeEventListener('contextmenu', onContextMenu);
   };
 }

@@ -1,0 +1,99 @@
+import { css, html, nothing } from 'lit';
+import type { StyleModule } from './index';
+
+/** Classic bar: icon, then a 34 px track with name and value inside. */
+export const bar: StyleModule = {
+  layout: 'rows',
+  height: 46,
+  styles: css`
+    .style-bar .entity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 0;
+    }
+    .style-bar .icon {
+      flex: none;
+      color: var(--state-icon-color, var(--secondary-text-color));
+      --mdc-icon-size: 22px;
+    }
+    .style-bar .track {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      height: 34px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--cd-track);
+    }
+    .style-bar .fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: calc(var(--start) * 100%);
+      width: calc((var(--end) - var(--start)) * 100%);
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--c-start), var(--c-end));
+      transition:
+        left var(--cd-duration) var(--cd-easing),
+        width var(--cd-duration) var(--cd-easing);
+    }
+    .style-bar .target {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      width: 3px;
+      border-radius: 2px;
+      left: calc(var(--target) * (100% - 3px));
+      background: rgba(255, 255, 255, 0.85);
+      transition: left var(--cd-duration) var(--cd-easing);
+    }
+    .style-bar .text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      font-size: 14px;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+    .style-bar .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .style-bar .value {
+      flex: none;
+      margin-left: auto;
+    }
+    .style-bar .unavailable .text {
+      color: var(--secondary-text-color);
+      text-shadow: none;
+    }
+  `,
+  render(e, { show, hass }) {
+    return html`
+      ${
+        show.icon
+          ? html`<ha-state-icon
+              class="icon"
+              .hass=${hass}
+              .stateObj=${e.stateObj}
+              .icon=${e.config.icon}
+            ></ha-state-icon>`
+          : nothing
+      }
+      <div class="track">
+        <div class="fill"></div>
+        ${show.target && e.targetPosition !== null && e.available ? html`<div class="target"></div>` : nothing}
+        <div class="text">
+          ${show.name ? html`<span class="name">${e.name}</span>` : nothing}
+          ${show.value ? html`<span class="value">${e.display}</span>` : nothing}
+        </div>
+      </div>
+    `;
+  },
+};

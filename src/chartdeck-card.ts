@@ -1,29 +1,259 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, nothing } from 'lit';
+import type { PropertyValues } from 'lit';
+import { attachActions, isInteractive } from './actions';
+import { colorStops, legendItems } from './bands';
+import { normalizeConfig } from './config';
+import { formatNumber } from './format';
+import { localize } from './localize';
+import { resolveEntities, sortEntities, watchedEntityIds } from './resolve';
+import type { ResolvedEntity } from './resolve';
+import { STYLES } from './styles/index';
+import type { StyleModule } from './styles/index';
+import { shared } from './styles/shared';
+import type { CardConfig, HomeAssistant, NormalizedConfig, StyleName } from './types';
 import { VERSION } from './version';
-
-// Placeholder so the repository builds, tests and validates end to end. The real card
-// replaces this once the design is agreed.
 
 console.info(`%c CHARTDECK %c ${VERSION} `, 'color:#fff;background:#3b8bff;font-weight:700', 'color:#3b8bff');
 
-export class ChartdeckCard extends LitElement {
-  static styles = css`
-    .placeholder {
-      padding: 16px;
-      color: var(--secondary-text-color);
-    }
-  `;
+const TITLE_HEIGHT = 52;
+const PADDING_HEIGHT = 16;
+const LEGEND_HEIGHT = 32;
 
-  setConfig(config: Record<string, unknown>): void {
-    if (!config) throw new Error('Invalid configuration');
+function prefersReducedMotion(): boolean {
+  if (typeof window.matchMedia !== 'function') return false;
+  return !!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches;
+}
+
+export class ChartdeckCard extends LitElement {
+  static properties = {
+    hass: { attribute: false },
+    _config: { state: true },
+  };
+
+  static styles = [shared, ...Object.values(STYLES).map((s) => s.styles)];
+
+  declare hass?: HomeAssistant;
+  declare _config?: NormalizedConfig;
+
+  private _watched = new Set<string>();
+  /** Entities as last rendered, indexed by each `.entity` element's data-index. */
+  private _items: ResolvedEntity[] = [];
+  private _detachers = new Map<HTMLElement, () => void>();
+  private _readyScheduled = false;
+
+  static getStubConfig(hass: HomeAssistant): CardConfig {
+    const numeric = Object.values(hass?.states ?? {}).filter(
+      (s) => s.entity_id.startsWith('sensor.') && s.state.trim() !== '' && Number.isFinite(Number(s.state)),
+    );
+    const isBattery = (s: (typeof numeric)[number]) => s.attributes?.device_class === 'battery';
+    numeric.sort((a, b) => {
+      if (isBattery(a) !== isBattery(b)) return isBattery(a) ? -1 : 1;
+      return a.entity_id < b.entity_id ? -1 : a.entity_id > b.entity_id ? 1 : 0;
+    });
+    return {
+      type: 'custom:chartdeck-card',
+      style: 'bar',
+      entities: numeric.slice(0, 3).map((s) => s.entity_id),
+    };
+  }
+
+  static getConfigElement(): HTMLElement {
+    return document.createElement('chartdeck-card-editor');
+  }
+
+  setConfig(config: CardConfig): void {
+    const normalized = normalizeConfig(config);
+    this._watched = watchedEntityIds(normalized);
+    this._config = normalized;
+  }
+
+  /** The configured style, or `bar` while a style's module is not registered. */
+  private get _styleName(): StyleName {
+    const name = this._config?.style ?? 'bar';
+    return STYLES[name] ? name : 'bar';
+  }
+
+  private get _style(): StyleModule {
+    return STYLES[this._styleName];
+  }
+
+  /** Legend items, formatted with the first entity's decimals and unit. */
+  private _legend(first?: ResolvedEntity): { color: string; text: string }[] {
+    const config = this._config;
+    if (!config?.show.legend || config.entities.length === 0) return [];
+    const decimals = first?.decimals ?? 1;
+    return legendItems(config.legendBands, (n) => formatNumber(n, decimals, this.hass), first?.unit ?? '');
+  }
+
+  /** Estimated content height in px (see the sizing rules). */
+  private _contentHeight(): number {
+    const config = this._config;
+    if (!config) return 0;
+    const style = this._style;
+    const n = config.entities.length;
+    const perRow =
+      style.layout === 'rows' ? (config.columns ?? 1) : (config.columns ?? Math.min(n, style.tilesPerRow ?? 3));
+    const rows = n === 0 ? 0 : Math.ceil(n / Math.max(1, perRow));
+    return (
+      (config.title ? TITLE_HEIGHT : 0) +
+      PADDING_HEIGHT +
+      rows * style.height +
+      (this._legend().length > 0 ? LEGEND_HEIGHT : 0)
+    );
   }
 
   getCardSize(): number {
-    return 1;
+    return Math.max(1, Math.ceil(this._contentHeight() / 50));
+  }
+
+  getGridOptions(): { columns: number; rows: number; min_columns: number; min_rows: number } {
+    const n = this._config?.entities.length ?? 0;
+    const columns = this._style.layout === 'rows' || n <= 1 ? 6 : 12;
+    return {
+      columns,
+      rows: Math.max(1, Math.ceil((this._contentHeight() + 8) / 64)),
+      min_columns: 3,
+      min_rows: 1,
+    };
+  }
+
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    if ([...changed.keys()].some((key) => key !== 'hass')) return true;
+    if (!changed.has('hass')) return false;
+    const prev = changed.get('hass') as HomeAssistant | undefined;
+    const next = this.hass;
+    if (!prev || !next) return true;
+    for (const id of this._watched) {
+      if (prev.states[id] !== next.states[id]) return true;
+    }
+    return (
+      prev.themes?.darkMode !== next.themes?.darkMode ||
+      prev.themes?.theme !== next.themes?.theme ||
+      prev.locale !== next.locale
+    );
+  }
+
+  protected willUpdate(): void {
+    const isStatic = this._config?.animate === false || prefersReducedMotion();
+    this.toggleAttribute('static', isStatic);
+    if (isStatic) this.setAttribute('ready', '');
+  }
+
+  /**
+   * One frame after the first update that drew entities (normally the first update), set `ready`
+   * so the marks transition in from empty. Later updates keep it, so config changes never replay.
+   */
+  private _scheduleReady(): void {
+    if (this._readyScheduled || this.hasAttribute('ready') || this._items.length === 0) return;
+    this._readyScheduled = true;
+    const markReady = () => this.setAttribute('ready', '');
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(markReady);
+    else setTimeout(markReady, 16);
+  }
+
+  protected updated(): void {
+    this._scheduleReady();
+    this._syncActions();
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (this.hasUpdated) this._syncActions();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    for (const detach of this._detachers.values()) detach();
+    this._detachers.clear();
+  }
+
+  /** Attach gesture handlers once per `.entity` element; config is read at event time. */
+  private _syncActions(): void {
+    const root = this.shadowRoot;
+    if (!root) return;
+    const current = new Set(root.querySelectorAll<HTMLElement>('.entity'));
+    for (const [el, detach] of this._detachers) {
+      if (!current.has(el)) {
+        detach();
+        this._detachers.delete(el);
+      }
+    }
+    for (const el of current) {
+      if (this._detachers.has(el)) continue;
+      this._detachers.set(
+        el,
+        attachActions(el, () => this._items[Number(el.dataset.index)].config),
+      );
+    }
+  }
+
+  private _renderEntity(e: ResolvedEntity, index: number, style: StyleModule, hass: HomeAssistant) {
+    const config = this._config!;
+    const interactive = isInteractive(e.config);
+    const stops = colorStops(e.band.color);
+    const vars =
+      `--start:${e.span[0]};--end:${e.span[1]};--pos:${e.position};--target:${e.targetPosition ?? 0};` +
+      `--c-start:${stops.start};--c-end:${stops.end}`;
+    return html`<div
+      class="entity ${interactive ? 'interactive' : ''} ${e.available ? '' : 'unavailable'}"
+      data-index=${index}
+      role="meter"
+      aria-valuenow=${e.available ? String(e.value) : nothing}
+      aria-valuemin=${e.min}
+      aria-valuemax=${e.max}
+      aria-label=${e.label}
+      tabindex=${interactive ? 0 : nothing}
+      style=${vars}
+    >
+      ${style.render(e, { show: config.show, hass })}
+    </div>`;
   }
 
   render() {
-    return html`<ha-card header="Chartdeck"><div class="placeholder">In development (${VERSION})</div></ha-card>`;
+    const config = this._config;
+    if (!config) return nothing;
+    const hass = this.hass;
+    const style = this._style;
+    let body;
+    let first: ResolvedEntity | undefined;
+    if (config.entities.length === 0) {
+      this._items = [];
+      body = html`<div class="hint">${localize(hass, 'no_entities')}</div>`;
+    } else if (!hass) {
+      this._items = [];
+      body = nothing;
+    } else {
+      const resolved = resolveEntities(config, hass);
+      first = resolved[0];
+      this._items = sortEntities(resolved, config.sort);
+      const tiles = style.layout === 'tiles';
+      const grid =
+        !tiles || config.columns !== undefined
+          ? `grid-template-columns: repeat(${config.columns ?? 1}, minmax(0, 1fr))`
+          : '';
+      body = html`<div
+        class="entities layout-${style.layout} ${tiles && config.columns !== undefined ? 'has-columns' : ''}"
+        style=${grid}
+      >
+        ${this._items.map((e, i) => this._renderEntity(e, i, style, hass))}
+      </div>`;
+    }
+    const legend = this._legend(first);
+    return html`<ha-card .header=${config.title}>
+      <div class="content style-${this._styleName}">${body}</div>
+      ${
+        legend.length
+          ? html`<div class="legend">
+              ${legend.map(
+                (item) =>
+                  html`<span class="legend-item"
+                    ><span class="dot" style="background:${item.color}"></span>${item.text}</span
+                  >`,
+              )}
+            </div>`
+          : nothing
+      }
+    </ha-card>`;
   }
 }
 

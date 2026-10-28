@@ -121,6 +121,37 @@ describe('actions', () => {
     expect(seen).toEqual(['tap', 'tap']);
   });
 
+  it('ignores auto-repeated keydown', () => {
+    setup(mk());
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', repeat: true }));
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', repeat: true }));
+    expect(seen).toEqual(['tap']);
+  });
+
+  it('ignores non-primary pointer buttons', () => {
+    setup(mk({ hold_action: more }));
+    el.dispatchEvent(new MouseEvent('pointerdown', { button: 2 }));
+    el.dispatchEvent(new MouseEvent('pointerup', { button: 2 }));
+    el.dispatchEvent(new MouseEvent('pointerdown', { button: 1 }));
+    vi.advanceTimersByTime(600);
+    el.dispatchEvent(new MouseEvent('pointerup', { button: 1 }));
+    expect(seen).toEqual([]);
+  });
+
+  it('suppresses the context menu only when a hold action is set', () => {
+    setup(mk({ hold_action: more }));
+    const withHold = new MouseEvent('contextmenu', { cancelable: true });
+    el.dispatchEvent(withHold);
+    expect(withHold.defaultPrevented).toBe(true);
+    detach();
+
+    setup(mk());
+    const without = new MouseEvent('contextmenu', { cancelable: true });
+    el.dispatchEvent(without);
+    expect(without.defaultPrevented).toBe(false);
+  });
+
   it('fires nothing for action none', () => {
     setup(mk({ tap_action: none }));
     ptr(el, 'pointerdown');
