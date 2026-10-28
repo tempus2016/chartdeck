@@ -491,6 +491,9 @@ describe('arc crop', () => {
 describe('gauges in very narrow cards', () => {
   it('scales the ring and arc dial down with its tile, keeping the icon in place', () => {
     const css = STYLES.ring.styles.cssText;
+    // The dial is a size container, so it can't size the tile itself: the gauge has a definite
+    // width that only shrinks when the tile is narrower (else the dial collapses to the name).
+    expect(css).toMatch(/\.radial \{[^}]*width: 124px;[^}]*max-width: 100%;/);
     expect(css).toMatch(
       /\.radial \.dial \{[^}]*container-type: inline-size;[^}]*width: min\(124px, 100%\);[^}]*aspect-ratio: 124 \/ 120;/,
     );

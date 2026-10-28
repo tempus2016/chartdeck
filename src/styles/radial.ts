@@ -42,12 +42,16 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
     layout: 'tiles',
     height: cropped ? 135 : 155,
     styles: css`
+      /* A definite width: the dial is a size container and can't size the tile itself. */
       .radial {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 2px;
         padding: 6px 0;
+        width: 124px;
+        max-width: 100%;
+        margin: 0 auto;
       }
       /* The dial is 124 px wide, smaller only when its tile is narrower; positions inside it
          are in cqw (1 % of the dial's width) so they scale with it. */
