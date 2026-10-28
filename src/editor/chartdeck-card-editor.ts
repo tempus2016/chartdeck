@@ -7,6 +7,7 @@ import { fireConfigChanged, setOption } from './edit';
 import {
   ACTION_FIELDS,
   DISPLAY_FIELDS,
+  DISPLAY_TOGGLE_FIELDS,
   TITLE_FIELDS,
   actionsSchema,
   applyFormData,
@@ -64,6 +65,17 @@ export class ChartdeckCardEditor extends LitElement {
     }
     .panel {
       padding: 8px 0;
+    }
+    .toggles {
+      margin-bottom: 16px;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 40px;
+      cursor: pointer;
     }
     .section-limits {
       display: flex;
@@ -216,7 +228,29 @@ export class ChartdeckCardEditor extends LitElement {
   }
 
   protected renderDisplay(): TemplateResult {
-    return this._form('display', displaySchema(this.hass), DISPLAY_FIELDS);
+    // ha-form spaces every field 24 px apart, which turns six switches into a tall column, so
+    // they are compact label + switch rows here and only the inputs go through ha-form.
+    const data = formData(this._config!, DISPLAY_TOGGLE_FIELDS);
+    return html`<div class="toggles">
+        ${DISPLAY_TOGGLE_FIELDS.map(
+          ({ name }) =>
+            html`<label class="toggle"
+              ><span>${this._label(`editor_${name}`)}</span
+              ><ha-switch
+                data-name=${name}
+                .checked=${data[name] === true}
+                @change=${(ev: Event) => this._toggle(name, (ev.target as HTMLInputElement).checked)}
+              ></ha-switch
+            ></label>`,
+        )}
+      </div>
+      ${this._form('display', displaySchema(this.hass), DISPLAY_FIELDS)}`;
+  }
+
+  private _toggle(name: string, checked: boolean): void {
+    if (!this._config) return;
+    const data = formData(this._config, DISPLAY_TOGGLE_FIELDS);
+    this._commit(applyFormData(this._config, DISPLAY_TOGGLE_FIELDS, { ...data, [name]: checked }));
   }
 
   protected renderActions(): TemplateResult {
