@@ -106,15 +106,15 @@ export class ChartdeckCard extends LitElement {
     return Math.max(1, Math.ceil(this._contentHeight() / 50));
   }
 
-  getGridOptions(): { columns: number; rows: number; min_columns: number; min_rows: number } {
+  /**
+   * Sections sizing. Rows are left to the grid ('auto'): the real height depends on the card's
+   * width (title wrapping, tiles per row), which an estimate can't know, and a fixed row count
+   * that is too small lets the card spill over the one below it.
+   */
+  getGridOptions(): { columns: number; rows: 'auto'; min_columns: number; min_rows: number } {
     const n = this._config?.entities.length ?? 0;
     const columns = this._style.layout === 'rows' || n <= 1 ? 6 : 12;
-    return {
-      columns,
-      rows: Math.max(1, Math.ceil((this._contentHeight() + 8) / 64)),
-      min_columns: 3,
-      min_rows: 1,
-    };
+    return { columns, rows: 'auto', min_columns: 3, min_rows: 1 };
   }
 
   protected shouldUpdate(changed: PropertyValues): boolean {

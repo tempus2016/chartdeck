@@ -215,7 +215,9 @@ describe('chartdeck-card', () => {
       base({ title: 'Power', entities: ['sensor.load', 'sensor.solar', 'sensor.cap', 'sensor.other'] }),
     );
     expect(card.getCardSize()).toBe(6);
-    expect(card.getGridOptions()).toEqual({ columns: 6, rows: 5, min_columns: 3, min_rows: 1 });
+    // Sections: the real height depends on title wrapping and the card's width, so let the
+    // grid size the card to its content rather than reserve an estimated row count.
+    expect(card.getGridOptions()).toEqual({ columns: 6, rows: 'auto', min_columns: 3, min_rows: 1 });
 
     const two = await mount(
       base({
@@ -229,7 +231,7 @@ describe('chartdeck-card', () => {
     );
     // 16 + 1 row × 46 + 32 legend = 94
     expect(two.getCardSize()).toBe(2);
-    expect(two.getGridOptions().rows).toBe(2);
+    expect(two.getGridOptions().rows).toBe('auto');
   });
 
   it('builds a stub from battery sensors first', () => {

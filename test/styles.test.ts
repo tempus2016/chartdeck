@@ -127,10 +127,10 @@ describe('tank', () => {
     expect(q(card, '.target')).toBeNull();
   });
 
-  it('sizes four tanks without a title to 12 columns and 4 rows', async () => {
+  it('sizes four tanks without a title to 12 columns and auto rows', async () => {
     const card = await mount({ style: 'tank', entities: ['sensor.a', 'sensor.a', 'sensor.a', 'sensor.a'] });
     expect(card.getGridOptions().columns).toBe(12);
-    expect(card.getGridOptions().rows).toBe(4);
+    expect(card.getGridOptions().rows).toBe('auto');
   });
 });
 
