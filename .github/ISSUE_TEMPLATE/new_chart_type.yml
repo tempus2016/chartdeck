@@ -9,7 +9,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check the [Roadmap](https://github.com/tempus2016/chartdeck/wiki/Roadmap) first — it may
+        Check the [roadmap board](https://github.com/users/tempus2016/projects/5) first — it may
         already be planned, in which case a 👍 on its issue helps decide what comes next.
 
   - type: input
