@@ -16,6 +16,7 @@ export function litCells(span: [number, number]): boolean[] {
 export const segmented: StyleModule = {
   layout: 'rows',
   height: 50,
+  minColumnWidth: 180,
   styles: css`
     /* Each row is measured on its own, so a narrow column (columns: 2 or 3) switches layout
        even when the card as a whole is wide. A container can't restyle itself, hence .seg. */

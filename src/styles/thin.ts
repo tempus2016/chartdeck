@@ -5,6 +5,7 @@ import type { StyleModule } from './index';
 export const thin: StyleModule = {
   layout: 'rows',
   height: 44,
+  minColumnWidth: 140,
   styles: css`
     .style-thin .entity {
       display: flex;

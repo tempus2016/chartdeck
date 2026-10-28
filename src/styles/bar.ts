@@ -6,6 +6,7 @@ import type { StyleModule } from './index';
 export const bar: StyleModule = {
   layout: 'rows',
   height: 46,
+  minColumnWidth: 160,
   styles: css`
     .style-bar .entity {
       display: flex;

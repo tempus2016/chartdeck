@@ -56,6 +56,7 @@ function statusLines(text: string, width: number, max: number, min: number, last
 export const needle: StyleModule = {
   layout: 'tiles',
   height: 140,
+  minColumnWidth: 134,
   styles: css`
     /* A definite width that shrinks with a narrow tile (the svg inside is sized in %). */
     .needle-gauge {

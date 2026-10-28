@@ -47,6 +47,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
   return {
     layout: 'tiles',
     height: cropped ? 135 : 155,
+    minColumnWidth: 128,
     styles: css`
       /* A definite width: the dial is a size container and can't size the tile itself. */
       .radial {
