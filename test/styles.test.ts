@@ -234,6 +234,20 @@ describe('bandSegments', () => {
     ).toEqual([{ from: 0, to: 1, color: 'green' }]);
     expect(bandSegments(DEFAULT_BANDS, -10, 10)).toEqual([{ from: 0, to: 1, color: 'primary' }]);
   });
+
+  it('colours the scale below the first band with the first band, as bandFor does', () => {
+    expect(
+      bandSegments(
+        [
+          { from: 0, color: 'green' },
+          { from: 60, color: 'amber' },
+          { from: 85, color: 'red' },
+        ],
+        -20,
+        100,
+      )[0],
+    ).toEqual({ from: 0, to: 80 / 120, color: 'green' });
+  });
 });
 
 describe('needle', () => {

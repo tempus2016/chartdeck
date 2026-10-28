@@ -12,13 +12,16 @@ const GAP = 1;
 /** A short plain number for inline style (no float noise, no -0). */
 const num = (x: number) => String(Math.round(x * 1000) / 1000 + 0);
 
-/** Each band's [from, nextFrom) clipped to [min, max] and mapped to 0..1; empty segments are dropped. */
+/**
+ * Each band's [from, nextFrom) clipped to [min, max] and mapped to 0..1; empty segments are dropped.
+ * The first band also covers everything below its `from`, matching bandFor().
+ */
 export function bandSegments(bands: Band[], min: number, max: number): { from: number; to: number; color: string }[] {
   const range = max - min;
   const out: { from: number; to: number; color: string }[] = [];
   if (!(range > 0)) return out;
   bands.forEach((band, i) => {
-    const lo = Math.max(band.from, min);
+    const lo = i === 0 ? min : Math.max(band.from, min);
     const hi = Math.min(i + 1 < bands.length ? bands[i + 1].from : Infinity, max);
     if (!(hi > lo)) return;
     out.push({ from: (lo - min) / range, to: (hi - min) / range, color: band.color });
