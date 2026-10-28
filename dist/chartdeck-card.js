@@ -513,7 +513,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       white-space: nowrap;
       margin-left: auto;
     }
-  `,render(t,{show:e,hass:i}){const n=I`${e.name?I`<span class="name">${t.name}</span>`:V}${e.value?I`<span class="value">${t.display}</span>`:V}`;return I`
+  `,render(t,{show:e,hass:i}){const n=e.value||!t.available,s=I`${e.name?I`<span class="name">${t.name}</span>`:V}${n?I`<span class="value">${t.display}</span>`:V}`;return I`
       ${e.icon?I`<ha-state-icon
               class="icon"
               .hass=${i}
@@ -523,8 +523,8 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       <div class="track">
         <div class="fill"></div>
         ${e.target&&null!==t.targetPosition&&t.available?I`<div class="target"></div>`:V}
-        <div class="text">${n}</div>
-        ${t.available?I`<div class="text on-fill ${Ot(t.band.color)}" aria-hidden="true">${n}</div>`:V}
+        <div class="text">${s}</div>
+        ${t.available?I`<div class="text on-fill ${Ot(t.band.color)}" aria-hidden="true">${s}</div>`:V}
       </div>
     `}},Ge=t=>(Math.abs(t)<.005?0:t).toFixed(2);function Ke(t,e,i,n){const s=n*Math.PI/180;return[t+i*Math.sin(s),e-i*Math.cos(s)]}function Xe(t,e,i,n,s){const o=String(Number(i.toFixed(2))),r=s-n,[a,l]=Ke(t,e,i,n);if(r>=359.99){const[s,r]=Ke(t,e,i,n+180);return`M${Ge(a)} ${Ge(l)} A${o} ${o} 0 1 1 ${Ge(s)} ${Ge(r)} A${o} ${o} 0 1 1 ${Ge(a)} ${Ge(l)}`}const[c,d]=Ke(t,e,i,s),h=r>180?1:0;return`M${Ge(a)} ${Ge(l)} A${o} ${o} 0 ${h} 1 ${Ge(c)} ${Ge(d)}`}function Je(t,e){const i=t/2;return[-i+e[0]*t,-i+e[1]*t]}function Ye(t){let e=0;for(const i of t)e+=i.codePointAt(0)>=11904?1/.58:1;return e}function Qe(t,e=76,i=12,n=8,s=11){const o=t.trim();let r=[o];if(Ye(o)>s){let t=Ye(o);for(let e=o.indexOf(" ");e>0;e=o.indexOf(" ",e+1)){const i=Math.max(Ye(o.slice(0,e)),Ye(o.slice(e+1)));i<t&&(t=i,r=[o.slice(0,e),o.slice(e+1)])}}const a=Math.max(...r.map(Ye));return{lines:r,size:Math.max(n,Math.min(i,Math.floor(e/(.58*Math.max(1,a)))))}}const ti=65,ei=66,ii=t=>String(Math.round(1e3*t)/1e3+0);function ni(t,e,i,n,s,o=11){const{lines:r,size:a}=Qe(t,e,i,n,o),l=s-1.2*(r.length-1)*a;return q`<text class="na" text-anchor="middle" style="font-size: ${a}px">${r.map((t,e)=>q`<tspan x=${ti} y=${ii(l+1.2*e*a)}>${t}</tspan>`)}</text>`}const si={layout:"tiles",height:140,minColumnWidth:134,styles:o`
     /* A definite width that shrinks with a narrow tile (the svg inside is sized in %). */
@@ -957,7 +957,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
               .stateObj=${t.stateObj}
               .icon=${De(t)}
             ></ha-state-icon>`:V}
-      ${e.value?I`<span class="value">${t.display}</span>`:V}
+      ${e.value||!t.available?I`<span class="value">${t.display}</span>`:V}
       <div class="tube">
         <div class="fill"></div>
         ${e.target&&null!==t.targetPosition&&t.available?I`<div class="target"></div>`:V}
@@ -1029,7 +1029,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       background: var(--primary-text-color);
       transition: left var(--cd-duration) var(--cd-easing);
     }
-  `,render:(t,{show:e,hass:i})=>I`
+  `,render(t,{show:e,hass:i}){const n=e.value||!t.available;return I`
       ${e.icon?I`<ha-state-icon
               class="icon"
               .hass=${i}
@@ -1037,16 +1037,16 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
               .icon=${De(t)}
             ></ha-state-icon>`:V}
       <div class="body">
-        ${e.name||e.value?I`<div class="top">
+        ${e.name||n?I`<div class="top">
                 ${e.name?I`<span class="name">${t.name}</span>`:V}
-                ${e.value?I`<span class="value">${t.display}</span>`:V}
+                ${n?I`<span class="value">${t.display}</span>`:V}
               </div>`:V}
         <div class="track">
           <div class="fill"></div>
           ${e.target&&null!==t.targetPosition&&t.available?I`<div class="target"></div>`:V}
         </div>
       </div>
-    `},_i={bar:Ze,thin:gi,segmented:mi,tank:fi,ring:hi,needle:si,arc:ui},yi=o`
+    `}},_i={bar:Ze,thin:gi,segmented:mi,tank:fi,ring:hi,needle:si,arc:ui},yi=o`
   :host {
     display: block;
     --cd-duration: 900ms;
