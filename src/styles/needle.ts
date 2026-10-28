@@ -57,12 +57,16 @@ export const needle: StyleModule = {
   layout: 'tiles',
   height: 140,
   styles: css`
+    /* A definite width that shrinks with a narrow tile (the svg inside is sized in %). */
     .needle-gauge {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 2px;
       padding: 6px 0;
+      width: 130px;
+      max-width: 100%;
+      margin: 0 auto;
     }
     /* 130 px wide, smaller only when the tile is narrower. */
     .needle-gauge svg {

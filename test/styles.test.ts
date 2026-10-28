@@ -503,6 +503,9 @@ describe('gauges in very narrow cards', () => {
 
   it('scales the needle dial down with its tile', () => {
     const css = STYLES.needle.styles.cssText;
+    // A definite width: a percentage-wide svg would otherwise report its 300 px default size
+    // and make every needle tile a full row.
+    expect(css).toMatch(/\.needle-gauge \{[^}]*width: 130px;[^}]*max-width: 100%;/);
     expect(css).toMatch(
       /\.needle-gauge svg \{[^}]*width: min\(130px, 100%\);[^}]*height: auto;[^}]*aspect-ratio: 130 \/ 104;/,
     );
