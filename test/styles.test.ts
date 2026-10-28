@@ -412,3 +412,19 @@ describe('ring and arc centre', () => {
     expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 50%;[^}]*transform: translate\(-50%, -50%\);/);
   });
 });
+
+describe('needle without its value', () => {
+  it('closes up the space the value used', async () => {
+    const card = await mount({ style: 'needle', show: { value: false } });
+    const svgEl = q(card, '.needle-gauge svg')!;
+    expect(svgEl.getAttribute('viewBox')).toBe('0 0 130 82');
+    expect(svgEl.classList.contains('compact')).toBe(true);
+  });
+
+  it('keeps the full height when the value is shown or the entity is unavailable', async () => {
+    const shown = await mount({ style: 'needle' });
+    expect(q(shown, '.needle-gauge svg')!.getAttribute('viewBox')).toBe('0 0 130 104');
+    const na = await mount({ style: 'needle', entities: ['sensor.missing'], show: { value: false } });
+    expect(q(na, '.needle-gauge svg')!.getAttribute('viewBox')).toBe('0 0 130 104');
+  });
+});

@@ -47,6 +47,9 @@ export const needle: StyleModule = {
       height: 104px;
       overflow: visible;
     }
+    .needle-gauge svg.compact {
+      height: 82px;
+    }
     .needle-gauge .seg {
       fill: none;
       stroke-width: 12px;
@@ -122,8 +125,10 @@ export const needle: StyleModule = {
       const [rx, ry] = polar(CX, CY, R + 14, deg + 3);
       mark = svg`<polygon class="target-mark" points="${tx.toFixed(2)},${ty.toFixed(2)} ${lx.toFixed(2)},${ly.toFixed(2)} ${rx.toFixed(2)},${ry.toFixed(2)}"></polygon>`;
     }
+    // Without a value line under the hub, the drawing ends at the hub and the name moves up.
+    const compact = e.available && !show.value;
     return html`<div class="needle-gauge">
-      <svg viewBox="0 0 130 104" aria-hidden="true">
+      <svg class=${compact ? 'compact' : ''} viewBox="0 0 130 ${compact ? 82 : 104}" aria-hidden="true">
         ${arcs} ${ticks} ${mark}
         ${
           e.available
