@@ -730,11 +730,16 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         </div>
         ${i.name?I`<span class="name">${e.name}</span>`:W}
       </div>`}}}const ai=ri(360),li=ri(270);function ci(t){const[e,i]=t;return Array.from({length:10},(t,n)=>{const s=(n+.5)/10;return s>e&&s<=i})}const di={layout:"rows",height:50,styles:o`
+    /* Each row is measured on its own, so a narrow column (columns: 2 or 3) switches layout
+       even when the card as a whole is wide. A container can't restyle itself, hence .seg. */
     .style-segmented .entity {
+      container-type: inline-size;
+      padding: 6px 0;
+    }
+    .style-segmented .seg {
       display: flex;
       align-items: flex-end;
       gap: 12px;
-      padding: 6px 0;
     }
     .style-segmented .icon {
       flex: none;
@@ -798,7 +803,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
     }
     /* Narrow cards: the value joins the name line so the cells get the full width. */
     @container (max-width: 279px) {
-      .style-segmented .entity {
+      .style-segmented .seg {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
         grid-template-areas:
@@ -827,7 +832,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         padding-bottom: 0;
       }
     }
-  `,render(t,{show:e,hass:i}){const n=t.available?ci(t.span):ci([0,0]),s=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1;return I`
+  `,render(t,{show:e,hass:i}){const n=t.available?ci(t.span):ci([0,0]),s=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1;return I`<div class="seg">
       ${e.icon?I`<ha-state-icon
               class="icon"
               .hass=${i}
@@ -841,7 +846,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         </div>
       </div>
       ${e.value?I`<span class="value">${t.display}</span>`:W}
-    `}},hi={layout:"tiles",height:230,tilesPerRow:4,styles:o`
+    </div>`}},hi={layout:"tiles",height:230,tilesPerRow:4,styles:o`
     .style-tank .entity {
       display: flex;
       flex-direction: column;
