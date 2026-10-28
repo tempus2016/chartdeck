@@ -421,10 +421,31 @@ describe('needle without its value', () => {
     expect(svgEl.classList.contains('compact')).toBe(true);
   });
 
-  it('keeps the full height when the value is shown or the entity is unavailable', async () => {
+  it('keeps the full height when the value is shown', async () => {
     const shown = await mount({ style: 'needle' });
     expect(q(shown, '.needle-gauge svg')!.getAttribute('viewBox')).toBe('0 0 130 104');
-    const na = await mount({ style: 'needle', entities: ['sensor.missing'], show: { value: false } });
+    const na = await mount({ style: 'needle', entities: ['sensor.b'] });
     expect(q(na, '.needle-gauge svg')!.getAttribute('viewBox')).toBe('0 0 130 104');
+    expect(q(na, '.na')!.getAttribute('y')).toBe('94');
+  });
+
+  it('closes up unavailable and missing needles too, with their status inside the dial', async () => {
+    const card = await mount({
+      style: 'needle',
+      entities: ['sensor.a', 'sensor.b', 'sensor.missing'],
+      show: { value: false },
+    });
+    const svgs = [...card.shadowRoot!.querySelectorAll('.needle-gauge svg')];
+    expect(svgs.map((s) => s.getAttribute('viewBox'))).toEqual(Array(3).fill('0 0 130 82'));
+    expect(svgs.every((s) => s.classList.contains('compact'))).toBe(true);
+    const [na, missing] = [...card.shadowRoot!.querySelectorAll('.na')];
+    // Above the hub (cy 66, r 6), shrunk to fit between the ticks.
+    expect([...na.querySelectorAll('tspan')].map((t) => [t.textContent, t.getAttribute('y')])).toEqual([
+      ['Unavailable', '52'],
+    ]);
+    expect(na.getAttribute('style')).toBe('font-size: 9px');
+    const lines = [...missing.querySelectorAll('tspan')];
+    expect(lines.map((t) => t.textContent)).toEqual(['Entity', 'not found']);
+    expect(Number(lines[1].getAttribute('y'))).toBeLessThanOrEqual(52);
   });
 });

@@ -1,6 +1,7 @@
 import { css, html, nothing, svg } from 'lit';
 import { baseColor } from '../bands';
 import { arcPath, needlePath, polar } from '../geometry';
+import { fitStatusText } from '../status-text';
 import type { Band } from '../types';
 import type { StyleModule } from './index';
 
@@ -27,6 +28,18 @@ export function bandSegments(bands: Band[], min: number, max: number): { from: n
     out.push({ from: (lo - min) / range, to: (hi - min) / range, color: band.color });
   });
   return out;
+}
+
+/**
+ * Status text inside the dial, above the hub, for a compact gauge: one or two lines, shrunk to
+ * fit between the ticks, the last line's baseline at y 52.
+ */
+function statusInDial(text: string) {
+  const { lines, size } = fitStatusText(text, 58, 11, 7);
+  const top = 52 - (lines.length - 1) * 1.2 * size;
+  return svg`<text class="na" text-anchor="middle" style="font-size: ${size}px">${lines.map(
+    (line, i) => svg`<tspan x=${CX} y=${num(top + i * 1.2 * size)}>${line}</tspan>`,
+  )}</text>`;
 }
 
 /** Half-circle gauge: banded arc, ticks, and a needle that overshoots into place. */
@@ -126,7 +139,7 @@ export const needle: StyleModule = {
       mark = svg`<polygon class="target-mark" points="${tx.toFixed(2)},${ty.toFixed(2)} ${lx.toFixed(2)},${ly.toFixed(2)} ${rx.toFixed(2)},${ry.toFixed(2)}"></polygon>`;
     }
     // Without a value line under the hub, the drawing ends at the hub and the name moves up.
-    const compact = e.available && !show.value;
+    const compact = !show.value;
     return html`<div class="needle-gauge">
       <svg class=${compact ? 'compact' : ''} viewBox="0 0 130 ${compact ? 82 : 104}" aria-hidden="true">
         ${arcs} ${ticks} ${mark}
@@ -142,7 +155,9 @@ export const needle: StyleModule = {
             ? show.value
               ? svg`<text class="value" x=${CX} y="94" text-anchor="middle">${e.display}</text>`
               : nothing
-            : svg`<text class="na" x=${CX} y="94" text-anchor="middle">${e.display}</text>`
+            : compact
+              ? statusInDial(e.display)
+              : svg`<text class="na" x=${CX} y="94" text-anchor="middle">${e.display}</text>`
         }
       </svg>
       ${
