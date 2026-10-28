@@ -23,7 +23,7 @@
 </p>
 
 > **1.0 brings seven bar and gauge styles; history charts are next.** See the
-> [Roadmap][roadmap] for what is coming and in what order.
+> [roadmap board][roadmap] for what is coming and in what order.
 
 ![The seven Chartdeck styles in a light theme: classic bar, thin bar, segmented, tank, ring, needle and arc](images/preview-v1.png)
 
@@ -111,7 +111,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Translations are the easiest place to st
 [pages]: https://tempus2016.github.io/chartdeck/
 [releases]: https://github.com/tempus2016/chartdeck/releases
 [latest-release]: https://github.com/tempus2016/chartdeck/releases/latest
-[roadmap]: https://github.com/tempus2016/chartdeck/wiki/Roadmap
+[roadmap]: https://github.com/users/tempus2016/projects/5
 [wiki-installation]: https://github.com/tempus2016/chartdeck/wiki/Installation
 [wiki-quick-start]: https://github.com/tempus2016/chartdeck/wiki/Quick-Start
 [wiki-troubleshooting]: https://github.com/tempus2016/chartdeck/wiki/Troubleshooting
