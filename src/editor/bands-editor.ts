@@ -168,6 +168,7 @@ export class CdBandsEditor extends LitElement {
     return html`<div class="band">
       <span class="swatch" style=${styleMap({ '--swatch': baseColor(band.color) })}></span>
       <ha-selector
+        .required=${false}
         data-role="from"
         .hass=${this.hass}
         .label=${this._t('editor_band_from')}
@@ -176,6 +177,7 @@ export class CdBandsEditor extends LitElement {
         @value-changed=${(ev: CustomEvent) => this._fromChanged(index, ev)}
       ></ha-selector>
       <ha-selector
+        .required=${false}
         data-role="color"
         .hass=${this.hass}
         .label=${this._t('editor_band_color')}
@@ -184,6 +186,7 @@ export class CdBandsEditor extends LitElement {
         @value-changed=${(ev: CustomEvent) => this._colorChanged(index, ev)}
       ></ha-selector>
       <ha-selector
+        .required=${false}
         data-role="label"
         .hass=${this.hass}
         .label=${this._t('editor_band_label')}
@@ -200,6 +203,7 @@ export class CdBandsEditor extends LitElement {
       ${
         custom
           ? html`<ha-selector
+              .required=${false}
               class="custom"
               data-role="custom-color"
               .hass=${this.hass}
@@ -217,6 +221,7 @@ export class CdBandsEditor extends LitElement {
     const selectors = this._getSelectors();
     const preset = presetFor(this.bands);
     return html`<ha-selector
+        .required=${false}
         data-role="preset"
         .hass=${this.hass}
         .label=${this._t('editor_preset')}

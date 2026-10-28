@@ -443,6 +443,44 @@ describe('editor: entities', () => {
   });
 });
 
+describe('editor: optional fields', () => {
+  /** Every element matching `sel` in `root` and all shadow roots below it. */
+  function walk(root: Element | ShadowRoot, sel: string, out: Element[] = []): Element[] {
+    root.querySelectorAll(sel).forEach((e) => out.push(e));
+    root.querySelectorAll('*').forEach((e) => {
+      if (e.shadowRoot) walk(e.shadowRoot, sel, out);
+    });
+    return out;
+  }
+  function schemaItems(schema: unknown): Record<string, unknown>[] {
+    if (!Array.isArray(schema)) return [];
+    return schema.flatMap((item: Record<string, unknown>) => [item, ...schemaItems(item.schema)]);
+  }
+
+  it('marks no field required, so none shows a required asterisk', async () => {
+    // ha-selector defaults to required; every Chartdeck field is optional or always has a value.
+    const { editor } = await mount({
+      ...raw,
+      severity: [
+        { from: 0, color: 'red', label: 'Low' },
+        { from: 50, color: '#123456' },
+      ],
+    });
+    const expand = deepAll(editor, 'cd-entities-editor', '.expand')[0];
+    expand.click();
+    await settle(editor);
+    const selectors = walk(editor.shadowRoot!, 'ha-selector') as StubElement[];
+    const roles = selectors.map((s) => s.dataset.role).filter(Boolean);
+    for (const role of ['mode', 'preset', 'from', 'color', 'label', 'custom-color']) expect(roles).toContain(role);
+    for (const s of selectors) expect(s.required, `ha-selector[data-role=${s.dataset.role}]`).toBe(false);
+    const forms = walk(editor.shadowRoot!, 'ha-form') as StubElement[];
+    expect(forms.length).toBeGreaterThanOrEqual(4);
+    for (const f of forms) {
+      for (const item of schemaItems(f.schema)) expect(item.required, String(item.name)).not.toBe(true);
+    }
+  });
+});
+
 describe('editor: schemas', () => {
   it('memoises ha-form schemas per language', async () => {
     const { editor } = await mount(raw);

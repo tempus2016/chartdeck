@@ -98,6 +98,7 @@ export class CdLimitField extends LitElement {
     const t = (key: string) => localize(this.hass, key);
     const mode = this._currentMode;
     return html`<ha-selector
+        .required=${false}
         data-role="mode"
         .hass=${this.hass}
         .label=${this.label}
@@ -108,6 +109,7 @@ export class CdLimitField extends LitElement {
       ${
         mode === 'number'
           ? html`<ha-selector
+              .required=${false}
               data-role="number"
               .hass=${this.hass}
               .label=${t('editor_limit_number')}
@@ -117,6 +119,7 @@ export class CdLimitField extends LitElement {
             ></ha-selector>`
           : mode === 'entity'
             ? html`<ha-selector
+                .required=${false}
                 data-role="entity"
                 .hass=${this.hass}
                 .label=${t('editor_limit_entity')}
