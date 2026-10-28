@@ -32,32 +32,50 @@ function valueFontSize(text: string): number {
   return Math.min(22, Math.floor(124 / Math.max(1, text.length)));
 }
 
+/** Whether `color` can follow url() as a stroke fallback: no var(), and a colour this browser parses. */
+function canPaint(color: string): boolean {
+  if (color.includes('var(')) return false;
+  return typeof CSS === 'undefined' || typeof CSS.supports !== 'function' || CSS.supports('color', color);
+}
+
 /** Ring (360) and three-quarter arc (270) gauges share one drawing. */
 export function radialStyle(sweep: 360 | 270): StyleModule {
   const [a0, a1] = sweepAngles(sweep, [0, 1]);
   const trackD = arcPath(CX, CY, R, a0, a1);
+  // The arc's open bottom is empty: crop the drawing just below its round end caps (~98).
+  const cropped = sweep < 360;
   return {
     layout: 'tiles',
-    height: 155,
+    height: cropped ? 135 : 155,
     minColumnWidth: 128,
     styles: css`
+      /* A definite width: the dial is a size container and can't size the tile itself. */
       .radial {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 2px;
         padding: 6px 0;
+        width: 124px;
+        max-width: 100%;
+        margin: 0 auto;
       }
+      /* The dial is 124 px wide, smaller only when its tile is narrower; positions inside it
+         are in cqw (1 % of the dial's width) so they scale with it. */
       .radial .dial {
         position: relative;
-        width: 124px;
-        height: 120px;
+        container-type: inline-size;
+        width: min(124px, 100%);
+        aspect-ratio: 124 / 120;
       }
       .radial svg {
         display: block;
-        width: 124px;
-        height: 120px;
+        width: 100%;
+        height: 100%;
         overflow: visible;
+      }
+      .radial.cropped .dial {
+        aspect-ratio: 124 / 100;
       }
       .radial .track {
         fill: none;
@@ -110,13 +128,20 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
       .radial .icon {
         position: absolute;
         left: 50%;
-        top: 31px;
+        top: 25cqw;
         transform: translateX(-50%);
         color: var(--state-icon-color, var(--secondary-text-color));
-        --mdc-icon-size: 18px;
+        --mdc-icon-size: 14.52cqw;
+      }
+      /* With the value hidden, the icon is all that sits in the hollow, so it moves to the
+         dial centre (y 60, also on the cropped arc) and grows to fill it. */
+      .radial .icon.centre {
+        top: 48.39cqw;
+        transform: translate(-50%, -50%);
+        --mdc-icon-size: 22.58cqw;
       }
       .radial .name {
-        max-width: 124px;
+        max-width: min(124px, 100%);
         font-size: 12px;
         color: var(--secondary-text-color);
         overflow: hidden;
@@ -129,7 +154,11 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
       const empty = e.span[1] - e.span[0] <= 0;
       // Plain numbers (pathLength 100), not calc() on custom properties, so every engine draws them.
       const dash = `stroke-dasharray: ${num((e.span[1] - e.span[0]) * 100)} 100; stroke-dashoffset: ${num(-e.span[0] * 100)}`;
+      // A second paint after url() is used if the gradient reference can't be resolved, so
+      // the arc still draws. Only for a colour this browser can parse: attributes can't
+      // resolve var(), and an unknown colour would void the whole stroke.
       const solid = solidColor(e.band.color);
+      const paint = canPaint(solid) ? `url(#${id}) ${solid}` : `url(#${id})`;
       const shift = show.icon ? 6 : 0;
       const size = valueFontSize(e.valueText);
       let tick = nothing as unknown;
@@ -139,13 +168,13 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         const [x2, y2] = polar(CX, CY, R + STROKE / 2 + 1, deg);
         tick = svg`<line class="tick" x1=${x1.toFixed(2)} y1=${y1.toFixed(2)} x2=${x2.toFixed(2)} y2=${y2.toFixed(2)}></line>`;
       }
-      return html`<div class="radial">
+      return html`<div class="radial ${cropped ? 'cropped' : ''}">
         <div class="dial">
-          <svg viewBox="0 0 120 120" aria-hidden="true">
+          <svg viewBox="0 0 120 ${cropped ? 100 : 120}" aria-hidden="true">
             <defs>
               <linearGradient id=${id} x1="0" y1="1" x2="1" y2="0">
-                <stop class="stop-start" offset="0" stop-color=${solid}></stop>
-                <stop class="stop-end" offset="1" stop-color=${solid}></stop>
+                <stop class="stop-start" offset="0"></stop>
+                <stop class="stop-end" offset="1"></stop>
               </linearGradient>
             </defs>
             <circle class="disc" cx=${CX} cy=${CY} r="34"></circle>
@@ -157,7 +186,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
                   d=${trackD}
                   pathLength="100"
                   style=${dash}
-                  stroke="url(#${id})"
+                  stroke=${paint}
                 ></path>`
                 : nothing
             }
@@ -182,7 +211,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
           ${
             show.icon && e.available
               ? html`<ha-state-icon
-                  class="icon"
+                  class="icon ${show.value ? '' : 'centre'}"
                   .hass=${hass}
                   .stateObj=${e.stateObj}
                   .icon=${e.config.icon}
