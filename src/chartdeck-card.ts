@@ -26,6 +26,15 @@ const DRAW_IN_MS = 1000;
 /** Gap between columns (px): see .layout-rows and .layout-tiles in shared.ts. */
 const COLUMN_GAP = { rows: 16, tiles: 8 };
 
+/** Content width of a typical masonry card (about 400 px, less padding), for estimating height. */
+const MASONRY_CONTENT_WIDTH = 368;
+
+/** How many of the style's columns fit a typical masonry card, since `columns` is only a maximum. */
+function columnsThatFit(style: StyleModule): number {
+  const gap = COLUMN_GAP[style.layout];
+  return Math.max(1, Math.floor((MASONRY_CONTENT_WIDTH + gap) / ((style.minColumnWidth ?? 0) + gap)));
+}
+
 /**
  * The entities grid. A set `columns` is a maximum: each column keeps the style's minimum width,
  * so a narrow card drops to fewer columns rather than crushing or overlapping them.
@@ -113,7 +122,11 @@ export class ChartdeckCard extends LitElement {
     const style = this._style;
     const n = config.entities.length;
     const perRow =
-      style.layout === 'rows' ? (config.columns ?? 1) : (config.columns ?? Math.min(n, style.tilesPerRow ?? 3));
+      config.columns !== undefined
+        ? Math.min(config.columns, columnsThatFit(style))
+        : style.layout === 'rows'
+          ? 1
+          : Math.min(n, style.tilesPerRow ?? 3);
     const rows = n === 0 ? 0 : Math.ceil(n / Math.max(1, perRow));
     return (
       (config.title ? TITLE_HEIGHT : 0) +
