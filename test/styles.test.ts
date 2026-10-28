@@ -134,6 +134,26 @@ describe('tank', () => {
   });
 });
 
+describe('color-mix fallback', () => {
+  it('declares a solid fill colour under every gradient', () => {
+    for (const name of ['bar', 'thin', 'segmented', 'tank'] as const) {
+      const css = STYLES[name].styles.cssText;
+      const rules = css.match(/\{[^}]*linear-gradient[^}]*\}/g)!;
+      expect(rules.length).toBeGreaterThan(0);
+      for (const rule of rules) {
+        expect(rule).toMatch(/background: var\(--c-start\);\s*background-image: linear-gradient\(/);
+      }
+    }
+  });
+
+  it('swaps in a plain track and end colour where color-mix is unsupported', () => {
+    const css = (ChartdeckCard.styles as { cssText: string }[]).map((s) => s.cssText).join('');
+    const block = css.match(/@supports not \(color: color-mix\(in srgb, red 50%, white\)\) \{[\s\S]*?\}\s*\}/)![0];
+    expect(block).toMatch(/:host \{\s*--cd-track: var\(--divider-color, [^;]+\);/);
+    expect(block).toMatch(/\.entity \{\s*--c-end: var\(--c-start\) !important;/);
+  });
+});
+
 describe('static mode', () => {
   it('marks the host static and the shared reset covers pseudo-elements', async () => {
     const card = await mount({ style: 'segmented', animate: false });

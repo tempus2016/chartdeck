@@ -55,7 +55,8 @@ export const thin: StyleModule = {
       left: calc(var(--start) * 100%);
       width: calc((var(--end) - var(--start)) * 100%);
       border-radius: 4px;
-      background: linear-gradient(90deg, var(--c-start), var(--c-end));
+      background: var(--c-start);
+      background-image: linear-gradient(90deg, var(--c-start), var(--c-end));
       transition:
         left var(--cd-duration) var(--cd-easing),
         width var(--cd-duration) var(--cd-easing);

@@ -57,7 +57,8 @@ export const segmented: StyleModule = {
       position: absolute;
       inset: 0;
       border-radius: 4px;
-      background: linear-gradient(180deg, var(--c-start), var(--c-end));
+      background: var(--c-start);
+      background-image: linear-gradient(180deg, var(--c-start), var(--c-end));
       opacity: 0;
       transition: opacity calc(var(--cd-duration) / 3) var(--cd-easing);
     }

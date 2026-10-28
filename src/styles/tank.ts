@@ -42,7 +42,8 @@ export const tank: StyleModule = {
       bottom: calc(var(--start) * 100%);
       height: calc((var(--end) - var(--start)) * 100%);
       border-radius: 10px;
-      background: linear-gradient(0deg, var(--c-start), var(--c-end));
+      background: var(--c-start);
+      background-image: linear-gradient(0deg, var(--c-start), var(--c-end));
       transition:
         bottom var(--cd-duration) var(--cd-easing),
         height var(--cd-duration) var(--cd-easing);

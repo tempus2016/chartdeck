@@ -16,6 +16,15 @@ export const shared = css`
     --cd-easing: cubic-bezier(0.22, 1, 0.36, 1);
     --cd-track: color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent);
   }
+  /* Engines without color-mix() (older wall-tablet WebViews): a theme divider track and solid fills. */
+  @supports not (color: color-mix(in srgb, red 50%, white)) {
+    :host {
+      --cd-track: var(--divider-color, rgba(127, 127, 127, 0.2));
+    }
+    .entity {
+      --c-end: var(--c-start) !important;
+    }
+  }
   :host(:not([ready])) .entity {
     --start: 0 !important;
     --end: 0 !important;
