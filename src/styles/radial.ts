@@ -130,7 +130,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         --mdc-icon-size: 22.58cqw;
       }
       .radial .name {
-        max-width: 124px;
+        max-width: min(124px, 100%);
         font-size: 12px;
         color: var(--secondary-text-color);
         overflow: hidden;
