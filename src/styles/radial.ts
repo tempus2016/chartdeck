@@ -32,12 +32,13 @@ function valueFontSize(text: string): number {
   return Math.min(22, Math.floor(124 / Math.max(1, text.length)));
 }
 
-/** Ring (360) and three-quarter arc (270) gauges share one drawing. */
+/** Whether `color` can follow url() as a stroke fallback: no var(), and a colour this browser parses. */
 function canPaint(color: string): boolean {
   if (color.includes('var(')) return false;
   return typeof CSS === 'undefined' || typeof CSS.supports !== 'function' || CSS.supports('color', color);
 }
 
+/** Ring (360) and three-quarter arc (270) gauges share one drawing. */
 export function radialStyle(sweep: 360 | 270): StyleModule {
   const [a0, a1] = sweepAngles(sweep, [0, 1]);
   const trackD = arcPath(CX, CY, R, a0, a1);
