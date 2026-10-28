@@ -327,8 +327,9 @@ describe('editor: colours', () => {
     const { editor, events } = await mount({ ...raw, severity: [{ from: 0, color: 'green' }] });
     await settle(editor);
     const row = deepAll(bands(editor), '.band')[0];
+    const before = events.length;
     pick(row.querySelector('ha-selector[data-role="color"]') as HTMLElement, 'custom');
-    expect(events.at(-1)!.severity).toEqual([{ from: 0, color: 'var(--success-color, #1fae7a)' }]);
+    expect(events.length).toBe(before);
     await settle(editor);
     const custom = deepAll(bands(editor), '.band')[0].querySelector('ha-selector[data-role="custom-color"]');
     pick(custom as HTMLElement, 'var(--accent-color)');
