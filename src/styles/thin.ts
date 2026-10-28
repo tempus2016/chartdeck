@@ -73,6 +73,8 @@ export const thin: StyleModule = {
     }
   `,
   render(e, { show, hass }) {
+    // An unavailable or missing sensor always says so, even with the value hidden.
+    const value = show.value || !e.available;
     return html`
       ${
         show.icon
@@ -86,10 +88,10 @@ export const thin: StyleModule = {
       }
       <div class="body">
         ${
-          show.name || show.value
+          show.name || value
             ? html`<div class="top">
                 ${show.name ? html`<span class="name">${e.name}</span>` : nothing}
-                ${show.value ? html`<span class="value">${e.display}</span>` : nothing}
+                ${value ? html`<span class="value">${e.display}</span>` : nothing}
               </div>`
             : nothing
         }
