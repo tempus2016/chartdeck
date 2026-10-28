@@ -31,12 +31,15 @@ function prefersReducedMotion(): boolean {
 export class ChartdeckCard extends LitElement {
   static properties = {
     hass: { attribute: false },
+    preview: { type: Boolean },
     _config: { state: true },
   };
 
   static styles = [shared, ...Object.values(STYLES).map((s) => s.styles)];
 
   declare hass?: HomeAssistant;
+  /** Set by Home Assistant on the editor's preview card, which it rebuilds on every change. */
+  declare preview?: boolean;
   declare _config?: NormalizedConfig;
 
   private _watched = new Set<string>();
@@ -140,7 +143,8 @@ export class ChartdeckCard extends LitElement {
   protected willUpdate(): void {
     const isStatic = this._config?.animate === false || prefersReducedMotion();
     this.toggleAttribute('static', isStatic);
-    if (isStatic) this.setAttribute('ready', '');
+    // An editor preview is rebuilt on every edit, so a draw-in there would replay per keystroke.
+    if (isStatic || this.preview) this.setAttribute('ready', '');
   }
 
   /**

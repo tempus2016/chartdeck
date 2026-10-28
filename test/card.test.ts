@@ -175,6 +175,20 @@ describe('chartdeck-card', () => {
     expect(card.hasAttribute('ready')).toBe(true);
   });
 
+  it('skips the draw-in in an editor preview', async () => {
+    // Home Assistant builds a new preview card on every editor change and marks it `preview`;
+    // drawing in each one would replay the animation on every keystroke.
+    const card = document.createElement('chartdeck-card') as Card;
+    card.preview = true;
+    card.setConfig(base());
+    card.hass = states();
+    document.body.appendChild(card);
+    await card.updateComplete;
+    expect(card.hasAttribute('ready')).toBe(true);
+    // Value changes still animate.
+    expect(card.hasAttribute('static')).toBe(false);
+  });
+
   it('waits for entities to be drawn before setting ready', async () => {
     const card = document.createElement('chartdeck-card') as Card;
     card.setConfig(base());
