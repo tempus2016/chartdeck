@@ -1,8 +1,10 @@
 import { css, html, nothing, svg } from 'lit';
 import { baseColor } from '../bands';
 import { arcPath, needlePath, polar } from '../geometry';
+import { fitStatusText } from '../status-text';
 import type { Band } from '../types';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 const CX = 65;
 const CY = 66;
@@ -29,23 +31,55 @@ export function bandSegments(bands: Band[], min: number, max: number): { from: n
   return out;
 }
 
+/**
+ * Status text inside the dial, above the hub, for a compact gauge: one or two lines, shrunk to
+ * fit between the ticks, the last line's baseline at y 55 (just above the hub).
+ */
+function statusInDial(text: string) {
+  return statusLines(text, 58, 11, 7, 55);
+}
+
+/** Status text in the value's place under a full-height gauge, fitted to the tile's width. */
+function statusBelow(text: string) {
+  // One line whenever it fits at full size (126 / (0.58 × 12) ≈ 18 characters).
+  return statusLines(text, 126, 12, 8, 94, 18);
+}
+
+function statusLines(text: string, width: number, max: number, min: number, lastBaseline: number, splitAbove = 11) {
+  const { lines, size } = fitStatusText(text, width, max, min, splitAbove);
+  const top = lastBaseline - (lines.length - 1) * 1.2 * size;
+  return svg`<text class="na" text-anchor="middle" style="font-size: ${size}px">${lines.map(
+    (line, i) => svg`<tspan x=${CX} y=${num(top + i * 1.2 * size)}>${line}</tspan>`,
+  )}</text>`;
+}
+
 /** Half-circle gauge: banded arc, ticks, and a needle that overshoots into place. */
 export const needle: StyleModule = {
   layout: 'tiles',
   height: 140,
+  minColumnWidth: 134,
   styles: css`
+    /* A definite width that shrinks with a narrow tile (the svg inside is sized in %). */
     .needle-gauge {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 2px;
       padding: 6px 0;
+      width: 130px;
+      max-width: 100%;
+      margin: 0 auto;
     }
+    /* 130 px wide, smaller only when the tile is narrower. */
     .needle-gauge svg {
       display: block;
-      width: 130px;
-      height: 104px;
+      width: min(130px, 100%);
+      height: auto;
+      aspect-ratio: 130 / 104;
       overflow: visible;
+    }
+    .needle-gauge svg.compact {
+      aspect-ratio: 130 / 82;
     }
     .needle-gauge .seg {
       fill: none;
@@ -122,8 +156,10 @@ export const needle: StyleModule = {
       const [rx, ry] = polar(CX, CY, R + 14, deg + 3);
       mark = svg`<polygon class="target-mark" points="${tx.toFixed(2)},${ty.toFixed(2)} ${lx.toFixed(2)},${ly.toFixed(2)} ${rx.toFixed(2)},${ry.toFixed(2)}"></polygon>`;
     }
+    // Without a value line under the hub, the drawing ends at the hub and the name moves up.
+    const compact = !show.value;
     return html`<div class="needle-gauge">
-      <svg viewBox="0 0 130 104" aria-hidden="true">
+      <svg class=${compact ? 'compact' : ''} viewBox="0 0 130 ${compact ? 82 : 104}" aria-hidden="true">
         ${arcs} ${ticks} ${mark}
         ${
           e.available
@@ -137,7 +173,9 @@ export const needle: StyleModule = {
             ? show.value
               ? svg`<text class="value" x=${CX} y="94" text-anchor="middle">${e.display}</text>`
               : nothing
-            : svg`<text class="na" x=${CX} y="94" text-anchor="middle">${e.display}</text>`
+            : compact
+              ? statusInDial(e.display)
+              : statusBelow(e.display)
         }
       </svg>
       ${
@@ -149,7 +187,7 @@ export const needle: StyleModule = {
                       class="icon"
                       .hass=${hass}
                       .stateObj=${e.stateObj}
-                      .icon=${e.config.icon}
+                      .icon=${iconOverride(e)}
                     ></ha-state-icon>`
                   : nothing
               }
