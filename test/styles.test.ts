@@ -408,6 +408,17 @@ describe('needle', () => {
   });
 });
 
+describe('bar text on see-through fills', () => {
+  it('uses the theme text colour, not white, over a mostly transparent fill', async () => {
+    const card = await mount({ style: 'bar', severity: [{ from: 0, color: 'rgba(255, 255, 255, 0.15)' }] } as never);
+    expect(q(card, '.text.on-fill')!.classList.contains('theme')).toBe(true);
+    const css = (ChartdeckCard.styles as unknown as { cssText: string }[]).map((x) => x.cssText).join('\n');
+    expect(css).toMatch(
+      /\.style-bar \.text\.on-fill\.theme \{[^}]*color: var\(--primary-text-color\);[^}]*text-shadow: none;/,
+    );
+  });
+});
+
 describe('ring and arc centre', () => {
   for (const style of ['ring', 'arc'] as const) {
     it(`${style} centres the icon when the value is hidden`, async () => {
