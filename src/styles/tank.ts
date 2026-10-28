@@ -7,6 +7,7 @@ export const tank: StyleModule = {
   layout: 'tiles',
   height: 230,
   tilesPerRow: 4,
+  minColumnWidth: 80,
   styles: css`
     .style-tank .entity {
       display: flex;

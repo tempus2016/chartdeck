@@ -7,6 +7,7 @@ import { iconOverride } from '../resolve';
 export const bar: StyleModule = {
   layout: 'rows',
   height: 46,
+  minColumnWidth: 160,
   styles: css`
     .style-bar .entity {
       display: flex;
@@ -71,6 +72,11 @@ export const bar: StyleModule = {
     /* Light fills (amber, pale custom colours) take dark text instead. */
     .style-bar .text.on-fill.dark {
       color: #1d1f24;
+      text-shadow: none;
+    }
+    /* Mostly see-through fills show the card behind, so the text follows the theme. */
+    .style-bar .text.on-fill.theme {
+      color: var(--primary-text-color);
       text-shadow: none;
     }
     .style-bar .name {

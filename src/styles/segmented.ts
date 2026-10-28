@@ -17,12 +17,18 @@ export function litCells(span: [number, number]): boolean[] {
 export const segmented: StyleModule = {
   layout: 'rows',
   height: 50,
+  minColumnWidth: 180,
   styles: css`
+    /* Each row is measured on its own, so a narrow column (columns: 2 or 3) switches layout
+       even when the card as a whole is wide. A container can't restyle itself, hence .seg. */
     .style-segmented .entity {
+      container-type: inline-size;
+      padding: 6px 0;
+    }
+    .style-segmented .seg {
       display: flex;
       align-items: flex-end;
       gap: 12px;
-      padding: 6px 0;
     }
     .style-segmented .icon {
       flex: none;
@@ -86,7 +92,7 @@ export const segmented: StyleModule = {
     }
     /* Narrow cards: the value joins the name line so the cells get the full width. */
     @container (max-width: 279px) {
-      .style-segmented .entity {
+      .style-segmented .seg {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
         grid-template-areas:
@@ -122,7 +128,7 @@ export const segmented: StyleModule = {
       show.target && e.available && e.targetPosition !== null
         ? Math.min(CELLS - 1, Math.max(0, Math.floor(e.targetPosition * CELLS)))
         : -1;
-    return html`
+    return html`<div class="seg">
       ${
         show.icon
           ? html`<ha-state-icon
@@ -142,6 +148,6 @@ export const segmented: StyleModule = {
         </div>
       </div>
       ${show.value ? html`<span class="value">${e.display}</span>` : nothing}
-    `;
+    </div>`;
   },
 };
