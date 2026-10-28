@@ -17,28 +17,45 @@ function clone(value: unknown, nextKey: string | number): Container {
   return typeof nextKey === 'number' ? [] : {};
 }
 
-/** Copy `node` with `path` set (or removed); an object emptied by a removal is reported as undefined. */
+function getIn(node: unknown, path: Path): unknown {
+  let current = node;
+  for (const key of path) {
+    if (typeof current !== 'object' || current === null) return undefined;
+    current = (current as Record<string | number, unknown>)[key];
+  }
+  return current;
+}
+
+/**
+ * Copy `node` with `path` set (or removed). A plain object emptied by a removal is dropped from a
+ * plain-object parent; inside an array it stays as `{}` so list positions never shift.
+ */
 function setIn(node: unknown, path: Path, value: unknown): unknown {
   const [key, ...rest] = path;
   const next = clone(node, key);
-  const child = rest.length ? setIn((next as Record<string | number, unknown>)[key], rest, value) : value;
+  const slot = next as Record<string | number, unknown>;
+  const child = rest.length ? setIn(slot[key], rest, value) : value;
+  const emptied = rest.length > 0 && isPlainObject(child) && Object.keys(child).length === 0;
   if (isEmptyValue(child)) {
     if (Array.isArray(next) && typeof key === 'number') next.splice(key, 1);
-    else delete (next as Record<string | number, unknown>)[key];
-    if (isPlainObject(next) && Object.keys(next).length === 0) return undefined;
+    else delete slot[key];
+  } else if (emptied && isPlainObject(next)) {
+    delete slot[key];
   } else {
-    (next as Record<string | number, unknown>)[key] = child;
+    slot[key] = child;
   }
   return next;
 }
 
 /**
  * Return a copy of `config` with the option at `path` set. `undefined`, `''` and `null` remove the
- * key, and a nested object (such as `show`) left empty by the removal is removed too.
+ * key, and a nested object (such as `show`) left empty by the removal is removed too. Removing an
+ * option that isn't there returns `config` unchanged.
  */
 export function setOption(config: CardConfig, path: Path, value: unknown): CardConfig {
   if (path.length === 0) return config;
-  return (setIn(config, path, value) as CardConfig | undefined) ?? ({ type: config.type } as CardConfig);
+  if (isEmptyValue(value) && getIn(config, path) === undefined) return config;
+  return setIn(config, path, value) as CardConfig;
 }
 
 export function entityId(item: string | EntityConfig): string {
@@ -50,6 +67,7 @@ export function entityId(item: string | EntityConfig): string {
  * and an object left with only `entity` goes back to the shorthand string.
  */
 export function setEntityOption(config: CardConfig, index: number, key: string, value: unknown): CardConfig {
+  if (key === 'entity' && (isEmptyValue(value) || typeof value !== 'string')) return config;
   const entities = [...(config.entities ?? [])];
   const item = entities[index];
   if (item === undefined) return config;

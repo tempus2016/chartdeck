@@ -1,4 +1,4 @@
-import { localize } from '../localize';
+import { languageOf, localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import { setOption } from './edit';
 
@@ -31,11 +31,48 @@ export const ACTION_FIELDS: FieldBinding[] = [
   { name: 'double_tap_action', path: ['double_tap_action'], default: { action: 'none' } },
 ];
 
+/** Per-entity overrides edited through ha-form; paths are relative to the entity object. */
+export const ENTITY_TEXT_FIELDS: FieldBinding[] = [
+  { name: 'name', path: ['name'] },
+  { name: 'unit', path: ['unit'] },
+  { name: 'decimals', path: ['decimals'] },
+];
+
+/** Absent per-entity actions inherit the card's, so there are no defaults here. */
+export const ENTITY_ACTION_FIELDS: FieldBinding[] = ACTION_FIELDS.map(({ name, path }) => ({ name, path }));
+
+// Schemas are built once (or once per language) so ha-form isn't handed a new array on every render.
+const TITLE_SCHEMA = [{ name: 'title', selector: { text: {} } }];
+const ACTIONS_SCHEMA = ACTION_FIELDS.map(({ name }) => ({ name, selector: { ui_action: {} } }));
+const ENTITY_TEXT_SCHEMA = [
+  {
+    type: 'grid',
+    name: '',
+    schema: [
+      { name: 'name', selector: { text: {} } },
+      { name: 'unit', selector: { text: {} } },
+      { name: 'decimals', selector: { number: { min: 0, max: 6, mode: 'box' } } },
+    ],
+  },
+];
+
 export function titleSchema() {
-  return [{ name: 'title', selector: { text: {} } }];
+  return TITLE_SCHEMA;
 }
 
-export function displaySchema(hass?: HomeAssistant) {
+export function actionsSchema() {
+  return ACTIONS_SCHEMA;
+}
+
+export function entityTextSchema() {
+  return ENTITY_TEXT_SCHEMA;
+}
+
+export function entityActionsSchema() {
+  return ACTIONS_SCHEMA;
+}
+
+function buildDisplaySchema(hass?: HomeAssistant) {
   const toggle = (name: string) => ({ name, selector: { boolean: {} } });
   return [
     {
@@ -68,8 +105,13 @@ export function displaySchema(hass?: HomeAssistant) {
   ];
 }
 
-export function actionsSchema() {
-  return ACTION_FIELDS.map(({ name }) => ({ name, selector: { ui_action: {} } }));
+let displayCache: { language: string; schema: ReturnType<typeof buildDisplaySchema> } | undefined;
+
+/** The Display schema, rebuilt only when the user's language changes. */
+export function displaySchema(hass?: HomeAssistant) {
+  const language = languageOf(hass);
+  if (displayCache?.language !== language) displayCache = { language, schema: buildDisplaySchema(hass) };
+  return displayCache.schema;
 }
 
 function getIn(config: CardConfig, path: string[]): unknown {
@@ -81,7 +123,7 @@ function getIn(config: CardConfig, path: string[]): unknown {
   return node;
 }
 
-function deepEqual(a: unknown, b: unknown): boolean {
+export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
   if (Array.isArray(a) !== Array.isArray(b)) return false;

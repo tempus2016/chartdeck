@@ -2,7 +2,7 @@ import { LitElement, css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { localize } from '../localize';
 import { STYLE_NAMES } from '../types';
-import type { CardConfig, HomeAssistant, StyleName } from '../types';
+import type { Band, CardConfig, HomeAssistant, Limit, StyleName } from '../types';
 import { fireConfigChanged, setOption } from './edit';
 import {
   ACTION_FIELDS,
@@ -16,6 +16,9 @@ import {
 } from './schemas';
 import type { FieldBinding } from './schemas';
 import { thumbnail } from './thumbnails';
+import './bands-editor';
+import './entities-editor';
+import './limit-field';
 
 interface CardHelpers {
   createCardElement(config: Record<string, unknown>): Promise<HTMLElement>;
@@ -61,6 +64,11 @@ export class ChartdeckCardEditor extends LitElement {
     }
     .panel {
       padding: 8px 0;
+    }
+    .section-limits {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
     .styles {
       display: grid;
@@ -138,19 +146,50 @@ export class ChartdeckCardEditor extends LitElement {
     </ha-expansion-panel>`;
   }
 
+  /** Commit a sub-editor's `value-changed` to `path`, keeping it from reaching HA's dialog. */
+  private _subChanged(path: string[], ev: CustomEvent): void {
+    ev.stopPropagation();
+    if (!this._config) return;
+    this._commit(setOption(this._config, path, ev.detail?.value));
+  }
+
   /** Entity list, pickers and per-entity overrides. */
   protected renderEntities(): unknown {
-    return nothing;
+    return html`<cd-entities-editor
+      .hass=${this.hass}
+      .entities=${this._config?.entities ?? []}
+      @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
+    ></cd-entities-editor>`;
   }
 
   /** Card-level min, max and target. */
   protected renderLimits(): unknown {
-    return nothing;
+    const fields: ['min' | 'max' | 'target', string][] = [
+      ['min', '0'],
+      ['max', '100'],
+      ['target', this._label('editor_none')],
+    ];
+    return fields.map(
+      ([key, defaultLabel]) =>
+        html`<cd-limit-field
+          data-limit=${key}
+          .hass=${this.hass}
+          .label=${this._label(`editor_${key}`)}
+          .value=${this._config?.[key] as Limit | undefined}
+          .defaultLabel=${defaultLabel}
+          @value-changed=${(ev: CustomEvent) => this._subChanged([key], ev)}
+        ></cd-limit-field>`,
+    );
   }
 
   /** Severity bands. */
   protected renderColours(): unknown {
-    return nothing;
+    return html`<cd-bands-editor
+      .hass=${this.hass}
+      .bands=${this._config?.severity as Band[] | undefined}
+      .unit=${this._config?.unit}
+      @value-changed=${(ev: CustomEvent) => this._subChanged(['severity'], ev)}
+    ></cd-bands-editor>`;
   }
 
   private _selectStyle(style: StyleName): void {

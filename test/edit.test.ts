@@ -40,7 +40,32 @@ describe('setOption', () => {
   });
 });
 
+describe('setOption pruning (R10)', () => {
+  it('keeps an array element that a removal leaves empty', () => {
+    const c = { ...raw, entities: [{ name: 'X' }, 'sensor.b'] } as unknown as CardConfig;
+    expect(setOption(c, ['entities', 0, 'name'], undefined).entities).toEqual([{}, 'sensor.b']);
+  });
+
+  it('still prunes an emptied object whose parent is a plain object', () => {
+    const c = { ...raw, outer: { inner: { a: 1 } } };
+    expect(setOption(c, ['outer', 'inner', 'a'], undefined)).toEqual(raw);
+  });
+
+  it('removing a key from a missing path is a no-op', () => {
+    expect(setOption(raw, ['severity'], undefined)).toBe(raw);
+    expect(setOption(raw, ['severity', 0, 'label'], undefined)).toBe(raw);
+    expect(setOption(raw, ['show', 'legend'], undefined)).toBe(raw);
+    expect(setOption(raw, ['severity', 0, 'label'], undefined)).not.toHaveProperty('severity');
+  });
+});
+
 describe('entity helpers', () => {
+  it('ignores clearing an entity id', () => {
+    expect(setEntityOption(raw, 0, 'entity', '')).toBe(raw);
+    expect(setEntityOption(raw, 1, 'entity', undefined)).toBe(raw);
+    expect(setEntityOption(raw, 1, 'entity', 'sensor.c').entities![1]).toEqual({ entity: 'sensor.c', name: 'B' });
+  });
+
   it('converts shorthand to an object and back', () => {
     expect(setEntityOption(raw, 0, 'name', 'A').entities![0]).toEqual({ entity: 'sensor.a', name: 'A' });
     expect(setEntityOption(raw, 1, 'name', undefined).entities![1]).toBe('sensor.b');

@@ -35,12 +35,55 @@ const STRINGS: Record<string, Record<string, string>> = {
     editor_tap_action: 'Tap action',
     editor_hold_action: 'Hold action',
     editor_double_tap_action: 'Double tap action',
+    editor_name: 'Name',
+    editor_icon: 'Icon',
+    editor_min: 'Minimum',
+    editor_max: 'Maximum',
+    editor_target: 'Target',
+    editor_none: 'None',
+    editor_card_setting: 'card setting',
+    editor_limit_default: 'Default ({value})',
+    editor_limit_number: 'Number',
+    editor_limit_entity: 'Entity',
+    editor_preset: 'Preset',
+    editor_preset_battery: 'Battery (low is bad)',
+    editor_preset_usage: 'Usage (high is bad)',
+    editor_preset_temperature: 'Temperature',
+    editor_preset_none: 'None',
+    editor_preset_custom: 'Custom',
+    editor_band_from: 'From',
+    editor_band_color: 'Colour',
+    editor_band_custom_color: 'CSS colour',
+    editor_band_label: 'Label',
+    editor_color_primary: 'Primary',
+    editor_color_green: 'Green',
+    editor_color_amber: 'Amber',
+    editor_color_red: 'Red',
+    editor_color_blue: 'Blue',
+    editor_color_purple: 'Purple',
+    editor_color_grey: 'Grey',
+    editor_color_custom: 'Custom…',
+    editor_add_band: 'Add band',
+    editor_remove_band: 'Remove band',
+    editor_add_entity: 'Add entity',
+    editor_move_up: 'Move up',
+    editor_move_down: 'Move down',
+    editor_remove_entity: 'Remove entity',
+    editor_show_options: 'Show options',
+    editor_hide_options: 'Hide options',
+    editor_not_found: '{entity} (not found)',
+    editor_severity: 'Colours',
   },
 };
 
+/** The user's language code, e.g. `en`. */
+export function languageOf(hass: HomeAssistant | undefined): string {
+  return (hass?.locale?.language ?? hass?.language ?? 'en').split('-')[0];
+}
+
 /** Look up a string for the user's language, falling back to English, then to the key. */
 export function localize(hass: HomeAssistant | undefined, key: string, vars?: Record<string, string | number>): string {
-  const lang = (hass?.locale?.language ?? hass?.language ?? 'en').split('-')[0];
+  const lang = languageOf(hass);
   const template = STRINGS[lang]?.[key] ?? STRINGS.en[key] ?? key;
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (m, name: string) => (name in vars ? String(vars[name]) : m));
