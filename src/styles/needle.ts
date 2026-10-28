@@ -9,6 +9,9 @@ const CY = 66;
 const R = 50;
 const GAP = 1;
 
+/** A short plain number for inline style (no float noise, no -0). */
+const num = (x: number) => String(Math.round(x * 1000) / 1000 + 0);
+
 /** Each band's [from, nextFrom) clipped to [min, max] and mapped to 0..1; empty segments are dropped. */
 export function bandSegments(bands: Band[], min: number, max: number): { from: number; to: number; color: string }[] {
   const range = max - min;
@@ -52,9 +55,12 @@ export const needle: StyleModule = {
     }
     .needle-gauge .needle {
       fill: var(--primary-text-color);
+      transform-box: view-box;
       transform-origin: 65px 66px;
-      transform: rotate(calc(-90deg + var(--pos) * 180deg));
       transition: transform 0.9s cubic-bezier(0.22, 1.4, 0.36, 1);
+    }
+    :host(:not([ready])) .needle-gauge .needle {
+      transform: rotate(-90deg) !important;
     }
     .needle-gauge .hub {
       fill: var(--primary-text-color);
@@ -116,7 +122,11 @@ export const needle: StyleModule = {
     return html`<div class="needle-gauge">
       <svg viewBox="0 0 130 104" aria-hidden="true">
         ${arcs} ${ticks} ${mark}
-        ${e.available ? svg`<g class="needle"><path d=${needlePath(CX, CY, 42, 3)}></path></g>` : nothing}
+        ${
+          e.available
+            ? svg`<g class="needle" style="transform: rotate(${num(-90 + 180 * e.position)}deg)"><path d=${needlePath(CX, CY, 42, 3)}></path></g>`
+            : nothing
+        }
         <circle class="hub" cx=${CX} cy=${CY} r="6"></circle>
         <circle class="hub-dot" cx=${CX} cy=${CY} r="2.5"></circle>
         ${

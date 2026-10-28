@@ -5,7 +5,9 @@ import { css } from 'lit';
  *
  * Each `.entity` carries --start, --end, --pos, --target (0..1) and --c-start, --c-end (colours).
  * Until the host gets `ready`, the drawing variables are forced to the empty state so that the
- * marks transition in on first paint. `static` turns every transition off.
+ * marks transition in on first paint. Ring, arc and needle compute their dash pattern / rotation
+ * in render() as plain numbers instead, and force their own empty state until `ready`.
+ * `static` turns every transition off.
  */
 export const shared = css`
   :host {

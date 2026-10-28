@@ -20,6 +20,11 @@ export function baseColor(color: string): string {
   return color;
 }
 
+/** A plain colour for places that can't take var(): a palette name's fallback, or the colour itself. */
+export function solidColor(color: string): string {
+  return Object.prototype.hasOwnProperty.call(PALETTE, color) ? PALETTE[color as PaletteName].fallback : color;
+}
+
 export function colorStops(color: string): { start: string; end: string } {
   const start = baseColor(color);
   return { start, end: `color-mix(in srgb, ${start} 65%, #fff)` };

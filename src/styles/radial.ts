@@ -1,4 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
+import { solidColor } from '../bands';
 import { arcPath, polar, sweepAngles } from '../geometry';
 import type { StyleModule } from './index';
 
@@ -19,6 +20,9 @@ const CX = 60;
 const CY = 60;
 const R = 46;
 const STROKE = 11;
+
+/** A short plain number for inline style (no float noise, no -0). */
+const num = (x: number) => String(Math.round(x * 1000) / 1000 + 0);
 
 /** Ring (360) and three-quarter arc (270) gauges share one drawing. */
 export function radialStyle(sweep: 360 | 270): StyleModule {
@@ -60,11 +64,13 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         fill: none;
         stroke-width: 11px;
         stroke-linecap: round;
-        stroke-dasharray: calc((var(--end) - var(--start)) * 100) 100;
-        stroke-dashoffset: calc(var(--start) * -100);
         transition:
           stroke-dasharray var(--cd-duration) var(--cd-easing),
           stroke-dashoffset var(--cd-duration) var(--cd-easing);
+      }
+      :host(:not([ready])) .radial .value-arc {
+        stroke-dasharray: 0 100 !important;
+        stroke-dashoffset: 0 !important;
       }
       .radial .value-arc.empty {
         opacity: 0;
@@ -112,6 +118,9 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
     render(e, { show, hass }) {
       const id = gradientId(e.config);
       const empty = e.span[1] - e.span[0] <= 0;
+      // Plain numbers (pathLength 100), not calc() on custom properties, so every engine draws them.
+      const dash = `stroke-dasharray: ${num((e.span[1] - e.span[0]) * 100)} 100; stroke-dashoffset: ${num(-e.span[0] * 100)}`;
+      const solid = solidColor(e.band.color);
       const shift = show.icon ? 6 : 0;
       let tick = nothing as unknown;
       if (show.target && e.targetPosition !== null && e.available) {
@@ -125,8 +134,8 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
           <svg viewBox="0 0 120 120" aria-hidden="true">
             <defs>
               <linearGradient id=${id} x1="0" y1="1" x2="1" y2="0">
-                <stop class="stop-start" offset="0"></stop>
-                <stop class="stop-end" offset="1"></stop>
+                <stop class="stop-start" offset="0" stop-color=${solid}></stop>
+                <stop class="stop-end" offset="1" stop-color=${solid}></stop>
               </linearGradient>
             </defs>
             <circle class="disc" cx=${CX} cy=${CY} r="34"></circle>
@@ -137,6 +146,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
                   class="value-arc ${empty ? 'empty' : ''}"
                   d=${trackD}
                   pathLength="100"
+                  style=${dash}
                   stroke="url(#${id})"
                 ></path>`
                 : nothing

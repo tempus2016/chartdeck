@@ -150,6 +150,33 @@ describe('ring and arc', () => {
     expect(q(card, '.value-arc')!.getAttribute('pathLength')).toBe('100');
   });
 
+  it('puts the dash pattern in inline style as plain numbers', async () => {
+    const card = await mount({ style: 'ring' });
+    const style = q(card, '.value-arc')!.getAttribute('style')!;
+    expect(style).toContain('stroke-dasharray: 42 100');
+    expect(style).toContain('stroke-dashoffset: 0');
+    const centred = await mount({ style: 'arc', entities: [{ entity: 'sensor.a', min: -100, max: 100 }] } as never);
+    const s2 = q(centred, '.value-arc')!.getAttribute('style')!;
+    expect(s2).toContain('stroke-dasharray: 21 100');
+    expect(s2).toContain('stroke-dashoffset: -50');
+  });
+
+  it('draws the arc empty until ready without calc() on custom properties', () => {
+    const css = STYLES.ring.styles.cssText;
+    expect(css).not.toMatch(/stroke-dash[a-z]*:\s*calc/);
+    expect(css).toMatch(
+      /:host\(:not\(\[ready\]\)\) \.radial \.value-arc \{\s*stroke-dasharray: 0 100 !important;\s*stroke-dashoffset: 0 !important;/,
+    );
+    expect(css).toMatch(/\.radial \.value-arc \{[^}]*transition:[^}]*stroke-dasharray[^}]*stroke-dashoffset/);
+  });
+
+  it('gives gradient stops a stop-color attribute fallback', async () => {
+    const card = await mount({ style: 'ring' });
+    const stops = card.shadowRoot!.querySelectorAll('stop');
+    expect(stops[0].getAttribute('stop-color')).toBe('#2f6fe4');
+    expect(stops[1].getAttribute('stop-color')).toBe('#2f6fe4');
+  });
+
   it('arc track spans 270 degrees', async () => {
     const card = await mount({ style: 'arc' });
     expect(q(card, '.track')!.getAttribute('d')).toBe(arcPath(60, 60, 46, -135, 135));
@@ -216,6 +243,17 @@ describe('needle', () => {
     const na = await mount({ style: 'needle', entities: ['sensor.b'] });
     expect(q(na, '.needle')).toBeNull();
     expect(q(na, '.na')).not.toBeNull();
+  });
+
+  it('rotates the needle with an inline numeric transform', async () => {
+    const card = await mount({ style: 'needle' });
+    expect(q(card, '.needle')!.getAttribute('style')).toBe('transform: rotate(-14.4deg)');
+    const css = STYLES.needle.styles.cssText;
+    expect(css).not.toMatch(/rotate\(calc/);
+    expect(css).toMatch(/\.needle-gauge \.needle \{[^}]*transform-box: view-box;[^}]*transform-origin: 65px 66px;/);
+    expect(css).toMatch(
+      /:host\(:not\(\[ready\]\)\) \.needle-gauge \.needle \{\s*transform: rotate\(-90deg\) !important;/,
+    );
   });
 
   it('draws a target marker only when shown', async () => {
