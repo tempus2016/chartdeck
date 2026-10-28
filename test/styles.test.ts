@@ -176,11 +176,19 @@ describe('narrow cards', () => {
     expect(css).toMatch(NARROW);
     const narrow = css.slice(css.search(NARROW));
     expect(narrow).toMatch(
-      /\.style-segmented \.entity \{[^}]*display: grid;[^}]*grid-template-areas:\s*'icon name value'\s*'icon cells cells';/,
+      /\.style-segmented \.seg \{[^}]*display: grid;[^}]*grid-template-areas:\s*'icon name value'\s*'icon cells cells';/,
     );
     expect(narrow).toMatch(/\.style-segmented \.body \{\s*display: contents;/);
     expect(narrow).toMatch(/\.style-segmented \.cells \{[^}]*grid-area: cells;[^}]*gap: 2px;/);
     expect(narrow).toMatch(/\.style-segmented \.value \{[^}]*grid-area: value;/);
+  });
+  it('measures each segmented row on its own, so narrow columns switch layout too', async () => {
+    const css = STYLES.segmented.styles.cssText;
+    expect(css).toMatch(/\.style-segmented \.entity \{[^}]*container-type: inline-size;/);
+    const card = await mount({ style: 'segmented', columns: 2, entities: ['sensor.a', 'sensor.b'] } as never);
+    const seg = card.shadowRoot!.querySelector('.entity > .seg');
+    expect(seg).not.toBeNull();
+    expect(seg!.querySelector('.cells')).not.toBeNull();
   });
   it('never shrinks or wraps the thin and bar values; names truncate instead', () => {
     for (const name of ['thin', 'bar'] as const) {
