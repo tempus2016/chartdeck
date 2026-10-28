@@ -29,6 +29,7 @@ export class CdBandsEditor extends LitElement {
     hass: { attribute: false },
     bands: { attribute: false },
     unit: { attribute: false },
+    _customOpen: { state: true },
   };
 
   static styles = css`
@@ -72,6 +73,18 @@ export class CdBandsEditor extends LitElement {
   declare hass?: HomeAssistant;
   declare bands?: Band[];
   declare unit?: string;
+  /** Rows where "Custom…" was chosen but nothing typed yet: the field shows, the config is untouched. */
+  declare _customOpen: Set<number>;
+
+  constructor() {
+    super();
+    this._customOpen = new Set();
+  }
+
+  /** New bands (a preset, a YAML edit, a reorder, our own edits) close any half-open custom field. */
+  protected willUpdate(changed: Map<string, unknown>): void {
+    if (changed.has('bands') && this._customOpen.size) this._customOpen = new Set();
+  }
 
   private _selectors?: { key: string; preset: unknown; presetCustom: unknown; color: unknown; from: unknown };
 
@@ -131,18 +144,26 @@ export class CdBandsEditor extends LitElement {
     const choice = ev.detail?.value as string | undefined;
     const current = this.bands?.[index]?.color ?? 'primary';
     if (!choice) return;
+    const open = new Set(this._customOpen);
     if (choice === CUSTOM) {
-      // Start the custom field from the colour already shown, so nothing visibly changes.
-      if (isPaletteColor(current)) this._updateBand(index, 'color', baseColor(current));
+      // Show the field, pre-filled with the colour already shown; the config changes only
+      // when something is typed.
+      if (isPaletteColor(current)) this._customOpen = open.add(index);
       return;
     }
+    open.delete(index);
+    this._customOpen = open;
     if (choice !== current) this._updateBand(index, 'color', choice);
   }
 
   private _customColorChanged(index: number, ev: CustomEvent): void {
     ev.stopPropagation();
     const value = typeof ev.detail?.value === 'string' ? ev.detail.value.trim() : '';
-    if (value) this._updateBand(index, 'color', value);
+    if (!value) return;
+    const open = new Set(this._customOpen);
+    open.delete(index);
+    this._customOpen = open;
+    this._updateBand(index, 'color', value);
   }
 
   private _labelChanged(index: number, ev: CustomEvent): void {
@@ -164,7 +185,7 @@ export class CdBandsEditor extends LitElement {
   }
 
   private _renderBand(band: Band, index: number, selectors: ReturnType<CdBandsEditor['_getSelectors']>) {
-    const custom = !isPaletteColor(band.color);
+    const custom = !isPaletteColor(band.color) || this._customOpen.has(index);
     return html`<div class="band">
       <span class="swatch" style=${styleMap({ '--swatch': baseColor(band.color) })}></span>
       <ha-selector
@@ -209,7 +230,7 @@ export class CdBandsEditor extends LitElement {
               .hass=${this.hass}
               .label=${this._t('editor_band_custom_color')}
               .selector=${TEXT_SELECTOR}
-              .value=${band.color}
+              .value=${isPaletteColor(band.color) ? baseColor(band.color) : band.color}
               @value-changed=${(ev: CustomEvent) => this._customColorChanged(index, ev)}
             ></ha-selector>`
           : nothing
