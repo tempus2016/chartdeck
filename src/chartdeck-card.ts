@@ -1,5 +1,6 @@
 import { LitElement, html, nothing } from 'lit';
 import type { PropertyValues } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
 import { attachActions, isInteractive } from './actions';
 import { colorStops, legendItems } from './bands';
 import { normalizeConfig } from './config';
@@ -230,6 +231,14 @@ export class ChartdeckCard extends LitElement {
     } else {
       const resolved = resolveEntities(config, hass);
       first = resolved[0];
+      // Key rows by entity id (config position breaks ties for a repeated id) so a re-sort moves
+      // each entity's element rather than redrawing another entity's value into it.
+      const keys = new Map<ResolvedEntity, string>();
+      const seen = new Set<string>();
+      resolved.forEach((e, i) => {
+        keys.set(e, seen.has(e.entityId) ? `${e.entityId}#${i}` : e.entityId);
+        seen.add(e.entityId);
+      });
       this._items = sortEntities(resolved, config.sort);
       const tiles = style.layout === 'tiles';
       const grid =
@@ -240,7 +249,11 @@ export class ChartdeckCard extends LitElement {
         class="entities layout-${style.layout} ${tiles && config.columns !== undefined ? 'has-columns' : ''}"
         style=${grid}
       >
-        ${this._items.map((e, i) => this._renderEntity(e, i, style, hass))}
+        ${repeat(
+          this._items,
+          (e) => keys.get(e),
+          (e, i) => this._renderEntity(e, i, style, hass),
+        )}
       </div>`;
     }
     const legend = this._legend(first);

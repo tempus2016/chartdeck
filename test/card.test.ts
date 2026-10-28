@@ -83,6 +83,25 @@ describe('chartdeck-card', () => {
     expect(meters[2].classList.contains('unavailable')).toBe(true);
   });
 
+  it('keeps each entity on its own element when the sort order changes', async () => {
+    const card = await mount(base({ sort: 'ascending' }));
+    const [load, solar] = qa(card, '[role=meter]');
+    expect(load.getAttribute('aria-label')).toBe('Load, 42.3 W');
+    const next = states();
+    next.states['sensor.load'] = { ...next.states['sensor.load'], state: '90' };
+    card.hass = next;
+    await card.updateComplete;
+    const after = qa(card, '[role=meter]');
+    expect(after[0]).toBe(solar);
+    expect(after[1]).toBe(load);
+    expect(after.map((m) => m.getAttribute('data-index'))).toEqual(['0', '1']);
+  });
+
+  it('renders an entity listed twice once per listing', async () => {
+    const card = await mount(base({ entities: ['sensor.load', 'sensor.load'], sort: 'descending' }));
+    expect(qa(card, '[role=meter]')).toHaveLength(2);
+  });
+
   it('ignores unrelated entity updates', async () => {
     const hass = states();
     const card = await mount(base(), hass);
