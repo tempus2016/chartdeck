@@ -1,11 +1,13 @@
 import { css, html, nothing } from 'lit';
 import { onFillText } from '../bands';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 /** Classic bar: icon, then a 34 px track with name and value inside. */
 export const bar: StyleModule = {
   layout: 'rows',
   height: 46,
+  minColumnWidth: 160,
   styles: css`
     .style-bar .entity {
       display: flex;
@@ -72,6 +74,11 @@ export const bar: StyleModule = {
       color: #1d1f24;
       text-shadow: none;
     }
+    /* Mostly see-through fills show the card behind, so the text follows the theme. */
+    .style-bar .text.on-fill.theme {
+      color: var(--primary-text-color);
+      text-shadow: none;
+    }
     .style-bar .name {
       overflow: hidden;
       text-overflow: ellipsis;
@@ -97,7 +104,7 @@ export const bar: StyleModule = {
               class="icon"
               .hass=${hass}
               .stateObj=${e.stateObj}
-              .icon=${e.config.icon}
+              .icon=${iconOverride(e)}
             ></ha-state-icon>`
           : nothing
       }
