@@ -24,7 +24,7 @@
 > **1.0 brings seven bar and gauge styles; history charts are next.** See the
 > [Roadmap][roadmap] for what is coming and in what order.
 
-![Bars, rings, a needle gauge and arcs drawn by Chartdeck, with a history chart beneath](images/preview-v1.png)
+![The seven Chartdeck styles in a light theme: classic bar, thin bar, segmented, tank, ring, needle and arc](images/preview-v1.png)
 
 📖 **The documentation is in the [wiki][wiki]**, also published as a [searchable site][pages].
 This page is the summary. What changed in each version is on the [releases page][releases].
