@@ -27,6 +27,7 @@ export const tank: StyleModule = {
     }
     .style-tank .value {
       font-size: 13px;
+      text-align: center;
       color: var(--primary-text-color);
     }
     .style-tank .tube {

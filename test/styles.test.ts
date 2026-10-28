@@ -135,6 +135,8 @@ describe('tank', () => {
     const name = css.match(/\.style-tank \.name \{[^}]*\}/)![0];
     expect(name).toContain('max-width: 100%');
     expect(name).not.toContain('72px');
+    // A long status ("Entity not found") wraps within a narrow tile, centred over the tube.
+    expect(css).toMatch(/\.style-tank \.value \{[^}]*text-align: center;/);
   });
 
   it('sizes four tanks without a title to 12 columns and auto rows', async () => {
