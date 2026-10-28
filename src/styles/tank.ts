@@ -1,11 +1,13 @@
 import { css, html, nothing } from 'lit';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 /** Vertical tank: a 40 x 140 tube that fills from the bottom. */
 export const tank: StyleModule = {
   layout: 'tiles',
   height: 230,
   tilesPerRow: 4,
+  minColumnWidth: 80,
   styles: css`
     .style-tank .entity {
       display: flex;
@@ -77,7 +79,7 @@ export const tank: StyleModule = {
               class="icon"
               .hass=${hass}
               .stateObj=${e.stateObj}
-              .icon=${e.config.icon}
+              .icon=${iconOverride(e)}
             ></ha-state-icon>`
           : nothing
       }

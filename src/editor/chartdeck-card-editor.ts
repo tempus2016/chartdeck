@@ -1,5 +1,6 @@
 import { LitElement, css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
+import { live } from 'lit/directives/live.js';
 import { localize } from '../localize';
 import { STYLE_NAMES } from '../types';
 import type { Band, CardConfig, HomeAssistant, Limit, StyleName } from '../types';
@@ -7,6 +8,7 @@ import { fireConfigChanged, setOption } from './edit';
 import {
   ACTION_FIELDS,
   DISPLAY_FIELDS,
+  DISPLAY_TOGGLE_FIELDS,
   TITLE_FIELDS,
   actionsSchema,
   applyFormData,
@@ -64,6 +66,20 @@ export class ChartdeckCardEditor extends LitElement {
     }
     .panel {
       padding: 8px 0;
+    }
+    .toggles {
+      margin-bottom: 16px;
+    }
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 48px;
+    }
+    .toggle span {
+      flex: 1;
+      cursor: pointer;
     }
     .section-limits {
       display: flex;
@@ -216,7 +232,32 @@ export class ChartdeckCardEditor extends LitElement {
   }
 
   protected renderDisplay(): TemplateResult {
-    return this._form('display', displaySchema(this.hass), DISPLAY_FIELDS);
+    // ha-form spaces every field 24 px apart, which turns six switches into a tall column, so
+    // they are compact label + switch rows here and only the inputs go through ha-form.
+    const data = formData(this._config!, DISPLAY_TOGGLE_FIELDS);
+    return html`<div class="toggles">
+        ${DISPLAY_TOGGLE_FIELDS.map(({ name }) => {
+          const label = this._label(`editor_${name}`);
+          const on = data[name] === true;
+          // ha-switch isn't labelable, so it carries its own name and the text toggles it too.
+          return html`<div class="toggle">
+            <span @click=${() => this._toggle(name, !on)}>${label}</span
+            ><ha-switch
+              data-name=${name}
+              aria-label=${label}
+              .checked=${live(on)}
+              @change=${(ev: Event) => this._toggle(name, (ev.target as HTMLInputElement).checked)}
+            ></ha-switch>
+          </div>`;
+        })}
+      </div>
+      ${this._form('display', displaySchema(this.hass), DISPLAY_FIELDS)}`;
+  }
+
+  private _toggle(name: string, checked: boolean): void {
+    if (!this._config) return;
+    const data = formData(this._config, DISPLAY_TOGGLE_FIELDS);
+    this._commit(applyFormData(this._config, DISPLAY_TOGGLE_FIELDS, { ...data, [name]: checked }));
   }
 
   protected renderActions(): TemplateResult {
