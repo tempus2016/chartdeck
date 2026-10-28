@@ -260,7 +260,7 @@ describe('chartdeck-card', () => {
     expect(card.getCardSize()).toBe(6);
     // Sections: the real height depends on title wrapping and the card's width, so let the
     // grid size the card to its content rather than reserve an estimated row count.
-    expect(card.getGridOptions()).toEqual({ columns: 6, rows: 'auto', min_columns: 3, min_rows: 1 });
+    expect(card.getGridOptions()).toEqual({ columns: 6, rows: 'auto', min_columns: 6, min_rows: 1 });
 
     const two = await mount(
       base({
@@ -275,6 +275,14 @@ describe('chartdeck-card', () => {
     // 16 + 1 row × 46 + 32 legend = 94
     expect(two.getCardSize()).toBe(2);
     expect(two.getGridOptions().rows).toBe('auto');
+  });
+
+  it('keeps row styles at least half a section wide', async () => {
+    // Below 6 columns a row's icon, cells and value can't fit (48 px of content at 3 columns).
+    const row = await mount(base({ style: 'segmented' }));
+    expect(row.getGridOptions().min_columns).toBe(6);
+    const tiles = await mount(base({ style: 'ring' }));
+    expect(tiles.getGridOptions().min_columns).toBe(3);
   });
 
   it('builds a stub from battery sensors first', () => {

@@ -120,8 +120,10 @@ export class ChartdeckCard extends LitElement {
    */
   getGridOptions(): { columns: number; rows: 'auto'; min_columns: number; min_rows: number } {
     const n = this._config?.entities.length ?? 0;
-    const columns = this._style.layout === 'rows' || n <= 1 ? 6 : 12;
-    return { columns, rows: 'auto', min_columns: 3, min_rows: 1 };
+    const rows = this._style.layout === 'rows';
+    const columns = rows || n <= 1 ? 6 : 12;
+    // Row styles need half a section: at 3 columns the icon, cells and value can't fit.
+    return { columns, rows: 'auto', min_columns: rows ? 6 : 3, min_rows: 1 };
   }
 
   protected shouldUpdate(changed: PropertyValues): boolean {
