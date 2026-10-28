@@ -3,6 +3,7 @@ import type { ResolvedEntity } from '../resolve';
 import type { HomeAssistant, ShowOptions, StyleName } from '../types';
 import { bar } from './bar';
 import { segmented } from './segmented';
+import { tank } from './tank';
 import { thin } from './thin';
 
 export interface RenderContext {
@@ -25,4 +26,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   bar,
   thin,
   segmented,
+  tank,
 } as Record<StyleName, StyleModule>;

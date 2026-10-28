@@ -75,3 +75,27 @@ describe('styles', () => {
     expect(q(off, '.target')).toBeNull();
   });
 });
+
+describe('tank', () => {
+  it('renders a tube with a rising fill and a target marker', async () => {
+    const card = await mount({ style: 'tank', entities: [{ entity: 'sensor.a', target: 75 }] } as never);
+    expect(q(card, '.tube .fill')).not.toBeNull();
+    expect(q(card, '[role=meter]')!.getAttribute('style')).toContain('--end:0.42');
+    expect(q(card, '.target')).not.toBeNull();
+  });
+
+  it('omits the target marker when show.target is false', async () => {
+    const card = await mount({
+      style: 'tank',
+      entities: [{ entity: 'sensor.a', target: 75 }],
+      show: { target: false },
+    } as never);
+    expect(q(card, '.target')).toBeNull();
+  });
+
+  it('sizes four tanks without a title to 12 columns and 4 rows', async () => {
+    const card = await mount({ style: 'tank', entities: ['sensor.a', 'sensor.a', 'sensor.a', 'sensor.a'] });
+    expect(card.getGridOptions().columns).toBe(12);
+    expect(card.getGridOptions().rows).toBe(4);
+  });
+});
