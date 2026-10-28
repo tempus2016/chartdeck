@@ -34,12 +34,23 @@ export const segmented: StyleModule = {
       min-width: 0;
     }
     .style-segmented .name {
+      display: flex;
+      gap: 8px;
       font-size: 14px;
       margin-bottom: 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--primary-text-color);
+    }
+    .style-segmented .name .label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .style-segmented .name .status {
+      flex: none;
+      margin-left: auto;
+      color: var(--secondary-text-color);
     }
     .style-segmented .cells {
       display: flex;
@@ -123,6 +134,9 @@ export const segmented: StyleModule = {
       show.target && e.available && e.targetPosition !== null
         ? Math.min(CELLS - 1, Math.max(0, Math.floor(e.targetPosition * CELLS)))
         : -1;
+    // Status text ("Unavailable") is wider than a reading, so it goes on the name line and
+    // the row keeps an empty value slot: every row's cells then end at the same place.
+    const status = !e.available && show.value;
     return html`
       ${
         show.icon
@@ -135,14 +149,21 @@ export const segmented: StyleModule = {
           : nothing
       }
       <div class="body">
-        ${show.name ? html`<div class="name">${e.name}</div>` : nothing}
+        ${
+          show.name || status
+            ? html`<div class="name">
+                ${show.name ? html`<span class="label">${e.name}</span>` : nothing}
+                ${status ? html`<span class="status">${e.display}</span>` : nothing}
+              </div>`
+            : nothing
+        }
         <div class="cells">
           ${lit.map(
             (on, i) => html`<i class="cell ${on ? 'on' : ''} ${i === mark ? 'mark' : ''}" style="--i:${i}"></i>`,
           )}
         </div>
       </div>
-      ${show.value ? html`<span class="value">${e.display}</span>` : nothing}
+      ${show.value ? html`<span class="value">${e.available ? e.display : ''}</span>` : nothing}
     `;
   },
 };

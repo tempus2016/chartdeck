@@ -88,6 +88,21 @@ describe('styles', () => {
     expect((q(none, '.content') as HTMLElement).getAttribute('style')).toBeNull();
   });
 
+  it('segmented status rows show their status on the name line and keep an empty value slot', async () => {
+    const card = await mount({ style: 'segmented', entities: ['sensor.a', 'sensor.b', 'sensor.missing'] });
+    const rows = [...card.shadowRoot!.querySelectorAll('.entity')];
+    const status = (r: Element) => r.querySelector('.name .status')?.textContent ?? null;
+    const value = (r: Element) => r.querySelector('.value')?.textContent ?? null;
+    expect(rows.map(status)).toEqual([null, 'Unavailable', 'Entity not found']);
+    expect(rows.map(value)).toEqual([expect.stringMatching(/\d/), '', '']);
+    // With the name hidden the status still shows; with the value hidden it doesn't.
+    const noName = await mount({ style: 'segmented', entities: ['sensor.b'], show: { name: false } });
+    expect(q(noName, '.name .status')?.textContent).toBe('Unavailable');
+    expect(q(noName, '.name .label')).toBeNull();
+    const noValue = await mount({ style: 'segmented', entities: ['sensor.b'], show: { value: false } });
+    expect(q(noValue, '.status')).toBeNull();
+  });
+
   it('thin draws a target marker only when shown', async () => {
     const entities = [{ entity: 'sensor.a', target: 75 }] as never;
     const on = await mount({ style: 'thin', entities });
@@ -223,7 +238,12 @@ describe('unavailable entities', () => {
       const card = await mount({ style: name, entities: ['sensor.b'] });
       const entity = q(card, '.entity')!;
       expect(entity.classList.contains('unavailable'), name).toBe(true);
-      if (['bar', 'thin', 'segmented', 'tank'].includes(name)) {
+      if (name === 'segmented') {
+        // Segmented shows the status on the name line (secondary colour) so its cells line up.
+        expect(entity.querySelector('.name .status')!.textContent, name).toBe('Unavailable');
+        expect(css).toMatch(/\.style-segmented \.name \.status \{[^}]*color: var\(--secondary-text-color\);/);
+        expect(entity.querySelector('.on-fill, .target'), name).toBeNull();
+      } else if (['bar', 'thin', 'tank'].includes(name)) {
         expect(entity.querySelector('.value')!.textContent, name).toBe('Unavailable');
         expect(entity.querySelector('.on-fill, .target'), name).toBeNull();
       } else {
