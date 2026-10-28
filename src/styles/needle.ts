@@ -32,7 +32,7 @@ export function bandSegments(bands: Band[], min: number, max: number): { from: n
 /** Half-circle gauge: banded arc, ticks, and a needle that overshoots into place. */
 export const needle: StyleModule = {
   layout: 'tiles',
-  height: 130,
+  height: 140,
   styles: css`
     .needle-gauge {
       display: flex;

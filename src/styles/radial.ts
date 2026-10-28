@@ -38,7 +38,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
   const trackD = arcPath(CX, CY, R, a0, a1);
   return {
     layout: 'tiles',
-    height: 150,
+    height: 155,
     styles: css`
       .radial {
         display: flex;

@@ -164,6 +164,17 @@ describe('static mode', () => {
   });
 });
 
+describe('tile heights', () => {
+  it('declares the heights measured on ha-dev (needle 137 px, ring/arc 153 px, rounded up)', async () => {
+    expect(STYLES.needle.height).toBe(140);
+    expect(STYLES.ring.height).toBe(155);
+    expect(STYLES.arc.height).toBe(155);
+    // One needle, no title: 16 + 140 = 156 px -> 4 rows of 50 (3 with the old 130).
+    const card = await mount({ style: 'needle' });
+    expect(card.getCardSize()).toBe(4);
+  });
+});
+
 describe('ring and arc', () => {
   it('ring draws the value path with pathLength 100', async () => {
     const card = await mount({ style: 'ring' });
