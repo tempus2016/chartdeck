@@ -2,6 +2,7 @@ import type { CSSResult, TemplateResult } from 'lit';
 import type { ResolvedEntity } from '../resolve';
 import type { HomeAssistant, ShowOptions, StyleName } from '../types';
 import { bar } from './bar';
+import { needle } from './needle';
 import { arc, ring } from './radial';
 import { segmented } from './segmented';
 import { tank } from './tank';
@@ -29,5 +30,6 @@ export const STYLES: Record<StyleName, StyleModule> = {
   segmented,
   tank,
   ring,
+  needle,
   arc,
-} as Record<StyleName, StyleModule>;
+};

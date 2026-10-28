@@ -67,10 +67,8 @@ export class ChartdeckCard extends LitElement {
     this._config = normalized;
   }
 
-  /** The configured style, or `bar` while a style's module is not registered. */
   private get _styleName(): StyleName {
-    const name = this._config?.style ?? 'bar';
-    return STYLES[name] ? name : 'bar';
+    return this._config?.style ?? 'bar';
   }
 
   private get _style(): StyleModule {

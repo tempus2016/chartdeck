@@ -3,7 +3,9 @@ import '../src/chartdeck-card';
 import { ChartdeckCard } from '../src/chartdeck-card';
 import { litCells } from '../src/styles/segmented';
 import { arcPath } from '../src/geometry';
+import { DEFAULT_BANDS } from '../src/config';
 import { STYLES } from '../src/styles';
+import { bandSegments } from '../src/styles/needle';
 import { STYLE_NAMES } from '../src/types';
 import type { CardConfig } from '../src/types';
 import { makeHass } from './helpers/hass';
@@ -142,5 +144,51 @@ describe('ring and arc', () => {
     const u = await mount({ style: 'arc', entities: ['sensor.b'] });
     expect(q(u, '.value-arc')).toBeNull();
     expect(q(u, '.na')).not.toBeNull();
+  });
+});
+
+describe('bandSegments', () => {
+  it('maps bands to clipped 0..1 segments', () => {
+    expect(
+      bandSegments(
+        [
+          { from: 0, color: 'green' },
+          { from: 60, color: 'amber' },
+          { from: 85, color: 'red' },
+        ],
+        0,
+        100,
+      ),
+    ).toEqual([
+      { from: 0, to: 0.6, color: 'green' },
+      { from: 0.6, to: 0.85, color: 'amber' },
+      { from: 0.85, to: 1, color: 'red' },
+    ]);
+    expect(
+      bandSegments(
+        [
+          { from: 0, color: 'green' },
+          { from: 200, color: 'red' },
+        ],
+        0,
+        100,
+      ),
+    ).toEqual([{ from: 0, to: 1, color: 'green' }]);
+    expect(bandSegments(DEFAULT_BANDS, -10, 10)).toEqual([{ from: 0, to: 1, color: 'primary' }]);
+  });
+});
+
+describe('needle', () => {
+  it('renders a needle and hides it when unavailable', async () => {
+    const ok = await mount({ style: 'needle' });
+    expect(q(ok, '.needle')).not.toBeNull();
+    const na = await mount({ style: 'needle', entities: ['sensor.b'] });
+    expect(q(na, '.needle')).toBeNull();
+    expect(q(na, '.na')).not.toBeNull();
+  });
+
+  it('draws a target marker only when shown', async () => {
+    const on = await mount({ style: 'needle', entities: [{ entity: 'sensor.a', target: 75 }] } as never);
+    expect(q(on, '.target-mark')).not.toBeNull();
   });
 });
