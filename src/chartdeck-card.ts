@@ -146,7 +146,13 @@ export class ChartdeckCard extends LitElement {
   private _scheduleReady(): void {
     if (this._readyScheduled || this.hasAttribute('ready') || this._items.length === 0) return;
     this._readyScheduled = true;
-    const markReady = () => this.setAttribute('ready', '');
+    const markReady = () => {
+      // Force a style flush first: freshly inserted elements may not have had their not-ready
+      // (empty) style computed yet, and without that start value the transition has nothing to
+      // animate from, so bars would appear at full value instead of growing in.
+      this.shadowRoot?.querySelector('.entity')?.getBoundingClientRect();
+      this.setAttribute('ready', '');
+    };
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(markReady);
     else setTimeout(markReady, 16);
   }

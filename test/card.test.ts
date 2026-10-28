@@ -42,7 +42,7 @@ describe('chartdeck-card', () => {
   afterEach(() => {
     document.body.innerHTML = '';
     vi.restoreAllMocks();
-    delete (window as { matchMedia?: unknown }).matchMedia;
+    vi.unstubAllGlobals();
   });
 
   it('draws one meter per entity with aria values', async () => {
@@ -100,7 +100,6 @@ describe('chartdeck-card', () => {
   it('re-renders on own entity, limit entity, or theme change', async () => {
     const hass = states();
     const card = await mount(base({ max: 'sensor.cap' }), hass);
-    card.hass = hass;
     const own = { ...hass, states: { ...hass.states, 'sensor.load': { ...hass.states['sensor.load'], state: '50' } } };
     const limit = { ...hass, states: { ...hass.states, 'sensor.cap': { ...hass.states['sensor.cap'], state: '300' } } };
     const theme = { ...hass, themes: { darkMode: true } };
@@ -148,9 +147,10 @@ describe('chartdeck-card', () => {
     expect(plain.hasAttribute('static')).toBe(true);
     expect(plain.hasAttribute('ready')).toBe(true);
 
-    (window as { matchMedia?: unknown }).matchMedia = vi.fn((query: string) => ({
-      matches: query === '(prefers-reduced-motion: reduce)',
-    }));
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' })),
+    );
     const reduced = await mount(base());
     expect(reduced.hasAttribute('static')).toBe(true);
     expect(reduced.hasAttribute('ready')).toBe(true);
