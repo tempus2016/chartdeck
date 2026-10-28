@@ -126,7 +126,7 @@ export class ChartdeckCard extends LitElement {
         ? Math.min(config.columns, columnsThatFit(style))
         : style.layout === 'rows'
           ? 1
-          : Math.min(n, style.tilesPerRow ?? 3);
+          : Math.min(n, style.tilesPerRow ?? 3, columnsThatFit(style));
     const rows = n === 0 ? 0 : Math.ceil(n / Math.max(1, perRow));
     return (
       (config.title ? TITLE_HEIGHT : 0) +
