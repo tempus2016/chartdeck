@@ -27,6 +27,16 @@ describe('fitStatusText', () => {
     expect(fitStatusText('A really quite extraordinarily long status').size).toBe(8);
   });
 
+  it('ignores leading and trailing spaces when splitting', () => {
+    expect(fitStatusText(' Entity not found ')).toEqual({ lines: ['Entity', 'not found'], size: 12 });
+  });
+
+  it('counts wide (CJK) characters as a full em', () => {
+    const fit = fitStatusText('エンティティが見つかりません');
+    expect(fit.size).toBe(8);
+    expect(fitStatusText('不可用不可用', 40).size).toBeLessThan(fitStatusText('abcdef', 40).size);
+  });
+
   it('honours a custom width and size range', () => {
     expect(fitStatusText('Unavailable', 64, 11, 7)).toEqual({ lines: ['Unavailable'], size: 10 });
   });
