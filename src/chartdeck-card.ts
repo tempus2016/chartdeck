@@ -34,7 +34,7 @@ function columnsTemplate(style: StyleModule, columns: number | undefined): strin
   if (columns === undefined) return style.layout === 'rows' ? 'grid-template-columns: repeat(1, minmax(0, 1fr))' : '';
   const gaps = (columns - 1) * COLUMN_GAP[style.layout];
   const min = style.minColumnWidth ?? 0;
-  return `grid-template-columns: repeat(auto-fill, minmax(max(${min}px, calc((100% - ${gaps}px) / ${columns})), 1fr))`;
+  return `grid-template-columns: repeat(auto-fill, minmax(max(min(${min}px, 100%), calc((100% - ${gaps}px) / ${columns} - 0.5px)), 1fr))`;
 }
 
 function prefersReducedMotion(): boolean {

@@ -281,19 +281,21 @@ describe('chartdeck-card', () => {
     const grid = (card: Card) => (q(card, '.entities') as HTMLElement).getAttribute('style');
     const bar = await mount(base({ columns: 3 }));
     expect(grid(bar)).toBe(
-      'grid-template-columns: repeat(auto-fill, minmax(max(160px, calc((100% - 32px) / 3)), 1fr))',
+      'grid-template-columns: repeat(auto-fill, minmax(max(min(160px, 100%), calc((100% - 32px) / 3 - 0.5px)), 1fr))',
     );
     const ring = await mount(base({ style: 'ring', columns: 3 }));
     expect(grid(ring)).toBe(
-      'grid-template-columns: repeat(auto-fill, minmax(max(128px, calc((100% - 16px) / 3)), 1fr))',
+      'grid-template-columns: repeat(auto-fill, minmax(max(min(128px, 100%), calc((100% - 16px) / 3 - 0.5px)), 1fr))',
     );
     const mins = { bar: 160, thin: 140, segmented: 180, tank: 80, ring: 128, arc: 128, needle: 134 };
     for (const [style, min] of Object.entries(mins)) {
       const card = await mount(base({ style: style as CardConfig['style'], columns: 1 }));
       expect(grid(card)).toBe(
-        `grid-template-columns: repeat(auto-fill, minmax(max(${min}px, calc((100% - 0px) / 1)), 1fr))`,
+        `grid-template-columns: repeat(auto-fill, minmax(max(min(${min}px, 100%), calc((100% - 0px) / 1 - 0.5px)), 1fr))`,
       );
     }
+    // A card narrower than one minimum column shrinks the column instead of overflowing
+    // (min(…, 100%)); the 0.5 px keeps N columns fitting where a browser rounds to nearest.
     // Unset: rows stay one column and tiles keep wrapping on their own.
     expect(grid(await mount(base()))).toBe('grid-template-columns: repeat(1, minmax(0, 1fr))');
     expect(grid(await mount(base({ style: 'ring' })))).toBe('');
