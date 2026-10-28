@@ -70,6 +70,14 @@ describe('styles', () => {
     expect(marks[0].getAttribute('style')).toContain('--i:7');
   });
 
+  it('segmented value never wraps', () => {
+    const css = STYLES.segmented.styles.cssText;
+    const rule = css.match(/\.style-segmented \.value \{[^}]*\}/)![0];
+    expect(rule).toContain('white-space: nowrap');
+    expect(rule).toContain('min-width: 48px');
+    expect(rule).not.toMatch(/[^-]width: 48px/);
+  });
+
   it('thin draws a target marker only when shown', async () => {
     const entities = [{ entity: 'sensor.a', target: 75 }] as never;
     const on = await mount({ style: 'thin', entities });

@@ -75,7 +75,8 @@ export const segmented: StyleModule = {
     }
     .style-segmented .value {
       flex: none;
-      width: 48px;
+      min-width: 48px;
+      white-space: nowrap;
       text-align: right;
       font-size: 14px;
       padding-bottom: 2px;
