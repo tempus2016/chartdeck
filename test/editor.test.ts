@@ -360,8 +360,12 @@ describe('editor: entities', () => {
     pick(deep(list(editor), 'ha-entity-picker.add'), 'sensor.c');
     expect(events.at(-1)!.entities).toEqual([...raw.entities!, 'sensor.c']);
     await settle(editor);
-    pick(rows(editor)[0].querySelector('ha-entity-picker') as HTMLElement, '');
+    const picker = rows(editor)[0].querySelector('ha-entity-picker') as StubElement;
+    picker.value = '';
+    pick(picker, '');
     expect(events).toHaveLength(1);
+    await settle(editor);
+    expect(picker.value).toBe('sensor.a');
     pick(rows(editor)[0].querySelector('ha-entity-picker') as HTMLElement, 'sensor.z');
     expect(events.at(-1)!.entities![0]).toBe('sensor.z');
   });

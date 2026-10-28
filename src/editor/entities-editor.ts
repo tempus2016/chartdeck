@@ -1,4 +1,5 @@
 import { LitElement, css, html, nothing } from 'lit';
+import { live } from 'lit/directives/live.js';
 import { localize } from '../localize';
 import type { CardConfig, EntityConfig, HomeAssistant, Limit } from '../types';
 import { addEntity, entityId, moveEntity, removeEntity, setEntityOption } from './edit';
@@ -218,11 +219,13 @@ export class CdEntitiesEditor extends LitElement {
       <div class="header">
         <ha-entity-picker
           .hass=${this.hass}
-          .value=${id}
+          .value=${live(id)}
           allow-custom-entity
           @value-changed=${(ev: CustomEvent) => {
             ev.stopPropagation();
             this._set(index, 'entity', ev.detail?.value);
+            // A cleared picker is ignored; re-render so live() puts the stored id back.
+            this.requestUpdate();
           }}
         ></ha-entity-picker>
         <ha-icon-button
