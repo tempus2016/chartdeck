@@ -11,7 +11,7 @@ export default defineConfig({
       reporter: ['text-summary', 'lcov'],
       // Set a little below what the suite reaches, so CI catches a real slide rather than a
       // rounding difference. Raise them as the suite grows.
-      thresholds: { statements: 80, branches: 60, functions: 70, lines: 80 },
+      thresholds: { statements: 85, branches: 75, functions: 90, lines: 90 },
     },
   },
 });

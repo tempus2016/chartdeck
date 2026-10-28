@@ -21,8 +21,8 @@
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
 
-> **Chartdeck is in early development.** The first release brings the bar and gauge styles
-> below; history charts follow. See the [Roadmap][roadmap] for what is coming and in what order.
+> **1.0 brings seven bar and gauge styles; history charts are next.** See the
+> [Roadmap][roadmap] for what is coming and in what order.
 
 ![Bars, rings, a needle gauge and arcs drawn by Chartdeck, with a history chart beneath](images/preview-v1.png)
 
@@ -44,13 +44,13 @@ This page is the summary. What changed in each version is on the [releases page]
 
 | Style | Good for | Status |
 | --- | --- | --- |
-| Classic bar | Batteries, levels, anything 0–100 | First release |
-| Thin bar | Storage, compact lists | First release |
-| Segmented bar | Signal strength, fill levels | First release |
-| Vertical / tank | Tanks, bins, water butts | First release |
-| Ring | CPU, memory, disk | First release |
-| Half circle with needle | Power, speed | First release |
-| Three-quarter arc | Temperature, humidity, CO₂ | First release |
+| Classic bar | Batteries, levels, anything 0–100 | 1.0 |
+| Thin bar | Storage, compact lists | 1.0 |
+| Segmented bar | Signal strength, fill levels | 1.0 |
+| Vertical / tank | Tanks, bins, water butts | 1.0 |
+| Ring | CPU, memory, disk | 1.0 |
+| Half circle with needle | Power, speed | 1.0 |
+| Three-quarter arc | Temperature, humidity, CO₂ | 1.0 |
 | Line, area and column charts | History over hours and days | [Planned][roadmap] |
 | Pie, donut, pictograph, tally | Sharing out a total, counting | [Planned][roadmap] |
 | Histogram, scatter, heatmap and more | Patterns over weeks | [Planned][roadmap] |
@@ -73,6 +73,22 @@ To install by hand, save [chartdeck-card.js][latest-release] to `<config>/www/` 
 
 Edit a dashboard, choose **Add card**, and search for **Chartdeck**. The editor walks you
 through the rest. The [Quick start][wiki-quick-start] shows the same in pictures.
+
+## Quick start
+
+```yaml
+type: custom:chartdeck-card
+style: ring
+entities:
+  - sensor.cpu_usage
+severity:
+  - from: 0
+    color: green
+  - from: 80
+    color: red
+```
+
+Every option is in the [wiki][wiki].
 
 ## Help and feedback
 
