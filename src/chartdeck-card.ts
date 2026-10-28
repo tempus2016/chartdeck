@@ -17,7 +17,8 @@ import { VERSION } from './version';
 
 console.info(`%c CHARTDECK %c ${VERSION} `, 'color:#fff;background:#3b8bff;font-weight:700', 'color:#3b8bff');
 
-const TITLE_HEIGHT = 52;
+// ha-card's header as measured on a real dashboard (24 px title, 32 px line, its own padding).
+const TITLE_HEIGHT = 73;
 const PADDING_HEIGHT = 16;
 const LEGEND_HEIGHT = 32;
 /** How long the draw-in runs (the 900 ms --cd-duration, with a little slack). */

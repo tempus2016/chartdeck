@@ -33,16 +33,21 @@ export function colorStops(color: string): { start: string; end: string } {
 /** Palette colours light enough to need dark text on top. */
 const LIGHT_PALETTE = new Set(['amber']);
 
-/** [r, g, b] (0–255) from #rgb, #rrggbb, rgb() or rgba(); undefined for anything else. */
-function parseRgb(color: string): [number, number, number] | undefined {
+/** [r, g, b, alpha] (0–255, 0–1) from #rgb(a), #rrggbb(aa), rgb() or rgba(); undefined for anything else. */
+function parseRgba(color: string): [number, number, number, number] | undefined {
   const c = color.trim().toLowerCase();
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(c);
+  const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/.exec(c);
   if (hex) {
-    const h = hex[1].length === 3 ? [...hex[1]].map((x) => x + x).join('') : hex[1];
-    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
+    const h = hex[1].length <= 4 ? [...hex[1]].map((x) => x + x).join('') : hex[1];
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+    return [r, g, b, h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1];
   }
-  const fn = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)\s*(?:[,/]\s*[\d.]+%?\s*)?\)$/.exec(c);
-  if (fn) return [Number(fn[1]), Number(fn[2]), Number(fn[3])].map((n) => Math.min(255, n)) as [number, number, number];
+  const fn = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)\s*(?:[,/]\s*([\d.]+)(%?)\s*)?\)$/.exec(c);
+  if (fn) {
+    const [r, g, b] = [fn[1], fn[2], fn[3]].map((n) => Math.min(255, Number(n)));
+    const a = fn[4] === undefined ? 1 : Number(fn[4]) / (fn[5] ? 100 : 1);
+    return [r, g, b, Math.min(1, a)];
+  }
   return undefined;
 }
 
@@ -57,12 +62,15 @@ function luminance([r, g, b]: [number, number, number]): number {
 
 /**
  * Text colour for text drawn over a fill of `color`: 'dark' on light fills (amber, or a parseable
- * custom colour with luminance above 0.4), 'light' (white) otherwise and for anything unreadable.
+ * custom colour with luminance above 0.4), 'theme' on mostly see-through fills (alpha below 0.5),
+ * where the card behind shows through, and 'light' (white) otherwise and for anything unreadable.
  */
-export function onFillText(color: string): 'dark' | 'light' {
+export function onFillText(color: string): 'dark' | 'light' | 'theme' {
   if (Object.prototype.hasOwnProperty.call(PALETTE, color)) return LIGHT_PALETTE.has(color) ? 'dark' : 'light';
-  const rgb = parseRgb(color);
-  return rgb && luminance(rgb) > 0.4 ? 'dark' : 'light';
+  const rgba = parseRgba(color);
+  if (!rgba) return 'light';
+  if (rgba[3] < 0.5) return 'theme';
+  return luminance([rgba[0], rgba[1], rgba[2]]) > 0.4 ? 'dark' : 'light';
 }
 
 /** Last band with from <= value; below the first band, the first. Bands are sorted ascending. */

@@ -253,6 +253,12 @@ describe('chartdeck-card', () => {
     expect(qa(noTarget, '.target')).toHaveLength(0);
   });
 
+  it('counts the card header at its measured 73 px when sizing for masonry', async () => {
+    const card = await mount(base({ title: 'Tank', style: 'tank', entities: ['sensor.load'] }));
+    // 73 header + 16 padding + 230 tank tile = 319 px -> 7 rows of 50 px.
+    expect(card.getCardSize()).toBe(7);
+  });
+
   it('sizes for masonry and sections', async () => {
     const card = await mount(
       base({ title: 'Power', entities: ['sensor.load', 'sensor.solar', 'sensor.cap', 'sensor.other'] }),
