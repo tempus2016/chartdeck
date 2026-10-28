@@ -23,11 +23,18 @@ const ICON_DELETE = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2
 const ICON_CHEVRON = 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z';
 const LIMITS = ['min', 'max', 'target'] as const;
 
+/** The unit a sensor reports, which the card shows when no unit is configured. */
+export function sensorUnit(hass: HomeAssistant | undefined, id: string | undefined): string | undefined {
+  const unit = id ? hass?.states[id]?.attributes?.unit_of_measurement : undefined;
+  return typeof unit === 'string' && unit ? unit : undefined;
+}
+
 /** The entity list: pick, reorder and remove entities, and edit each one's overrides. */
 export class CdEntitiesEditor extends LitElement {
   static properties = {
     hass: { attribute: false },
     entities: { attribute: false },
+    unit: { attribute: false },
     _expanded: { state: true },
   };
 
@@ -87,6 +94,8 @@ export class CdEntitiesEditor extends LitElement {
 
   declare hass?: HomeAssistant;
   declare entities?: Item[];
+  /** The card-wide unit, which entities without their own inherit. */
+  declare unit?: string;
   /** Indexes of rows whose overrides are open. */
   declare _expanded: Set<number>;
 
@@ -202,7 +211,7 @@ export class CdEntitiesEditor extends LitElement {
       <cd-bands-editor
         .hass=${this.hass}
         .bands=${own.severity}
-        .unit=${own.unit}
+        .unit=${own.unit ?? this.unit ?? sensorUnit(this.hass, own.entity)}
         @value-changed=${stop((v) => this._set(index, 'severity', v))}
       ></cd-bands-editor>
       ${this._form('entity-actions', index, own, entityActionsSchema(), ENTITY_ACTION_FIELDS)}

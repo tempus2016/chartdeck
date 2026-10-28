@@ -16,6 +16,7 @@ import {
 } from './schemas';
 import type { FieldBinding } from './schemas';
 import { thumbnail } from './thumbnails';
+import { sensorUnit } from './entities-editor';
 import './bands-editor';
 import './entities-editor';
 import './limit-field';
@@ -158,6 +159,7 @@ export class ChartdeckCardEditor extends LitElement {
     return html`<cd-entities-editor
       .hass=${this.hass}
       .entities=${this._config?.entities ?? []}
+      .unit=${this._config?.unit}
       @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
     ></cd-entities-editor>`;
   }
@@ -187,9 +189,15 @@ export class ChartdeckCardEditor extends LitElement {
     return html`<cd-bands-editor
       .hass=${this.hass}
       .bands=${this._config?.severity as Band[] | undefined}
-      .unit=${this._config?.unit}
+      .unit=${this._config?.unit ?? sensorUnit(this.hass, this._firstEntityId())}
       @value-changed=${(ev: CustomEvent) => this._subChanged(['severity'], ev)}
     ></cd-bands-editor>`;
+  }
+
+  /** The legend and card-wide bands use the first entity's unit when the card sets none. */
+  private _firstEntityId(): string | undefined {
+    const first = this._config?.entities?.[0];
+    return typeof first === 'string' ? first : first?.entity;
   }
 
   private _selectStyle(style: StyleName): void {
