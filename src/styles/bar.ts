@@ -92,8 +92,10 @@ export const bar: StyleModule = {
     }
   `,
   render(e, { show, hass }) {
+    // An unavailable or missing sensor always says so, even with the value hidden.
+    const value = show.value || !e.available;
     const text = html`${show.name ? html`<span class="name">${e.name}</span>` : nothing}${
-      show.value ? html`<span class="value">${e.display}</span>` : nothing
+      value ? html`<span class="value">${e.display}</span>` : nothing
     }`;
     return html`
       ${

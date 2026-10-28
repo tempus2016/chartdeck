@@ -83,7 +83,7 @@ export const tank: StyleModule = {
             ></ha-state-icon>`
           : nothing
       }
-      ${show.value ? html`<span class="value">${e.display}</span>` : nothing}
+      ${show.value || !e.available ? html`<span class="value">${e.display}</span>` : nothing}
       <div class="tube">
         <div class="fill"></div>
         ${show.target && e.targetPosition !== null && e.available ? html`<div class="target"></div>` : nothing}
