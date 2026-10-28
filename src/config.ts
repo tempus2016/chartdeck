@@ -34,10 +34,14 @@ function toLimit(value: unknown, field: string): Limit | undefined {
   throw new Error(`"${field}" must be a number or an entity id`);
 }
 
-function toCount(value: unknown, field: string): number | undefined {
+/** A whole number in [min, max] (numeric strings allowed); anything else throws a readable error. */
+function toInteger(value: unknown, field: string, min: number, max = Infinity): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
   const n = toNumber(value);
-  if (n === undefined) throw new Error(`"${field}" must be a number`);
+  if (n === undefined || !Number.isInteger(n) || n < min || n > max) {
+    const range = max === Infinity ? `of at least ${min}` : `from ${min} to ${max}`;
+    throw new Error(`"${field}" must be a whole number ${range}`);
+  }
   return n;
 }
 
@@ -97,7 +101,7 @@ function mergeEntity(raw: string | EntityConfig, card: EntityOptions, index: num
   const icon = pick(own.icon, card.icon);
   const unit = pick(own.unit, card.unit);
   const target = pick(toLimit(own.target, 'target'), toLimit(card.target, 'target'));
-  const decimals = pick(toCount(own.decimals, 'decimals'), toCount(card.decimals, 'decimals'));
+  const decimals = pick(toInteger(own.decimals, 'decimals', 0, 20), toInteger(card.decimals, 'decimals', 0, 20));
   if (name !== undefined) merged.name = name;
   if (icon !== undefined) merged.icon = icon;
   if (unit !== undefined) merged.unit = unit;
@@ -129,7 +133,7 @@ export function normalizeConfig(raw: CardConfig): NormalizedConfig {
     legend: false,
     ...raw.show,
   };
-  const columns = toCount(raw.columns, 'columns');
+  const columns = toInteger(raw.columns, 'columns', 1);
   const config: NormalizedConfig = {
     style,
     entities,

@@ -70,6 +70,28 @@ describe('normalizeConfig', () => {
     expect(c.entities[0].min).toBe(-20);
     expect(c.columns).toBe(3);
   });
+  it('requires decimals to be a whole number from 0 to 20', () => {
+    const entities = ['sensor.a'];
+    expect(normalizeConfig({ type: 'x', decimals: 0, entities }).entities[0].decimals).toBe(0);
+    expect(normalizeConfig({ type: 'x', decimals: '20' as any, entities }).entities[0].decimals).toBe(20);
+    for (const bad of [-1, 21, 1.5, 100]) {
+      expect(() => normalizeConfig({ type: 'x', decimals: bad, entities })).toThrow(
+        /"decimals" must be a whole number from 0 to 20/,
+      );
+      expect(() => normalizeConfig({ type: 'x', entities: [{ entity: 'sensor.a', decimals: bad }] })).toThrow(
+        /"decimals" must be a whole number from 0 to 20/,
+      );
+    }
+    expect(() => normalizeConfig({ type: 'x', decimals: 'two' as any, entities })).toThrow(/"decimals"/);
+  });
+  it('requires columns to be a whole number of at least 1', () => {
+    expect(normalizeConfig({ type: 'x', columns: 1 }).columns).toBe(1);
+    for (const bad of [0, -2, 2.5]) {
+      expect(() => normalizeConfig({ type: 'x', columns: bad })).toThrow(
+        /"columns" must be a whole number of at least 1/,
+      );
+    }
+  });
 });
 
 describe('localize', () => {
