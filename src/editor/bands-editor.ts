@@ -179,8 +179,11 @@ export class CdBandsEditor extends LitElement {
 
   private _addBand(): void {
     const bands = [...(this.bands ?? [])];
-    const last = bands[bands.length - 1]?.from;
-    bands.push({ from: typeof last === 'number' && Number.isFinite(last) ? last + 10 : 0, color: 'primary' });
+    // YAML may hold the threshold as text ("20"); the card reads it as a number, so do the same
+    // (but a blank or non-numeric value starts again at 0).
+    const raw: unknown = bands[bands.length - 1]?.from;
+    const last = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+    bands.push({ from: Number.isFinite(last) ? last + 10 : 0, color: 'primary' });
     this._emit(bands);
   }
 
