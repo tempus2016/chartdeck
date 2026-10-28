@@ -90,6 +90,14 @@ describe('onFillText', () => {
     expect(onFillText('rgba(31, 56, 100, 0.9)')).toBe('light');
     expect(onFillText('  #FFFFFF ')).toBe('dark');
   });
+  it('follows the theme text colour on mostly see-through fills', () => {
+    expect(onFillText('rgba(255, 255, 255, 0.15)')).toBe('theme');
+    expect(onFillText('rgb(0 0 0 / 30%)')).toBe('theme');
+    expect(onFillText('#ffffff22')).toBe('theme');
+    expect(onFillText('#fff3')).toBe('theme');
+    expect(onFillText('rgba(255, 235, 59, 0.8)')).toBe('dark');
+    expect(onFillText('#1f3864cc')).toBe('light');
+  });
   it('falls back to white text for colours it cannot read', () => {
     expect(onFillText('var(--x)')).toBe('light');
     expect(onFillText('hsl(60 100% 50%)')).toBe('light');

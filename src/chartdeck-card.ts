@@ -17,11 +17,35 @@ import { VERSION } from './version';
 
 console.info(`%c CHARTDECK %c ${VERSION} `, 'color:#fff;background:#3b8bff;font-weight:700', 'color:#3b8bff');
 
-const TITLE_HEIGHT = 52;
+// ha-card's header as measured on a real dashboard (24 px title, 32 px line, its own padding).
+const TITLE_HEIGHT = 73;
 const PADDING_HEIGHT = 16;
 const LEGEND_HEIGHT = 32;
 /** How long the draw-in runs (the 900 ms --cd-duration, with a little slack). */
 const DRAW_IN_MS = 1000;
+
+/** Gap between columns (px): see .layout-rows and .layout-tiles in shared.ts. */
+const COLUMN_GAP = { rows: 16, tiles: 8 };
+
+/** Content width of a typical masonry card (about 400 px, less padding), for estimating height. */
+const MASONRY_CONTENT_WIDTH = 368;
+
+/** How many of the style's columns fit a typical masonry card, since `columns` is only a maximum. */
+function columnsThatFit(style: StyleModule): number {
+  const gap = COLUMN_GAP[style.layout];
+  return Math.max(1, Math.floor((MASONRY_CONTENT_WIDTH + gap) / ((style.minColumnWidth ?? 0) + gap)));
+}
+
+/**
+ * The entities grid. A set `columns` is a maximum: each column keeps the style's minimum width,
+ * so a narrow card drops to fewer columns rather than crushing or overlapping them.
+ */
+function columnsTemplate(style: StyleModule, columns: number | undefined): string {
+  if (columns === undefined) return style.layout === 'rows' ? 'grid-template-columns: repeat(1, minmax(0, 1fr))' : '';
+  const gaps = (columns - 1) * COLUMN_GAP[style.layout];
+  const min = style.minColumnWidth ?? 0;
+  return `grid-template-columns: repeat(auto-fill, minmax(max(min(${min}px, 100%), calc((100% - ${gaps}px) / ${columns} - 0.5px)), 1fr))`;
+}
 
 function prefersReducedMotion(): boolean {
   if (typeof window.matchMedia !== 'function') return false;
@@ -99,7 +123,11 @@ export class ChartdeckCard extends LitElement {
     const style = this._style;
     const n = config.entities.length;
     const perRow =
-      style.layout === 'rows' ? (config.columns ?? 1) : (config.columns ?? Math.min(n, style.tilesPerRow ?? 3));
+      config.columns !== undefined
+        ? Math.min(config.columns, columnsThatFit(style))
+        : style.layout === 'rows'
+          ? 1
+          : Math.min(n, style.tilesPerRow ?? 3, columnsThatFit(style));
     const rows = n === 0 ? 0 : Math.ceil(n / Math.max(1, perRow));
     return (
       (config.title ? TITLE_HEIGHT : 0) +
@@ -242,6 +270,8 @@ export class ChartdeckCard extends LitElement {
     const style = this._style;
     let body;
     let first: ResolvedEntity | undefined;
+    // Longest value text (characters), so row styles can give every row the same value width.
+    let valueCh: number | undefined;
     if (config.entities.length === 0) {
       this._items = [];
       body = html`<div class="hint">${localize(hass, 'no_entities')}</div>`;
@@ -260,11 +290,12 @@ export class ChartdeckCard extends LitElement {
         seen.add(e.entityId);
       });
       this._items = sortEntities(resolved, config.sort);
+      // Only real values set the shared width; status text ("Unavailable") widening every row
+      // would squeeze all the cells.
+      const values = resolved.filter((e) => e.available).map((e) => e.display.length);
+      valueCh = values.length ? Math.max(...values) : undefined;
       const tiles = style.layout === 'tiles';
-      const grid =
-        !tiles || config.columns !== undefined
-          ? `grid-template-columns: repeat(${config.columns ?? 1}, minmax(0, 1fr))`
-          : '';
+      const grid = columnsTemplate(style, config.columns);
       body = html`<div
         class="entities layout-${style.layout} ${tiles && config.columns !== undefined ? 'has-columns' : ''}"
         style=${grid}
@@ -278,7 +309,12 @@ export class ChartdeckCard extends LitElement {
     }
     const legend = this._legend(first);
     return html`<ha-card .header=${config.title}>
-      <div class="content style-${this._styleName}">${body}</div>
+      <div
+        class="content style-${this._styleName}"
+        style=${valueCh === undefined ? nothing : `--cd-value-ch: ${valueCh}`}
+      >
+        ${body}
+      </div>
       ${
         legend.length
           ? html`<div class="legend">

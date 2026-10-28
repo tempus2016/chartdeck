@@ -31,6 +31,11 @@ export interface ResolvedEntity {
 
 const warned = new Set<string>();
 
+/** The icon override: the configured one, or a placeholder for a missing entity so its row keeps its icon slot. */
+export function iconOverride(e: ResolvedEntity): string | undefined {
+  return e.config.icon ?? (e.stateObj ? undefined : 'mdi:help-circle-outline');
+}
+
 export function resetLimitWarnings(): void {
   warned.clear();
 }
