@@ -37,6 +37,10 @@ export const shared = css`
     transition: none !important;
     animation: none !important;
   }
+  /* Unavailable: every style draws an empty mark and greys the value text; the name keeps its colour. */
+  .entity.unavailable .value {
+    color: var(--secondary-text-color);
+  }
   .content {
     padding: 8px 16px;
     box-sizing: border-box;

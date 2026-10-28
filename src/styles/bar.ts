@@ -76,9 +76,6 @@ export const bar: StyleModule = {
       flex: none;
       margin-left: auto;
     }
-    .style-bar .unavailable .text {
-      color: var(--secondary-text-color);
-    }
   `,
   render(e, { show, hass }) {
     const text = html`${show.name ? html`<span class="name">${e.name}</span>` : nothing}${

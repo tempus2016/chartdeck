@@ -164,6 +164,27 @@ describe('static mode', () => {
   });
 });
 
+describe('unavailable entities', () => {
+  it('share one treatment: empty mark, secondary-colour value, name in normal text colour', async () => {
+    const shared = (await import('../src/styles/shared')).shared.cssText;
+    expect(shared).toMatch(/\.entity\.unavailable \.value \{\s*color: var\(--secondary-text-color\);/);
+    for (const name of STYLE_NAMES) {
+      const css = STYLES[name].styles.cssText;
+      // No style recolours the name (or the whole text block) of an unavailable entity.
+      expect(css, name).not.toMatch(/\.unavailable[^{]*(\.text|\.name)[^{]*\{/);
+      const card = await mount({ style: name, entities: ['sensor.b'] });
+      const entity = q(card, '.entity')!;
+      expect(entity.classList.contains('unavailable'), name).toBe(true);
+      if (['bar', 'thin', 'segmented', 'tank'].includes(name)) {
+        expect(entity.querySelector('.value')!.textContent, name).toBe('Unavailable');
+        expect(entity.querySelector('.on-fill, .target'), name).toBeNull();
+      } else {
+        expect(entity.querySelector('.na'), name).not.toBeNull();
+      }
+    }
+  });
+});
+
 describe('tile heights', () => {
   it('declares the heights measured on ha-dev (needle 137 px, ring/arc 153 px, rounded up)', async () => {
     expect(STYLES.needle.height).toBe(140);
