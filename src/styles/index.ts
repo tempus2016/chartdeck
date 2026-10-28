@@ -2,6 +2,8 @@ import type { CSSResult, TemplateResult } from 'lit';
 import type { ResolvedEntity } from '../resolve';
 import type { HomeAssistant, ShowOptions, StyleName } from '../types';
 import { bar } from './bar';
+import { segmented } from './segmented';
+import { thin } from './thin';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -21,4 +23,6 @@ export interface StyleModule {
 
 export const STYLES: Record<StyleName, StyleModule> = {
   bar,
+  thin,
+  segmented,
 } as Record<StyleName, StyleModule>;
