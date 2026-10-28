@@ -33,6 +33,11 @@ function valueFontSize(text: string): number {
 }
 
 /** Ring (360) and three-quarter arc (270) gauges share one drawing. */
+function canPaint(color: string): boolean {
+  if (color.includes('var(')) return false;
+  return typeof CSS === 'undefined' || typeof CSS.supports !== 'function' || CSS.supports('color', color);
+}
+
 export function radialStyle(sweep: 360 | 270): StyleModule {
   const [a0, a1] = sweepAngles(sweep, [0, 1]);
   const trackD = arcPath(CX, CY, R, a0, a1);
@@ -129,9 +134,10 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
       // Plain numbers (pathLength 100), not calc() on custom properties, so every engine draws them.
       const dash = `stroke-dasharray: ${num((e.span[1] - e.span[0]) * 100)} 100; stroke-dashoffset: ${num(-e.span[0] * 100)}`;
       // A second paint after url() is used if the gradient reference can't be resolved, so
-      // the arc still draws. Attributes can't resolve var(), so theme variables get none.
+      // the arc still draws. Only for a colour this browser can parse: attributes can't
+      // resolve var(), and an unknown colour would void the whole stroke.
       const solid = solidColor(e.band.color);
-      const paint = solid.includes('var(') ? `url(#${id})` : `url(#${id}) ${solid}`;
+      const paint = canPaint(solid) ? `url(#${id}) ${solid}` : `url(#${id})`;
       const shift = show.icon ? 6 : 0;
       const size = valueFontSize(e.valueText);
       let tick = nothing as unknown;

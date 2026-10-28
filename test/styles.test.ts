@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import '../src/chartdeck-card';
 import { ChartdeckCard } from '../src/chartdeck-card';
 import { litCells } from '../src/styles/segmented';
@@ -265,6 +265,17 @@ describe('ring and arc', () => {
     const arc = q(card, '.value-arc')!;
     expect(arc.getAttribute('stroke')).toMatch(/^url\(#cd-g-\d+\) #2f6fe4$/);
     expect(card.shadowRoot!.querySelector('stop')!.hasAttribute('stop-color')).toBe(false);
+  });
+
+  it('adds no paint fallback for a colour the browser cannot parse, which would void the stroke', async () => {
+    const supports = (_p: string, v: string) => !v.startsWith('oklch');
+    vi.stubGlobal('CSS', { supports });
+    try {
+      const card = await mount({ style: 'ring', severity: [{ from: 0, color: 'oklch(70% 0.1 200)' }] } as never);
+      expect(q(card, '.value-arc')!.getAttribute('stroke')).toMatch(/^url\(#cd-g-\d+\)$/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('adds no paint fallback for a theme variable, which an attribute cannot resolve', async () => {
