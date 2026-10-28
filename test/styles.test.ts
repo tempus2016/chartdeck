@@ -224,10 +224,10 @@ describe('unavailable entities', () => {
 });
 
 describe('tile heights', () => {
-  it('declares the heights measured on ha-dev (needle 137 px, ring/arc 153 px, rounded up)', async () => {
+  it('declares the heights measured on ha-dev (needle 137 px, ring 153 px, arc 133 px, rounded up)', async () => {
     expect(STYLES.needle.height).toBe(140);
     expect(STYLES.ring.height).toBe(155);
-    expect(STYLES.arc.height).toBe(155);
+    expect(STYLES.arc.height).toBe(135);
     // One needle, no title: 16 + 140 = 156 px -> 4 rows of 50 (3 with the old 130).
     const card = await mount({ style: 'needle' });
     expect(card.getCardSize()).toBe(4);
@@ -409,7 +409,7 @@ describe('ring and arc centre', () => {
 
   it('styles a centred icon in the middle of the dial', () => {
     const css = (ChartdeckCard.styles as unknown as { cssText: string }[]).map((s) => s.cssText).join('\n');
-    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 50%;[^}]*transform: translate\(-50%, -50%\);/);
+    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 60px;[^}]*transform: translate\(-50%, -50%\);/);
   });
 });
 
@@ -447,5 +447,21 @@ describe('needle without its value', () => {
     const lines = [...missing.querySelectorAll('tspan')];
     expect(lines.map((t) => t.textContent)).toEqual(['Entity', 'not found']);
     expect(Number(lines[1].getAttribute('y'))).toBeLessThanOrEqual(52);
+  });
+});
+
+describe('arc crop', () => {
+  it('crops the arc drawing to its open bottom, keeping the centre where it was', async () => {
+    const arc = await mount({ style: 'arc' });
+    expect(q(arc, '.radial svg')!.getAttribute('viewBox')).toBe('0 0 120 100');
+    expect(q(arc, '.radial')!.classList.contains('cropped')).toBe(true);
+    expect(q(arc, '.radial .value')!.getAttribute('y')).toBe('70');
+    const ring = await mount({ style: 'ring' });
+    expect(q(ring, '.radial svg')!.getAttribute('viewBox')).toBe('0 0 120 120');
+    expect(q(ring, '.radial')!.classList.contains('cropped')).toBe(false);
+    const css = STYLES.arc.styles.cssText;
+    expect(css).toMatch(/\.radial\.cropped \.dial,\s*\.radial\.cropped svg \{\s*height: 100px;/);
+    // The centred icon sits on the dial centre (y 60), not half the (cropped) dial height.
+    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 60px;/);
   });
 });

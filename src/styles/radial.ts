@@ -36,9 +36,11 @@ function valueFontSize(text: string): number {
 export function radialStyle(sweep: 360 | 270): StyleModule {
   const [a0, a1] = sweepAngles(sweep, [0, 1]);
   const trackD = arcPath(CX, CY, R, a0, a1);
+  // The arc's open bottom is empty: crop the drawing just below its round end caps (~98).
+  const cropped = sweep < 360;
   return {
     layout: 'tiles',
-    height: 155,
+    height: cropped ? 135 : 155,
     styles: css`
       .radial {
         display: flex;
@@ -57,6 +59,10 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         width: 124px;
         height: 120px;
         overflow: visible;
+      }
+      .radial.cropped .dial,
+      .radial.cropped svg {
+        height: 100px;
       }
       .radial .track {
         fill: none;
@@ -115,9 +121,9 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         --mdc-icon-size: 18px;
       }
       /* With the value hidden, the icon is all that sits in the hollow, so it moves to the
-         middle and grows to fill it. */
+         dial centre (y 60, also on the cropped arc) and grows to fill it. */
       .radial .icon.centre {
-        top: 50%;
+        top: 60px;
         transform: translate(-50%, -50%);
         --mdc-icon-size: 28px;
       }
@@ -145,9 +151,9 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         const [x2, y2] = polar(CX, CY, R + STROKE / 2 + 1, deg);
         tick = svg`<line class="tick" x1=${x1.toFixed(2)} y1=${y1.toFixed(2)} x2=${x2.toFixed(2)} y2=${y2.toFixed(2)}></line>`;
       }
-      return html`<div class="radial">
+      return html`<div class="radial ${cropped ? 'cropped' : ''}">
         <div class="dial">
-          <svg viewBox="0 0 120 120" aria-hidden="true">
+          <svg viewBox="0 0 120 ${cropped ? 100 : 120}" aria-hidden="true">
             <defs>
               <linearGradient id=${id} x1="0" y1="1" x2="1" y2="0">
                 <stop class="stop-start" offset="0" stop-color=${solid}></stop>
