@@ -136,7 +136,7 @@ export const segmented: StyleModule = {
         : -1;
     // Status text ("Unavailable") is wider than a reading, so it goes on the name line and
     // the row keeps an empty value slot: every row's cells then end at the same place.
-    const status = !e.available && show.value;
+    const status = !e.available;
     return html`
       ${
         show.icon

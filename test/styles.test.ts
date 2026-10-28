@@ -95,12 +95,14 @@ describe('styles', () => {
     const value = (r: Element) => r.querySelector('.value')?.textContent ?? null;
     expect(rows.map(status)).toEqual([null, 'Unavailable', 'Entity not found']);
     expect(rows.map(value)).toEqual([expect.stringMatching(/\d/), '', '']);
-    // With the name hidden the status still shows; with the value hidden it doesn't.
+    // The status shows with the name hidden, and with the value hidden too (the sensor is
+    // offline either way); a hidden value leaves no empty value slot behind.
     const noName = await mount({ style: 'segmented', entities: ['sensor.b'], show: { name: false } });
     expect(q(noName, '.name .status')?.textContent).toBe('Unavailable');
     expect(q(noName, '.name .label')).toBeNull();
     const noValue = await mount({ style: 'segmented', entities: ['sensor.b'], show: { value: false } });
-    expect(q(noValue, '.status')).toBeNull();
+    expect(q(noValue, '.name .status')?.textContent).toBe('Unavailable');
+    expect(q(noValue, '.value')).toBeNull();
   });
 
   it('thin draws a target marker only when shown', async () => {
