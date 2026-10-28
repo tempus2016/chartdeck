@@ -388,3 +388,27 @@ describe('needle', () => {
     expect(q(on, '.target-mark')).not.toBeNull();
   });
 });
+
+describe('missing entity icon', () => {
+  const icon = (card: Card) => q(card, 'ha-state-icon') as (HTMLElement & { icon?: string }) | null;
+
+  for (const style of ['bar', 'thin', 'segmented', 'tank', 'needle'] as const) {
+    it(`${style} draws a placeholder icon so the row lines up with the others`, async () => {
+      const missing = await mount({ style, entities: ['sensor.missing'] });
+      expect(icon(missing)?.icon).toBe('mdi:help-circle-outline');
+      const custom = await mount({ style, entities: [{ entity: 'sensor.missing', icon: 'mdi:water' }] } as never);
+      expect(icon(custom)?.icon).toBe('mdi:water');
+      const present = await mount({ style });
+      expect(icon(present)?.icon).toBeUndefined();
+      const hidden = await mount({ style, entities: ['sensor.missing'], show: { icon: false } });
+      expect(icon(hidden)).toBeNull();
+    });
+  }
+
+  for (const style of ['ring', 'arc'] as const) {
+    it(`${style} keeps a missing entity's hollow free for its status text`, async () => {
+      const missing = await mount({ style, entities: ['sensor.missing'] });
+      expect(icon(missing)).toBeNull();
+    });
+  }
+});

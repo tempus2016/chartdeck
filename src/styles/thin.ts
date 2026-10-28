@@ -1,5 +1,6 @@
 import { css, html, nothing } from 'lit';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 /** Thin bar: name and value above an 8 px track. */
 export const thin: StyleModule = {
@@ -80,7 +81,7 @@ export const thin: StyleModule = {
               class="icon"
               .hass=${hass}
               .stateObj=${e.stateObj}
-              .icon=${e.config.icon}
+              .icon=${iconOverride(e)}
             ></ha-state-icon>`
           : nothing
       }

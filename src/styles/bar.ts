@@ -1,6 +1,7 @@
 import { css, html, nothing } from 'lit';
 import { onFillText } from '../bands';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 /** Classic bar: icon, then a 34 px track with name and value inside. */
 export const bar: StyleModule = {
@@ -95,7 +96,7 @@ export const bar: StyleModule = {
               class="icon"
               .hass=${hass}
               .stateObj=${e.stateObj}
-              .icon=${e.config.icon}
+              .icon=${iconOverride(e)}
             ></ha-state-icon>`
           : nothing
       }
