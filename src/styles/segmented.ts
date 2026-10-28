@@ -74,10 +74,11 @@ export const segmented: StyleModule = {
       outline: 2px solid var(--primary-text-color);
       outline-offset: 0;
     }
-    /* Every row reserves the card's longest value (--cd-value-ch), so the cell strips line up. */
+    /* Every row reserves the card's longest value (--cd-value-ch), so the cell strips line up,
+       but never more than a third of the row. */
     .style-segmented .value {
       flex: none;
-      min-width: max(48px, calc(var(--cd-value-ch, 4) * 1ch + 4px));
+      min-width: min(max(48px, calc(var(--cd-value-ch, 4) * 1ch + 4px)), 35%);
       white-space: nowrap;
       text-align: right;
       font-size: 14px;

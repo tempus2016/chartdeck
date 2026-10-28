@@ -74,16 +74,18 @@ describe('styles', () => {
     const css = STYLES.segmented.styles.cssText;
     const rule = css.match(/\.style-segmented \.value \{[^}]*\}/)![0];
     expect(rule).toContain('white-space: nowrap');
-    expect(rule).toContain('min-width: max(48px, calc(var(--cd-value-ch, 4) * 1ch + 4px))');
+    expect(rule).toContain('min-width: min(max(48px, calc(var(--cd-value-ch, 4) * 1ch + 4px)), 35%)');
     expect(rule).not.toMatch(/[^-]width: 48px/);
   });
 
   it('segmented reserves the longest value width on every row so the cells line up', async () => {
-    const card = await mount({ style: 'segmented', entities: ['sensor.a', 'sensor.b', 'sensor.missing'] });
-    // "Entity not found" is the longest display.
-    expect((q(card, '.content') as HTMLElement).getAttribute('style')).toBe('--cd-value-ch: 16');
     const short = await mount({ style: 'segmented' });
     expect((q(short, '.content') as HTMLElement).getAttribute('style')).toBe('--cd-value-ch: 4');
+    // Status text ("Unavailable", "Entity not found") doesn't widen every row: only real values count.
+    const mixed = await mount({ style: 'segmented', entities: ['sensor.a', 'sensor.b', 'sensor.missing'] });
+    expect((q(mixed, '.content') as HTMLElement).getAttribute('style')).toBe('--cd-value-ch: 4');
+    const none = await mount({ style: 'segmented', entities: ['sensor.missing'] });
+    expect((q(none, '.content') as HTMLElement).getAttribute('style')).toBeNull();
   });
 
   it('thin draws a target marker only when shown', async () => {

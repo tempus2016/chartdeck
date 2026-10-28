@@ -262,7 +262,10 @@ export class ChartdeckCard extends LitElement {
         seen.add(e.entityId);
       });
       this._items = sortEntities(resolved, config.sort);
-      valueCh = Math.max(...resolved.map((e) => e.display.length));
+      // Only real values set the shared width; status text ("Unavailable") widening every row
+      // would squeeze all the cells.
+      const values = resolved.filter((e) => e.available).map((e) => e.display.length);
+      valueCh = values.length ? Math.max(...values) : undefined;
       const tiles = style.layout === 'tiles';
       const grid =
         !tiles || config.columns !== undefined
