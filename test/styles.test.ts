@@ -164,6 +164,33 @@ describe('static mode', () => {
   });
 });
 
+describe('narrow cards', () => {
+  // jsdom can't evaluate container queries; check the rules are there (behaviour is checked on ha-dev).
+  const NARROW = /@container \(max-width: 279px\)/;
+  it('makes the card content a size container', async () => {
+    const shared = (await import('../src/styles/shared')).shared.cssText;
+    expect(shared).toMatch(/\.content \{[^}]*container-type: inline-size;/);
+  });
+  it('puts the segmented value on the name line with full-width cells below 280px', () => {
+    const css = STYLES.segmented.styles.cssText;
+    expect(css).toMatch(NARROW);
+    const narrow = css.slice(css.search(NARROW));
+    expect(narrow).toMatch(
+      /\.style-segmented \.entity \{[^}]*display: grid;[^}]*grid-template-areas:\s*'icon name value'\s*'icon cells cells';/,
+    );
+    expect(narrow).toMatch(/\.style-segmented \.body \{\s*display: contents;/);
+    expect(narrow).toMatch(/\.style-segmented \.cells \{[^}]*grid-area: cells;[^}]*gap: 2px;/);
+    expect(narrow).toMatch(/\.style-segmented \.value \{[^}]*grid-area: value;/);
+  });
+  it('never shrinks or wraps the thin and bar values; names truncate instead', () => {
+    for (const name of ['thin', 'bar'] as const) {
+      const css = STYLES[name].styles.cssText;
+      expect(css, name).toMatch(new RegExp(`\\.style-${name} \\.value \\{[^}]*flex: none;[^}]*white-space: nowrap;`));
+      expect(css, name).toMatch(new RegExp(`\\.style-${name} \\.name \\{[^}]*text-overflow: ellipsis;`));
+    }
+  });
+});
+
 describe('bar text over the fill', () => {
   it('is dark on light fills and white otherwise', async () => {
     const amber = await mount({ style: 'bar', severity: [{ from: 0, color: 'amber' }] } as never);

@@ -83,6 +83,37 @@ export const segmented: StyleModule = {
       padding-bottom: 2px;
       color: var(--primary-text-color);
     }
+    /* Narrow cards: the value joins the name line so the cells get the full width. */
+    @container (max-width: 279px) {
+      .style-segmented .entity {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+          'icon name value'
+          'icon cells cells';
+        column-gap: 12px;
+        align-items: end;
+      }
+      .style-segmented .body {
+        display: contents;
+      }
+      .style-segmented .icon {
+        grid-area: icon;
+      }
+      .style-segmented .name {
+        grid-area: name;
+      }
+      .style-segmented .cells {
+        grid-area: cells;
+        gap: 2px;
+      }
+      .style-segmented .value {
+        grid-area: value;
+        min-width: 0;
+        margin-bottom: 6px;
+        padding-bottom: 0;
+      }
+    }
   `,
   render(e, { show, hass }) {
     const lit = e.available ? litCells(e.span) : litCells([0, 0]);

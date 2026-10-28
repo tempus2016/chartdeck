@@ -80,6 +80,7 @@ export const bar: StyleModule = {
     }
     .style-bar .value {
       flex: none;
+      white-space: nowrap;
       margin-left: auto;
     }
   `,

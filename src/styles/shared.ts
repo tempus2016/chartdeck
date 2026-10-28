@@ -44,6 +44,8 @@ export const shared = css`
   .content {
     padding: 8px 16px;
     box-sizing: border-box;
+    /* Styles adapt to the card's width (narrow sections columns) with @container rules. */
+    container-type: inline-size;
   }
   .layout-rows {
     display: grid;

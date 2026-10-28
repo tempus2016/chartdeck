@@ -37,6 +37,7 @@ export const thin: StyleModule = {
     }
     .style-thin .value {
       flex: none;
+      white-space: nowrap;
       margin-left: auto;
       font-size: 13px;
       color: var(--secondary-text-color);
