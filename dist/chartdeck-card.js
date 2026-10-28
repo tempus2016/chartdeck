@@ -688,13 +688,13 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-    `,render(e,{show:i,hass:o}){const r=function(t){let e=ii.get(t);return e||(e="cd-g-"+ ++ei,ii.set(t,e)),e}(e.config),a=e.span[1]-e.span[0]<=0,l=`stroke-dasharray: ${oi(100*(e.span[1]-e.span[0]))} 100; stroke-dashoffset: ${oi(100*-e.span[0])}`,c=(d=e.band.color,Object.prototype.hasOwnProperty.call(Ct,d)?Ct[d].fallback:d);var d;const h=i.icon?6:0,u=(p=e.valueText,Math.min(22,Math.floor(124/Math.max(1,p.length))));var p;let m=W;if(i.target&&null!==e.targetPosition&&e.available){const i=Ge(t,[e.targetPosition,e.targetPosition])[0],[n,s]=We(ni,si,39.5,i),[o,r]=We(ni,si,52.5,i);m=q`<line class="tick" x1=${n.toFixed(2)} y1=${s.toFixed(2)} x2=${o.toFixed(2)} y2=${r.toFixed(2)}></line>`}return I`<div class="radial ${s?"cropped":""}">
+    `,render(e,{show:i,hass:o}){const r=function(t){let e=ii.get(t);return e||(e="cd-g-"+ ++ei,ii.set(t,e)),e}(e.config),a=e.span[1]-e.span[0]<=0,l=`stroke-dasharray: ${oi(100*(e.span[1]-e.span[0]))} 100; stroke-dashoffset: ${oi(100*-e.span[0])}`,c=(d=e.band.color,Object.prototype.hasOwnProperty.call(Ct,d)?Ct[d].fallback:d);var d;const h=function(t){return!t.includes("var(")&&("undefined"==typeof CSS||"function"!=typeof CSS.supports||CSS.supports("color",t))}(c)?`url(#${r}) ${c}`:`url(#${r})`,u=i.icon?6:0,p=(m=e.valueText,Math.min(22,Math.floor(124/Math.max(1,m.length))));var m;let f=W;if(i.target&&null!==e.targetPosition&&e.available){const i=Ge(t,[e.targetPosition,e.targetPosition])[0],[n,s]=We(ni,si,39.5,i),[o,r]=We(ni,si,52.5,i);f=q`<line class="tick" x1=${n.toFixed(2)} y1=${s.toFixed(2)} x2=${o.toFixed(2)} y2=${r.toFixed(2)}></line>`}return I`<div class="radial ${s?"cropped":""}">
         <div class="dial">
           <svg viewBox="0 0 120 ${s?100:120}" aria-hidden="true">
             <defs>
               <linearGradient id=${r} x1="0" y1="1" x2="1" y2="0">
-                <stop class="stop-start" offset="0" stop-color=${c}></stop>
-                <stop class="stop-end" offset="1" stop-color=${c}></stop>
+                <stop class="stop-start" offset="0"></stop>
+                <stop class="stop-end" offset="1"></stop>
               </linearGradient>
             </defs>
             <circle class="disc" cx=${ni} cy=${si} r="34"></circle>
@@ -704,17 +704,17 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
                   d=${n}
                   pathLength="100"
                   style=${l}
-                  stroke="url(#${r})"
+                  stroke=${h}
                 ></path>`:W}
-            ${m}
+            ${f}
             ${e.available?q`${i.value?q`<text
                         class="value"
                         x=${ni}
-                        y=${64+h}
+                        y=${64+u}
                         text-anchor="middle"
-                        style=${u<22?`font-size: ${u}px`:W}
+                        style=${p<22?`font-size: ${p}px`:W}
                       >${e.valueText}</text>
-                      <text class="unit" x=${ni} y=${80+h} text-anchor="middle">${e.unit}</text>`:W}`:q`<text class="na" x=${ni} y=${64} text-anchor="middle">${e.display}</text>`}
+                      <text class="unit" x=${ni} y=${80+u} text-anchor="middle">${e.unit}</text>`:W}`:q`<text class="na" x=${ni} y=${64} text-anchor="middle">${e.display}</text>`}
           </svg>
           ${i.icon&&e.available?I`<ha-state-icon
                   class="icon ${i.value?"":"centre"}"
