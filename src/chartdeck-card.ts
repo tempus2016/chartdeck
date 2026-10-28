@@ -242,6 +242,8 @@ export class ChartdeckCard extends LitElement {
     const style = this._style;
     let body;
     let first: ResolvedEntity | undefined;
+    // Longest value text (characters), so row styles can give every row the same value width.
+    let valueCh: number | undefined;
     if (config.entities.length === 0) {
       this._items = [];
       body = html`<div class="hint">${localize(hass, 'no_entities')}</div>`;
@@ -260,6 +262,7 @@ export class ChartdeckCard extends LitElement {
         seen.add(e.entityId);
       });
       this._items = sortEntities(resolved, config.sort);
+      valueCh = Math.max(...resolved.map((e) => e.display.length));
       const tiles = style.layout === 'tiles';
       const grid =
         !tiles || config.columns !== undefined
@@ -278,7 +281,12 @@ export class ChartdeckCard extends LitElement {
     }
     const legend = this._legend(first);
     return html`<ha-card .header=${config.title}>
-      <div class="content style-${this._styleName}">${body}</div>
+      <div
+        class="content style-${this._styleName}"
+        style=${valueCh === undefined ? nothing : `--cd-value-ch: ${valueCh}`}
+      >
+        ${body}
+      </div>
       ${
         legend.length
           ? html`<div class="legend">
