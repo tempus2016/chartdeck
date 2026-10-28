@@ -16,7 +16,7 @@ describe('registration', () => {
     expect(() => card.setConfig(undefined)).toThrow();
   });
 
-  it('renders and reports a size', async () => {
+  it('renders the no_entities hint for an empty config', async () => {
     const card = document.createElement('chartdeck-card') as HTMLElement & {
       setConfig(c: unknown): void;
       getCardSize(): number;
@@ -25,7 +25,7 @@ describe('registration', () => {
     card.setConfig({ type: 'custom:chartdeck-card' });
     document.body.appendChild(card);
     await card.updateComplete;
-    expect(card.shadowRoot?.textContent).toContain('In development');
+    expect(card.shadowRoot?.textContent).toContain('Add an entity in the editor to get started.');
     expect(card.getCardSize()).toBe(1);
     card.remove();
   });
