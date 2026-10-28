@@ -82,12 +82,15 @@ export class CdLimitField extends LitElement {
     ev.stopPropagation();
     const raw = ev.detail?.value;
     const n = typeof raw === 'number' ? raw : raw === '' || raw == null ? NaN : Number(raw);
+    // Clearing the box removes the key; stay in Number mode so the box doesn't vanish mid-edit.
+    this._mode = 'number';
     this._emit(Number.isFinite(n) ? n : undefined);
   }
 
   private _entityChanged(ev: CustomEvent): void {
     ev.stopPropagation();
     const id = ev.detail?.value;
+    this._mode = 'entity';
     this._emit(typeof id === 'string' && id !== '' ? id : undefined);
   }
 

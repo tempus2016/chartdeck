@@ -234,6 +234,32 @@ describe('editor: limits', () => {
   });
 });
 
+describe('editor: clearing a limit mid-edit', () => {
+  it('keeps the number box when it is cleared, then writes the retyped number', async () => {
+    const { editor, events } = await mount({ ...raw, min: 5 });
+    await settle(editor);
+    const min = editor.shadowRoot!.querySelector('.section-limits cd-limit-field') as StubElement;
+    pick(deep(min, 'ha-selector[data-role="number"]'), undefined);
+    expect(events.at(-1)).toEqual(raw);
+    await settle(editor);
+    expect(deep(min, 'ha-selector[data-role="mode"]').value).toBe('number');
+    pick(deep(min, 'ha-selector[data-role="number"]'), 7);
+    expect(events.at(-1)).toEqual({ ...raw, min: 7 });
+  });
+
+  it('keeps the entity picker when it is cleared', async () => {
+    const { editor, events } = await mount({ ...raw, max: 'sensor.cap' });
+    await settle(editor);
+    const max = editor.shadowRoot!.querySelectorAll('.section-limits cd-limit-field')[1] as StubElement;
+    pick(deep(max, 'ha-selector[data-role="entity"]'), '');
+    expect(events.at(-1)).toEqual(raw);
+    await settle(editor);
+    expect(deep(max, 'ha-selector[data-role="mode"]').value).toBe('entity');
+    pick(deep(max, 'ha-selector[data-role="entity"]'), 'sensor.other');
+    expect(events.at(-1)).toEqual({ ...raw, max: 'sensor.other' });
+  });
+});
+
 describe('editor: colours', () => {
   const bands = (editor: Editor) => editor.shadowRoot!.querySelector('.section-colours cd-bands-editor') as StubElement;
 
