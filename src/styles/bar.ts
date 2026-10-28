@@ -72,6 +72,11 @@ export const bar: StyleModule = {
       color: #1d1f24;
       text-shadow: none;
     }
+    /* Mostly see-through fills show the card behind, so the text follows the theme. */
+    .style-bar .text.on-fill.theme {
+      color: var(--primary-text-color);
+      text-shadow: none;
+    }
     .style-bar .name {
       overflow: hidden;
       text-overflow: ellipsis;
