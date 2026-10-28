@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import '../src/chartdeck-card';
 import { ChartdeckCard } from '../src/chartdeck-card';
 import { litCells } from '../src/styles/segmented';
+import { arcPath } from '../src/geometry';
 import { STYLES } from '../src/styles';
 import { STYLE_NAMES } from '../src/types';
 import type { CardConfig } from '../src/types';
@@ -107,5 +108,39 @@ describe('static mode', () => {
     const css = (ChartdeckCard.styles as { cssText: string }[]).map((s) => s.cssText).join('');
     expect(css).toMatch(/:host\(\[static\]\) \.entity \*::before/);
     expect(css).toMatch(/:host\(\[static\]\) \.entity \*::after/);
+  });
+});
+
+describe('ring and arc', () => {
+  it('ring draws the value path with pathLength 100', async () => {
+    const card = await mount({ style: 'ring' });
+    expect(q(card, '.value-arc')!.getAttribute('pathLength')).toBe('100');
+  });
+
+  it('arc track spans 270 degrees', async () => {
+    const card = await mount({ style: 'arc' });
+    expect(q(card, '.track')!.getAttribute('d')).toBe(arcPath(60, 60, 46, -135, 135));
+  });
+
+  it('gives two cards distinct gradient ids', async () => {
+    const a = await mount({ style: 'ring' });
+    const b = await mount({ style: 'ring' });
+    const idA = q(a, 'linearGradient')!.id;
+    const idB = q(b, 'linearGradient')!.id;
+    expect(idA).toMatch(/^cd-g-\d+$/);
+    expect(idA).not.toBe(idB);
+  });
+
+  it('hides the value path when the span is empty', async () => {
+    const card = await mount({ style: 'ring', entities: [{ entity: 'sensor.a', min: 50, max: 100 }] } as never);
+    expect(q(card, '.value-arc')!.classList.contains('empty')).toBe(true);
+  });
+
+  it('draws a target tick and shows no value arc when unavailable', async () => {
+    const t = await mount({ style: 'arc', entities: [{ entity: 'sensor.a', target: 75 }] } as never);
+    expect(q(t, '.tick')).not.toBeNull();
+    const u = await mount({ style: 'arc', entities: ['sensor.b'] });
+    expect(q(u, '.value-arc')).toBeNull();
+    expect(q(u, '.na')).not.toBeNull();
   });
 });
