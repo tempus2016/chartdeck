@@ -441,12 +441,15 @@ describe('needle without its value', () => {
     const [na, missing] = [...card.shadowRoot!.querySelectorAll('.na')];
     // Above the hub (cy 66, r 6), shrunk to fit between the ticks.
     expect([...na.querySelectorAll('tspan')].map((t) => [t.textContent, t.getAttribute('y')])).toEqual([
-      ['Unavailable', '52'],
+      ['Unavailable', '55'],
     ]);
     expect(na.getAttribute('style')).toBe('font-size: 9px');
     const lines = [...missing.querySelectorAll('tspan')];
     expect(lines.map((t) => t.textContent)).toEqual(['Entity', 'not found']);
-    expect(Number(lines[1].getAttribute('y'))).toBeLessThanOrEqual(52);
+    expect(Number(lines[1].getAttribute('y'))).toBe(55);
+    // The first line's cap height (~0.75 em) clears the top tick, which ends at y 30.
+    const size = parseFloat(missing.getAttribute('style')!.match(/font-size: ([\d.]+)px/)![1]);
+    expect(Number(lines[0].getAttribute('y')) - 0.75 * size).toBeGreaterThan(31);
   });
 });
 

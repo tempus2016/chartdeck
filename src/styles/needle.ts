@@ -32,11 +32,11 @@ export function bandSegments(bands: Band[], min: number, max: number): { from: n
 
 /**
  * Status text inside the dial, above the hub, for a compact gauge: one or two lines, shrunk to
- * fit between the ticks, the last line's baseline at y 52.
+ * fit between the ticks, the last line's baseline at y 55 (just above the hub).
  */
 function statusInDial(text: string) {
   const { lines, size } = fitStatusText(text, 58, 11, 7);
-  const top = 52 - (lines.length - 1) * 1.2 * size;
+  const top = 55 - (lines.length - 1) * 1.2 * size;
   return svg`<text class="na" text-anchor="middle" style="font-size: ${size}px">${lines.map(
     (line, i) => svg`<tspan x=${CX} y=${num(top + i * 1.2 * size)}>${line}</tspan>`,
   )}</text>`;
