@@ -34,7 +34,7 @@ describe('colours', () => {
   it('builds gradient stops', () => {
     const s = colorStops('red');
     expect(s.start).toBe('var(--error-color, #ef3b5a)');
-    expect(s.end).toBe('color-mix(in srgb, var(--error-color, #ef3b5a) 65%, #fff)');
+    expect(s.end).toBe('color-mix(in srgb, var(--error-color, #ef3b5a) 80%, #fff)');
   });
 });
 

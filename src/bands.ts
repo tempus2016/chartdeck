@@ -27,7 +27,7 @@ export function solidColor(color: string): string {
 
 export function colorStops(color: string): { start: string; end: string } {
   const start = baseColor(color);
-  return { start, end: `color-mix(in srgb, ${start} 65%, #fff)` };
+  return { start, end: `color-mix(in srgb, ${start} 80%, #fff)` };
 }
 
 /** Last band with from <= value; below the first band, the first. Bands are sorted ascending. */
