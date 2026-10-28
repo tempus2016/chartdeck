@@ -17,9 +17,11 @@ export const tank: StyleModule = {
       gap: 6px;
       padding: 6px 0;
     }
+    /* Equal-width tiles, so tubes are evenly spaced and wrapped rows line up. */
     .style-tank .layout-tiles {
-      justify-content: space-around;
-      align-items: flex-end;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      align-items: end;
     }
     .style-tank .icon {
       color: var(--state-icon-color, var(--secondary-text-color));
@@ -27,6 +29,7 @@ export const tank: StyleModule = {
     }
     .style-tank .value {
       font-size: 13px;
+      text-align: center;
       color: var(--primary-text-color);
     }
     .style-tank .tube {
@@ -60,7 +63,7 @@ export const tank: StyleModule = {
       transition: bottom var(--cd-duration) var(--cd-easing);
     }
     .style-tank .name {
-      max-width: 72px;
+      max-width: 100%;
       font-size: 12px;
       color: var(--secondary-text-color);
       overflow: hidden;
