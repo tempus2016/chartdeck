@@ -12,17 +12,22 @@ export interface FieldBinding {
 
 export const TITLE_FIELDS: FieldBinding[] = [{ name: 'title', path: ['title'] }];
 
-export const DISPLAY_FIELDS: FieldBinding[] = [
+/** The Display section's on/off switches, drawn as compact rows by the editor itself. */
+export const DISPLAY_TOGGLE_FIELDS: FieldBinding[] = [
   { name: 'show_name', path: ['show', 'name'], default: true },
   { name: 'show_value', path: ['show', 'value'], default: true },
   { name: 'show_icon', path: ['show', 'icon'], default: true },
   { name: 'show_target', path: ['show', 'target'], default: true },
   { name: 'show_legend', path: ['show', 'legend'], default: false },
+  { name: 'animate', path: ['animate'], default: true },
+];
+
+/** The rest of the Display section, in an ha-form. */
+export const DISPLAY_FIELDS: FieldBinding[] = [
   { name: 'columns', path: ['columns'] },
   { name: 'sort', path: ['sort'], default: 'none' },
   { name: 'decimals', path: ['decimals'] },
   { name: 'unit', path: ['unit'] },
-  { name: 'animate', path: ['animate'], default: true },
 ];
 
 export const ACTION_FIELDS: FieldBinding[] = [
@@ -73,13 +78,7 @@ export function entityActionsSchema() {
 }
 
 function buildDisplaySchema(hass?: HomeAssistant) {
-  const toggle = (name: string) => ({ name, selector: { boolean: {} } });
   return [
-    {
-      type: 'grid',
-      name: '',
-      schema: ['show_name', 'show_value', 'show_icon', 'show_target', 'show_legend'].map(toggle),
-    },
     {
       type: 'grid',
       name: '',
@@ -101,7 +100,6 @@ function buildDisplaySchema(hass?: HomeAssistant) {
         { name: 'unit', selector: { text: {} } },
       ],
     },
-    toggle('animate'),
   ];
 }
 

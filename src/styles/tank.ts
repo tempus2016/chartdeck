@@ -1,11 +1,13 @@
 import { css, html, nothing } from 'lit';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 /** Vertical tank: a 40 x 140 tube that fills from the bottom. */
 export const tank: StyleModule = {
   layout: 'tiles',
   height: 230,
   tilesPerRow: 4,
+  minColumnWidth: 80,
   styles: css`
     .style-tank .entity {
       display: flex;
@@ -15,9 +17,11 @@ export const tank: StyleModule = {
       gap: 6px;
       padding: 6px 0;
     }
+    /* Equal-width tiles, so tubes are evenly spaced and wrapped rows line up. */
     .style-tank .layout-tiles {
-      justify-content: space-around;
-      align-items: flex-end;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      align-items: end;
     }
     .style-tank .icon {
       color: var(--state-icon-color, var(--secondary-text-color));
@@ -25,6 +29,7 @@ export const tank: StyleModule = {
     }
     .style-tank .value {
       font-size: 13px;
+      text-align: center;
       color: var(--primary-text-color);
     }
     .style-tank .tube {
@@ -58,7 +63,7 @@ export const tank: StyleModule = {
       transition: bottom var(--cd-duration) var(--cd-easing);
     }
     .style-tank .name {
-      max-width: 72px;
+      max-width: 100%;
       font-size: 12px;
       color: var(--secondary-text-color);
       overflow: hidden;
@@ -74,7 +79,7 @@ export const tank: StyleModule = {
               class="icon"
               .hass=${hass}
               .stateObj=${e.stateObj}
-              .icon=${e.config.icon}
+              .icon=${iconOverride(e)}
             ></ha-state-icon>`
           : nothing
       }
