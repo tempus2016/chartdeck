@@ -388,3 +388,27 @@ describe('needle', () => {
     expect(q(on, '.target-mark')).not.toBeNull();
   });
 });
+
+describe('ring and arc centre', () => {
+  for (const style of ['ring', 'arc'] as const) {
+    it(`${style} centres the icon when the value is hidden`, async () => {
+      const card = await mount({ style, show: { value: false } });
+      expect(q(card, '.radial .icon')!.classList.contains('centre')).toBe(true);
+    });
+
+    it(`${style} keeps the icon above the value when both are shown`, async () => {
+      const card = await mount({ style });
+      expect(q(card, '.radial .icon')!.classList.contains('centre')).toBe(false);
+    });
+
+    it(`${style} centres the value when the icon is hidden`, async () => {
+      const card = await mount({ style, show: { icon: false } });
+      expect(q(card, '.radial .value')!.getAttribute('y')).toBe('64');
+    });
+  }
+
+  it('styles a centred icon in the middle of the dial', () => {
+    const css = (ChartdeckCard.styles as unknown as { cssText: string }[]).map((s) => s.cssText).join('\n');
+    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 50%;[^}]*transform: translate\(-50%, -50%\);/);
+  });
+});

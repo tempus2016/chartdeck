@@ -114,6 +114,13 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         color: var(--state-icon-color, var(--secondary-text-color));
         --mdc-icon-size: 18px;
       }
+      /* With the value hidden, the icon is all that sits in the hollow, so it moves to the
+         middle and grows to fill it. */
+      .radial .icon.centre {
+        top: 50%;
+        transform: translate(-50%, -50%);
+        --mdc-icon-size: 28px;
+      }
       .radial .name {
         max-width: 124px;
         font-size: 12px;
@@ -181,7 +188,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
           ${
             show.icon && e.available
               ? html`<ha-state-icon
-                  class="icon"
+                  class="icon ${show.value ? '' : 'centre'}"
                   .hass=${hass}
                   .stateObj=${e.stateObj}
                   .icon=${e.config.icon}
