@@ -464,6 +464,25 @@ describe('editor: entities', () => {
     expect(events.at(-1)!.tap_action).toBeUndefined();
   });
 
+  it("picks an attribute from the entity's own list and drops the sensor unit from the bands", async () => {
+    const { editor, events } = await mount(raw);
+    editor.hass = makeHass({ 'sensor.a': ['1', { unit_of_measurement: '%', level: 3 }] });
+    await settle(editor);
+    (rows(editor)[0].querySelector('ha-icon-button.expand') as HTMLElement).click();
+    await settle(editor);
+    const attrForm = rows(editor)[0].querySelector('ha-form[data-section="entity-attribute"]') as StubElement;
+    expect(attrForm.schema).toEqual([{ name: 'attribute', selector: { attribute: { entity_id: 'sensor.a' } } }]);
+    expect((rows(editor)[0].querySelector('cd-bands-editor') as StubElement).unit).toBe('%');
+    change(attrForm, { attribute: 'level' });
+    expect(events.at(-1)!.entities![0]).toEqual({ entity: 'sensor.a', attribute: 'level' });
+    editor.setConfig(events.at(-1)!);
+    await settle(editor);
+    expect((rows(editor)[0].querySelector('cd-bands-editor') as StubElement).unit).toBeUndefined();
+    const again = rows(editor)[0].querySelector('ha-form[data-section="entity-attribute"]') as StubElement;
+    change(again, {});
+    expect(events.at(-1)!.entities![0]).toBe('sensor.a');
+  });
+
   it('inner value-changed events do not leak out of the editor', async () => {
     const { editor } = await mount(raw);
     await settle(editor);

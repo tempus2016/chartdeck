@@ -35,6 +35,7 @@ const STRINGS: Record<string, Record<string, string>> = {
     editor_tap_action: 'Tap action',
     editor_hold_action: 'Hold action',
     editor_double_tap_action: 'Double tap action',
+    editor_attribute: 'Attribute (instead of the state)',
     editor_name: 'Name',
     editor_icon: 'Icon',
     editor_min: 'Minimum',

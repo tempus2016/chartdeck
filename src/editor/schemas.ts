@@ -43,6 +43,8 @@ export const ENTITY_TEXT_FIELDS: FieldBinding[] = [
   { name: 'decimals', path: ['decimals'] },
 ];
 
+export const ENTITY_ATTRIBUTE_FIELDS: FieldBinding[] = [{ name: 'attribute', path: ['attribute'] }];
+
 /** Absent per-entity actions inherit the card's, so there are no defaults here. */
 export const ENTITY_ACTION_FIELDS: FieldBinding[] = ACTION_FIELDS.map(({ name, path }) => ({ name, path }));
 
@@ -60,6 +62,18 @@ const ENTITY_TEXT_SCHEMA = [
     ],
   },
 ];
+
+const attributeSchemas = new Map<string, unknown[]>();
+
+/** The attribute picker lists the chosen entity's attributes, so there is one schema per entity. */
+export function entityAttributeSchema(entityId: string) {
+  let schema = attributeSchemas.get(entityId);
+  if (!schema) {
+    schema = [{ name: 'attribute', selector: { attribute: { entity_id: entityId } } }];
+    attributeSchemas.set(entityId, schema);
+  }
+  return schema;
+}
 
 export function titleSchema() {
   return TITLE_SCHEMA;
