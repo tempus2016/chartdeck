@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAND_PRESETS, PALETTE, baseColor, bandFor, colorStops, legendItems } from '../src/bands';
+import { BAND_PRESETS, PALETTE, baseColor, bandFor, colorStops, legendItems, onFillText } from '../src/bands';
 import { DEFAULT_BANDS } from '../src/config';
 
 const bands = [
@@ -74,5 +74,26 @@ describe('BAND_PRESETS', () => {
     expect(BAND_PRESETS.usage?.[2]).toEqual({ from: 85, color: 'red', label: 'High' });
     expect(BAND_PRESETS.temperature?.every((b) => Number.isFinite(b.from))).toBe(true);
     expect(BAND_PRESETS.none).toBeUndefined();
+  });
+});
+
+describe('onFillText', () => {
+  it('uses dark text on amber and white on the other palette colours', () => {
+    expect(onFillText('amber')).toBe('dark');
+    for (const c of ['primary', 'green', 'red', 'blue', 'purple', 'grey']) expect(onFillText(c), c).toBe('light');
+  });
+  it('measures the luminance of custom colours it can parse', () => {
+    expect(onFillText('#ffeb3b')).toBe('dark');
+    expect(onFillText('#1f3864')).toBe('light');
+    expect(onFillText('#ff0')).toBe('dark');
+    expect(onFillText('rgb(255, 235, 59)')).toBe('dark');
+    expect(onFillText('rgba(31, 56, 100, 0.9)')).toBe('light');
+    expect(onFillText('  #FFFFFF ')).toBe('dark');
+  });
+  it('falls back to white text for colours it cannot read', () => {
+    expect(onFillText('var(--x)')).toBe('light');
+    expect(onFillText('hsl(60 100% 50%)')).toBe('light');
+    expect(onFillText('#12')).toBe('light');
+    expect(onFillText('')).toBe('light');
   });
 });

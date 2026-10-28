@@ -30,6 +30,41 @@ export function colorStops(color: string): { start: string; end: string } {
   return { start, end: `color-mix(in srgb, ${start} 80%, #fff)` };
 }
 
+/** Palette colours light enough to need dark text on top. */
+const LIGHT_PALETTE = new Set(['amber']);
+
+/** [r, g, b] (0–255) from #rgb, #rrggbb, rgb() or rgba(); undefined for anything else. */
+function parseRgb(color: string): [number, number, number] | undefined {
+  const c = color.trim().toLowerCase();
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(c);
+  if (hex) {
+    const h = hex[1].length === 3 ? [...hex[1]].map((x) => x + x).join('') : hex[1];
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
+  }
+  const fn = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)\s*(?:[,/]\s*[\d.]+%?\s*)?\)$/.exec(c);
+  if (fn) return [Number(fn[1]), Number(fn[2]), Number(fn[3])].map((n) => Math.min(255, n)) as [number, number, number];
+  return undefined;
+}
+
+/** WCAG relative luminance of an sRGB colour. */
+function luminance([r, g, b]: [number, number, number]): number {
+  const lin = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/**
+ * Text colour for text drawn over a fill of `color`: 'dark' on light fills (amber, or a parseable
+ * custom colour with luminance above 0.4), 'light' (white) otherwise and for anything unreadable.
+ */
+export function onFillText(color: string): 'dark' | 'light' {
+  if (Object.prototype.hasOwnProperty.call(PALETTE, color)) return LIGHT_PALETTE.has(color) ? 'dark' : 'light';
+  const rgb = parseRgb(color);
+  return rgb && luminance(rgb) > 0.4 ? 'dark' : 'light';
+}
+
 /** Last band with from <= value; below the first band, the first. Bands are sorted ascending. */
 export function bandFor(value: number, bands: Band[]): Band {
   let found = bands[0];

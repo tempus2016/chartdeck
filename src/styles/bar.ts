@@ -1,4 +1,5 @@
 import { css, html, nothing } from 'lit';
+import { onFillText } from '../bands';
 import type { StyleModule } from './index';
 
 /** Classic bar: icon, then a 34 px track with name and value inside. */
@@ -66,6 +67,11 @@ export const bar: StyleModule = {
       clip-path: inset(0 calc((1 - var(--end)) * 100%) 0 calc(var(--start) * 100%));
       transition: clip-path var(--cd-duration) var(--cd-easing);
     }
+    /* Light fills (amber, pale custom colours) take dark text instead. */
+    .style-bar .text.on-fill.dark {
+      color: #1d1f24;
+      text-shadow: none;
+    }
     .style-bar .name {
       overflow: hidden;
       text-overflow: ellipsis;
@@ -96,7 +102,7 @@ export const bar: StyleModule = {
         <div class="fill"></div>
         ${show.target && e.targetPosition !== null && e.available ? html`<div class="target"></div>` : nothing}
         <div class="text">${text}</div>
-        ${e.available ? html`<div class="text on-fill" aria-hidden="true">${text}</div>` : nothing}
+        ${e.available ? html`<div class="text on-fill ${onFillText(e.band.color)}" aria-hidden="true">${text}</div>` : nothing}
       </div>
     `;
   },

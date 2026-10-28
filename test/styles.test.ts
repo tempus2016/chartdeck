@@ -164,6 +164,17 @@ describe('static mode', () => {
   });
 });
 
+describe('bar text over the fill', () => {
+  it('is dark on light fills and white otherwise', async () => {
+    const amber = await mount({ style: 'bar', severity: [{ from: 0, color: 'amber' }] } as never);
+    expect(q(amber, '.text.on-fill')!.classList.contains('dark')).toBe(true);
+    const plain = await mount({ style: 'bar' });
+    expect(q(plain, '.text.on-fill')!.classList.contains('dark')).toBe(false);
+    const css = STYLES.bar.styles.cssText;
+    expect(css).toMatch(/\.style-bar \.text\.on-fill\.dark \{\s*color: #1d1f24;\s*text-shadow: none;/);
+  });
+});
+
 describe('unavailable entities', () => {
   it('share one treatment: empty mark, secondary-colour value, name in normal text colour', async () => {
     const shared = (await import('../src/styles/shared')).shared.cssText;
