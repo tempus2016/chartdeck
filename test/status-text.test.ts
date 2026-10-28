@@ -37,6 +37,10 @@ describe('fitStatusText', () => {
     expect(fitStatusText('不可用不可用', 40).size).toBeLessThan(fitStatusText('abcdef', 40).size);
   });
 
+  it('splits only above a chosen length', () => {
+    expect(fitStatusText('Entity not found', 126, 12, 8, 18)).toEqual({ lines: ['Entity not found'], size: 12 });
+  });
+
   it('honours a custom width and size range', () => {
     expect(fitStatusText('Unavailable', 64, 11, 7)).toEqual({ lines: ['Unavailable'], size: 10 });
   });
