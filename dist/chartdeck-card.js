@@ -777,12 +777,23 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       min-width: 0;
     }
     .style-segmented .name {
+      display: flex;
+      gap: 8px;
       font-size: 14px;
       margin-bottom: 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--primary-text-color);
+    }
+    .style-segmented .name .label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .style-segmented .name .status {
+      flex: none;
+      margin-left: auto;
+      color: var(--secondary-text-color);
     }
     .style-segmented .cells {
       display: flex;
@@ -817,9 +828,11 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       outline: 2px solid var(--primary-text-color);
       outline-offset: 0;
     }
+    /* Every row reserves the card's longest value (--cd-value-ch), so the cell strips line up,
+       but never more than about a third (35 %) of the row. */
     .style-segmented .value {
       flex: none;
-      min-width: 48px;
+      min-width: min(max(48px, calc(var(--cd-value-ch, 4) * 1ch + 4px)), 35%);
       white-space: nowrap;
       text-align: right;
       font-size: 14px;
@@ -857,7 +870,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         padding-bottom: 0;
       }
     }
-  `,render(t,{show:e,hass:i}){const n=t.available?ui(t.span):ui([0,0]),s=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1;return I`<div class="seg">
+  `,render(t,{show:e,hass:i}){const n=t.available?ui(t.span):ui([0,0]),s=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1,o=!t.available;return I`<div class="seg">
       ${e.icon?I`<ha-state-icon
               class="icon"
               .hass=${i}
@@ -865,12 +878,15 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
               .icon=${Be(t)}
             ></ha-state-icon>`:V}
       <div class="body">
-        ${e.name?I`<div class="name">${t.name}</div>`:V}
+        ${e.name||o?I`<div class="name">
+                ${e.name?I`<span class="label">${t.name}</span>`:V}
+                ${o?I`<span class="status">${t.display}</span>`:V}
+              </div>`:V}
         <div class="cells">
           ${n.map((t,e)=>I`<i class="cell ${t?"on":""} ${e===s?"mark":""}" style="--i:${e}"></i>`)}
         </div>
       </div>
-      ${e.value?I`<span class="value">${t.display}</span>`:V}
+      ${e.value?I`<span class="value">${t.available?t.display:""}</span>`:V}
     </div>`}},mi={layout:"tiles",height:230,tilesPerRow:4,minColumnWidth:80,styles:o`
     .style-tank .entity {
       display: flex;
@@ -1135,15 +1151,20 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       style=${l}
     >
       ${i.render(t,{show:s.show,hass:n})}
-    </div>`}render(){const t=this._config;if(!t)return V;const e=this.hass,i=this._style;let n,s;if(0===t.entities.length)this._items=[],n=I`<div class="hint">${Zt(e,"no_entities")}</div>`;else if(e){const o=We(t,e);s=o[0];const r=new Map,a=new Set;o.forEach((t,e)=>{r.set(t,a.has(t.entityId)?`${t.entityId}#${e}`:t.entityId),a.add(t.entityId)}),this._items=function(t,e){if("none"===e)return[...t];const i="ascending"===e?1:-1;return t.map((t,e)=>({item:t,index:e})).sort((t,e)=>{if(t.item.available!==e.item.available)return t.item.available?-1:1;if(t.item.available){const n=(t.item.position-e.item.position)*i;if(0!==n)return n}return t.index-e.index}).map(t=>t.item)}(o,t.sort);const l="tiles"===i.layout,c=function(t,e){if(void 0===e)return"rows"===t.layout?"grid-template-columns: repeat(1, minmax(0, 1fr))":"";const i=(e-1)*yi[t.layout];return`grid-template-columns: repeat(auto-fill, minmax(max(min(${t.minColumnWidth??0}px, 100%), calc((100% - ${i}px) / ${e} - 0.5px)), 1fr))`}(i,t.columns);n=I`<div
-        class="entities layout-${i.layout} ${l&&void 0!==t.columns?"has-columns":""}"
-        style=${c}
+    </div>`}render(){const t=this._config;if(!t)return V;const e=this.hass,i=this._style;let n,s,o;if(0===t.entities.length)this._items=[],n=I`<div class="hint">${Zt(e,"no_entities")}</div>`;else if(e){const r=We(t,e);s=r[0];const a=new Map,l=new Set;r.forEach((t,e)=>{a.set(t,l.has(t.entityId)?`${t.entityId}#${e}`:t.entityId),l.add(t.entityId)}),this._items=function(t,e){if("none"===e)return[...t];const i="ascending"===e?1:-1;return t.map((t,e)=>({item:t,index:e})).sort((t,e)=>{if(t.item.available!==e.item.available)return t.item.available?-1:1;if(t.item.available){const n=(t.item.position-e.item.position)*i;if(0!==n)return n}return t.index-e.index}).map(t=>t.item)}(r,t.sort);const c=r.filter(t=>t.available).map(t=>t.display.length);o=c.length?Math.max(...c):void 0;const d="tiles"===i.layout,h=function(t,e){if(void 0===e)return"rows"===t.layout?"grid-template-columns: repeat(1, minmax(0, 1fr))":"";const i=(e-1)*yi[t.layout];return`grid-template-columns: repeat(auto-fill, minmax(max(min(${t.minColumnWidth??0}px, 100%), calc((100% - ${i}px) / ${e} - 0.5px)), 1fr))`}(i,t.columns);n=I`<div
+        class="entities layout-${i.layout} ${d&&void 0!==t.columns?"has-columns":""}"
+        style=${h}
       >
-        ${kt(this._items,t=>r.get(t),(t,n)=>this._renderEntity(t,n,i,e))}
-      </div>`}else this._items=[],n=V;const o=this._legend(s);return I`<ha-card .header=${t.title}>
-      <div class="content style-${this._styleName}">${n}</div>
-      ${o.length?I`<div class="legend">
-              ${o.map(t=>I`<span class="legend-item"
+        ${kt(this._items,t=>a.get(t),(t,n)=>this._renderEntity(t,n,i,e))}
+      </div>`}else this._items=[],n=V;const r=this._legend(s);return I`<ha-card .header=${t.title}>
+      <div
+        class="content style-${this._styleName}"
+        style=${void 0===o?V:`--cd-value-ch: ${o}`}
+      >
+        ${n}
+      </div>
+      ${r.length?I`<div class="legend">
+              ${r.map(t=>I`<span class="legend-item"
                     ><span class="dot" style="background:${t.color}"></span>${t.text}</span
                   >`)}
             </div>`:V}

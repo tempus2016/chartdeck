@@ -74,8 +74,35 @@ describe('styles', () => {
     const css = STYLES.segmented.styles.cssText;
     const rule = css.match(/\.style-segmented \.value \{[^}]*\}/)![0];
     expect(rule).toContain('white-space: nowrap');
-    expect(rule).toContain('min-width: 48px');
+    expect(rule).toContain('min-width: min(max(48px, calc(var(--cd-value-ch, 4) * 1ch + 4px)), 35%)');
     expect(rule).not.toMatch(/[^-]width: 48px/);
+  });
+
+  it('segmented reserves the longest value width on every row so the cells line up', async () => {
+    const short = await mount({ style: 'segmented' });
+    expect((q(short, '.content') as HTMLElement).getAttribute('style')).toBe('--cd-value-ch: 4');
+    // Status text ("Unavailable", "Entity not found") doesn't widen every row: only real values count.
+    const mixed = await mount({ style: 'segmented', entities: ['sensor.a', 'sensor.b', 'sensor.missing'] });
+    expect((q(mixed, '.content') as HTMLElement).getAttribute('style')).toBe('--cd-value-ch: 4');
+    const none = await mount({ style: 'segmented', entities: ['sensor.missing'] });
+    expect((q(none, '.content') as HTMLElement).getAttribute('style')).toBeNull();
+  });
+
+  it('segmented status rows show their status on the name line and keep an empty value slot', async () => {
+    const card = await mount({ style: 'segmented', entities: ['sensor.a', 'sensor.b', 'sensor.missing'] });
+    const rows = [...card.shadowRoot!.querySelectorAll('.entity')];
+    const status = (r: Element) => r.querySelector('.name .status')?.textContent ?? null;
+    const value = (r: Element) => r.querySelector('.value')?.textContent ?? null;
+    expect(rows.map(status)).toEqual([null, 'Unavailable', 'Entity not found']);
+    expect(rows.map(value)).toEqual([expect.stringMatching(/\d/), '', '']);
+    // The status shows with the name hidden, and with the value hidden too (the sensor is
+    // offline either way); a hidden value leaves no empty value slot behind.
+    const noName = await mount({ style: 'segmented', entities: ['sensor.b'], show: { name: false } });
+    expect(q(noName, '.name .status')?.textContent).toBe('Unavailable');
+    expect(q(noName, '.name .label')).toBeNull();
+    const noValue = await mount({ style: 'segmented', entities: ['sensor.b'], show: { value: false } });
+    expect(q(noValue, '.name .status')?.textContent).toBe('Unavailable');
+    expect(q(noValue, '.value')).toBeNull();
   });
 
   it('thin draws a target marker only when shown', async () => {
@@ -233,7 +260,12 @@ describe('unavailable entities', () => {
       const card = await mount({ style: name, entities: ['sensor.b'] });
       const entity = q(card, '.entity')!;
       expect(entity.classList.contains('unavailable'), name).toBe(true);
-      if (['bar', 'thin', 'segmented', 'tank'].includes(name)) {
+      if (name === 'segmented') {
+        // Segmented shows the status on the name line (secondary colour) so its cells line up.
+        expect(entity.querySelector('.name .status')!.textContent, name).toBe('Unavailable');
+        expect(css).toMatch(/\.style-segmented \.name \.status \{[^}]*color: var\(--secondary-text-color\);/);
+        expect(entity.querySelector('.on-fill, .target'), name).toBeNull();
+      } else if (['bar', 'thin', 'tank'].includes(name)) {
         expect(entity.querySelector('.value')!.textContent, name).toBe('Unavailable');
         expect(entity.querySelector('.on-fill, .target'), name).toBeNull();
       } else {
