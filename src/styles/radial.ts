@@ -49,20 +49,22 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
         gap: 2px;
         padding: 6px 0;
       }
+      /* The dial is 124 px wide, smaller only when its tile is narrower; positions inside it
+         are in cqw (1 % of the dial's width) so they scale with it. */
       .radial .dial {
         position: relative;
-        width: 124px;
-        height: 120px;
+        container-type: inline-size;
+        width: min(124px, 100%);
+        aspect-ratio: 124 / 120;
       }
       .radial svg {
         display: block;
-        width: 124px;
-        height: 120px;
+        width: 100%;
+        height: 100%;
         overflow: visible;
       }
-      .radial.cropped .dial,
-      .radial.cropped svg {
-        height: 100px;
+      .radial.cropped .dial {
+        aspect-ratio: 124 / 100;
       }
       .radial .track {
         fill: none;
@@ -115,17 +117,17 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
       .radial .icon {
         position: absolute;
         left: 50%;
-        top: 31px;
+        top: 25cqw;
         transform: translateX(-50%);
         color: var(--state-icon-color, var(--secondary-text-color));
-        --mdc-icon-size: 18px;
+        --mdc-icon-size: 14.52cqw;
       }
       /* With the value hidden, the icon is all that sits in the hollow, so it moves to the
          dial centre (y 60, also on the cropped arc) and grows to fill it. */
       .radial .icon.centre {
-        top: 60px;
+        top: 48.39cqw;
         transform: translate(-50%, -50%);
-        --mdc-icon-size: 28px;
+        --mdc-icon-size: 22.58cqw;
       }
       .radial .name {
         max-width: 124px;

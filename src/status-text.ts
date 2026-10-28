@@ -10,13 +10,19 @@ function units(text: string): number {
 
 /**
  * Fit a status line (Unavailable, Entity not found, or a translated state) into `width` units:
- * longer than 11 characters, it splits on the space that best balances two lines; then the
- * font shrinks from `max` towards `min` until the longest line fits.
+ * longer than `splitAbove` characters, it splits on the space that best balances two lines;
+ * then the font shrinks from `max` towards `min` until the longest line fits.
  */
-export function fitStatusText(raw: string, width = 76, max = 12, min = 8): { lines: string[]; size: number } {
+export function fitStatusText(
+  raw: string,
+  width = 76,
+  max = 12,
+  min = 8,
+  splitAbove = 11,
+): { lines: string[]; size: number } {
   const text = raw.trim();
   let lines = [text];
-  if (units(text) > 11) {
+  if (units(text) > splitAbove) {
     let best = units(text);
     for (let i = text.indexOf(' '); i > 0; i = text.indexOf(' ', i + 1)) {
       const longest = Math.max(units(text.slice(0, i)), units(text.slice(i + 1)));

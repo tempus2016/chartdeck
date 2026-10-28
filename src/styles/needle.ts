@@ -40,11 +40,12 @@ function statusInDial(text: string) {
 
 /** Status text in the value's place under a full-height gauge, fitted to the tile's width. */
 function statusBelow(text: string) {
-  return statusLines(text, 126, 12, 8, 94);
+  // One line whenever it fits at full size (126 / (0.58 × 12) ≈ 18 characters).
+  return statusLines(text, 126, 12, 8, 94, 18);
 }
 
-function statusLines(text: string, width: number, max: number, min: number, lastBaseline: number) {
-  const { lines, size } = fitStatusText(text, width, max, min);
+function statusLines(text: string, width: number, max: number, min: number, lastBaseline: number, splitAbove = 11) {
+  const { lines, size } = fitStatusText(text, width, max, min, splitAbove);
   const top = lastBaseline - (lines.length - 1) * 1.2 * size;
   return svg`<text class="na" text-anchor="middle" style="font-size: ${size}px">${lines.map(
     (line, i) => svg`<tspan x=${CX} y=${num(top + i * 1.2 * size)}>${line}</tspan>`,
@@ -63,14 +64,16 @@ export const needle: StyleModule = {
       gap: 2px;
       padding: 6px 0;
     }
+    /* 130 px wide, smaller only when the tile is narrower. */
     .needle-gauge svg {
       display: block;
-      width: 130px;
-      height: 104px;
+      width: min(130px, 100%);
+      height: auto;
+      aspect-ratio: 130 / 104;
       overflow: visible;
     }
     .needle-gauge svg.compact {
-      height: 82px;
+      aspect-ratio: 130 / 82;
     }
     .needle-gauge .seg {
       fill: none;

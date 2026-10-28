@@ -409,7 +409,7 @@ describe('ring and arc centre', () => {
 
   it('styles a centred icon in the middle of the dial', () => {
     const css = (ChartdeckCard.styles as unknown as { cssText: string }[]).map((s) => s.cssText).join('\n');
-    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 60px;[^}]*transform: translate\(-50%, -50%\);/);
+    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 48\.39cqw;[^}]*transform: translate\(-50%, -50%\);/);
   });
 });
 
@@ -427,6 +427,11 @@ describe('needle without its value', () => {
     const na = await mount({ style: 'needle', entities: ['sensor.b'] });
     expect(q(na, '.needle-gauge svg')!.getAttribute('viewBox')).toBe('0 0 130 104');
     expect([...q(na, '.na')!.querySelectorAll('tspan')].map((t) => t.getAttribute('y'))).toEqual(['94']);
+  });
+
+  it('keeps a status that fits on one line under a full-height needle', async () => {
+    const card = await mount({ style: 'needle', entities: ['sensor.missing'] });
+    expect([...q(card, '.na')!.querySelectorAll('tspan')].map((t) => t.textContent)).toEqual(['Entity not found']);
   });
 
   it('fits a long status under a full-height needle instead of spilling past the tile', async () => {
@@ -477,8 +482,27 @@ describe('arc crop', () => {
     expect(q(ring, '.radial svg')!.getAttribute('viewBox')).toBe('0 0 120 120');
     expect(q(ring, '.radial')!.classList.contains('cropped')).toBe(false);
     const css = STYLES.arc.styles.cssText;
-    expect(css).toMatch(/\.radial\.cropped \.dial,\s*\.radial\.cropped svg \{\s*height: 100px;/);
+    expect(css).toMatch(/\.radial\.cropped \.dial \{\s*aspect-ratio: 124 \/ 100;/);
     // The centred icon sits on the dial centre (y 60), not half the (cropped) dial height.
-    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 60px;/);
+    expect(css).toMatch(/\.radial \.icon\.centre \{[^}]*top: 48\.39cqw;/);
+  });
+});
+
+describe('gauges in very narrow cards', () => {
+  it('scales the ring and arc dial down with its tile, keeping the icon in place', () => {
+    const css = STYLES.ring.styles.cssText;
+    expect(css).toMatch(
+      /\.radial \.dial \{[^}]*container-type: inline-size;[^}]*width: min\(124px, 100%\);[^}]*aspect-ratio: 124 \/ 120;/,
+    );
+    expect(css).toMatch(/\.radial svg \{[^}]*width: 100%;[^}]*height: 100%;/);
+    expect(css).toMatch(/\.radial \.icon \{[^}]*top: 25cqw;[^}]*--mdc-icon-size: 14\.52cqw;/);
+  });
+
+  it('scales the needle dial down with its tile', () => {
+    const css = STYLES.needle.styles.cssText;
+    expect(css).toMatch(
+      /\.needle-gauge svg \{[^}]*width: min\(130px, 100%\);[^}]*height: auto;[^}]*aspect-ratio: 130 \/ 104;/,
+    );
+    expect(css).toMatch(/\.needle-gauge svg\.compact \{\s*aspect-ratio: 130 \/ 82;/);
   });
 });
