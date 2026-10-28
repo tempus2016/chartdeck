@@ -56,7 +56,7 @@ const ENTITY_TEXT_SCHEMA = [
     schema: [
       { name: 'name', selector: { text: {} } },
       { name: 'unit', selector: { text: {} } },
-      { name: 'decimals', selector: { number: { min: 0, max: 6, mode: 'box' } } },
+      { name: 'decimals', selector: { number: { min: 0, max: 20, mode: 'box' } } },
     ],
   },
 ];
@@ -96,7 +96,7 @@ function buildDisplaySchema(hass?: HomeAssistant) {
             },
           },
         },
-        { name: 'decimals', selector: { number: { min: 0, max: 6, mode: 'box' } } },
+        { name: 'decimals', selector: { number: { min: 0, max: 20, mode: 'box' } } },
         { name: 'unit', selector: { text: {} } },
       ],
     },
