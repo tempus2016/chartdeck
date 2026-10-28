@@ -525,7 +525,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         <div class="text">${n}</div>
         ${t.available?I`<div class="text on-fill ${Lt(t.band.color)}" aria-hidden="true">${n}</div>`:V}
       </div>
-    `}},Ze=t=>(Math.abs(t)<.005?0:t).toFixed(2);function Ge(t,e,i,n){const s=n*Math.PI/180;return[t+i*Math.sin(s),e-i*Math.cos(s)]}function Ke(t,e,i,n,s){const o=String(Number(i.toFixed(2))),r=s-n,[a,l]=Ge(t,e,i,n);if(r>=359.99){const[s,r]=Ge(t,e,i,n+180);return`M${Ze(a)} ${Ze(l)} A${o} ${o} 0 1 1 ${Ze(s)} ${Ze(r)} A${o} ${o} 0 1 1 ${Ze(a)} ${Ze(l)}`}const[c,d]=Ge(t,e,i,s),h=r>180?1:0;return`M${Ze(a)} ${Ze(l)} A${o} ${o} 0 ${h} 1 ${Ze(c)} ${Ze(d)}`}function Xe(t,e){const i=t/2;return[-i+e[0]*t,-i+e[1]*t]}function Je(t){let e=0;for(const i of t)e+=i.codePointAt(0)>=11904?1/.58:1;return e}const Ye=65,Qe=66,ti=t=>String(Math.round(1e3*t)/1e3+0);function ei(t,e,i,n,s,o=11){const{lines:r,size:a}=function(t,e=76,i=12,n=8,s=11){const o=t.trim();let r=[o];if(Je(o)>s){let t=Je(o);for(let e=o.indexOf(" ");e>0;e=o.indexOf(" ",e+1)){const i=Math.max(Je(o.slice(0,e)),Je(o.slice(e+1)));i<t&&(t=i,r=[o.slice(0,e),o.slice(e+1)])}}const a=Math.max(...r.map(Je));return{lines:r,size:Math.max(n,Math.min(i,Math.floor(e/(.58*Math.max(1,a)))))}}(t,e,i,n,o),l=s-1.2*(r.length-1)*a;return q`<text class="na" text-anchor="middle" style="font-size: ${a}px">${r.map((t,e)=>q`<tspan x=${Ye} y=${ti(l+1.2*e*a)}>${t}</tspan>`)}</text>`}const ii={layout:"tiles",height:140,minColumnWidth:134,styles:o`
+    `}},Ze=t=>(Math.abs(t)<.005?0:t).toFixed(2);function Ge(t,e,i,n){const s=n*Math.PI/180;return[t+i*Math.sin(s),e-i*Math.cos(s)]}function Ke(t,e,i,n,s){const o=String(Number(i.toFixed(2))),r=s-n,[a,l]=Ge(t,e,i,n);if(r>=359.99){const[s,r]=Ge(t,e,i,n+180);return`M${Ze(a)} ${Ze(l)} A${o} ${o} 0 1 1 ${Ze(s)} ${Ze(r)} A${o} ${o} 0 1 1 ${Ze(a)} ${Ze(l)}`}const[c,d]=Ge(t,e,i,s),h=r>180?1:0;return`M${Ze(a)} ${Ze(l)} A${o} ${o} 0 ${h} 1 ${Ze(c)} ${Ze(d)}`}function Xe(t,e){const i=t/2;return[-i+e[0]*t,-i+e[1]*t]}function Je(t){let e=0;for(const i of t)e+=i.codePointAt(0)>=11904?1/.58:1;return e}function Ye(t,e=76,i=12,n=8,s=11){const o=t.trim();let r=[o];if(Je(o)>s){let t=Je(o);for(let e=o.indexOf(" ");e>0;e=o.indexOf(" ",e+1)){const i=Math.max(Je(o.slice(0,e)),Je(o.slice(e+1)));i<t&&(t=i,r=[o.slice(0,e),o.slice(e+1)])}}const a=Math.max(...r.map(Je));return{lines:r,size:Math.max(n,Math.min(i,Math.floor(e/(.58*Math.max(1,a)))))}}const Qe=65,ti=66,ei=t=>String(Math.round(1e3*t)/1e3+0);function ii(t,e,i,n,s,o=11){const{lines:r,size:a}=Ye(t,e,i,n,o),l=s-1.2*(r.length-1)*a;return q`<text class="na" text-anchor="middle" style="font-size: ${a}px">${r.map((t,e)=>q`<tspan x=${Qe} y=${ei(l+1.2*e*a)}>${t}</tspan>`)}</text>`}const ni={layout:"tiles",height:140,minColumnWidth:134,styles:o`
     /* A definite width that shrinks with a narrow tile (the svg inside is sized in %). */
     .needle-gauge {
       display: flex;
@@ -601,13 +601,13 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-  `,render(t,{show:e,hass:i}){const n=function(t,e,i){const n=i-e,s=[];return n>0?(t.forEach((o,r)=>{const a=0===r?e:Math.max(o.from,e),l=Math.min(r+1<t.length?t[r+1].from:1/0,i);l>a&&s.push({from:(a-e)/n,to:(l-e)/n,color:o.color})}),s):s}(t.config.severity,t.min,t.max),s=n.map((t,e)=>{const i=180*t.from-90+(e>0?1:0),s=180*t.to-90-(e<n.length-1?1:0);return s>i?q`<path class="seg" d=${Ke(Ye,Qe,50,i,s)} stroke=${Mt(t.color)}></path>`:V}),o=Array.from({length:11},(t,e)=>{const[i,n]=Ge(Ye,Qe,36,18*e-90),[s,o]=Ge(Ye,Qe,40,18*e-90);return q`<line class="tickmark" x1=${i.toFixed(2)} y1=${n.toFixed(2)} x2=${s.toFixed(2)} y2=${o.toFixed(2)}></line>`});let r=V;if(e.target&&null!==t.targetPosition&&t.available){const e=180*t.targetPosition-90,[i,n]=Ge(Ye,Qe,57,e),[s,o]=Ge(Ye,Qe,64,e-3),[a,l]=Ge(Ye,Qe,64,e+3);r=q`<polygon class="target-mark" points="${i.toFixed(2)},${n.toFixed(2)} ${s.toFixed(2)},${o.toFixed(2)} ${a.toFixed(2)},${l.toFixed(2)}"></polygon>`}const a=!e.value;return I`<div class="needle-gauge">
+  `,render(t,{show:e,hass:i}){const n=function(t,e,i){const n=i-e,s=[];return n>0?(t.forEach((o,r)=>{const a=0===r?e:Math.max(o.from,e),l=Math.min(r+1<t.length?t[r+1].from:1/0,i);l>a&&s.push({from:(a-e)/n,to:(l-e)/n,color:o.color})}),s):s}(t.config.severity,t.min,t.max),s=n.map((t,e)=>{const i=180*t.from-90+(e>0?1:0),s=180*t.to-90-(e<n.length-1?1:0);return s>i?q`<path class="seg" d=${Ke(Qe,ti,50,i,s)} stroke=${Mt(t.color)}></path>`:V}),o=Array.from({length:11},(t,e)=>{const[i,n]=Ge(Qe,ti,36,18*e-90),[s,o]=Ge(Qe,ti,40,18*e-90);return q`<line class="tickmark" x1=${i.toFixed(2)} y1=${n.toFixed(2)} x2=${s.toFixed(2)} y2=${o.toFixed(2)}></line>`});let r=V;if(e.target&&null!==t.targetPosition&&t.available){const e=180*t.targetPosition-90,[i,n]=Ge(Qe,ti,57,e),[s,o]=Ge(Qe,ti,64,e-3),[a,l]=Ge(Qe,ti,64,e+3);r=q`<polygon class="target-mark" points="${i.toFixed(2)},${n.toFixed(2)} ${s.toFixed(2)},${o.toFixed(2)} ${a.toFixed(2)},${l.toFixed(2)}"></polygon>`}const a=!e.value;return I`<div class="needle-gauge">
       <svg class=${a?"compact":""} viewBox="0 0 130 ${a?82:104}" aria-hidden="true">
         ${s} ${o} ${r}
-        ${t.available?q`<g class="needle" style="transform: rotate(${ti(180*t.position-90)}deg)"><path d=${c=Ye,d=Qe,h=42,u=3,`M${Ze(c)} ${Ze(d-h)} L${Ze(c+u)} ${Ze(d)} L${Ze(c-u)} ${Ze(d)} Z`}></path></g>`:V}
-        <circle class="hub" cx=${Ye} cy=${Qe} r="6"></circle>
-        <circle class="hub-dot" cx=${Ye} cy=${Qe} r="2.5"></circle>
-        ${t.available?e.value?q`<text class="value" x=${Ye} y="94" text-anchor="middle">${t.display}</text>`:V:a?(l=t.display,ei(l,58,11,7,55)):function(t){return ei(t,126,12,8,94,18)}(t.display)}
+        ${t.available?q`<g class="needle" style="transform: rotate(${ei(180*t.position-90)}deg)"><path d=${c=Qe,d=ti,h=42,u=3,`M${Ze(c)} ${Ze(d-h)} L${Ze(c+u)} ${Ze(d)} L${Ze(c-u)} ${Ze(d)} Z`}></path></g>`:V}
+        <circle class="hub" cx=${Qe} cy=${ti} r="6"></circle>
+        <circle class="hub-dot" cx=${Qe} cy=${ti} r="2.5"></circle>
+        ${t.available?e.value?q`<text class="value" x=${Qe} y="94" text-anchor="middle">${t.display}</text>`:V:a?(l=t.display,ii(l,58,11,7,55)):function(t){return ii(t,126,12,8,94,18)}(t.display)}
       </svg>
       ${e.name||e.icon?I`<div class="name">
               ${e.icon?I`<ha-state-icon
@@ -618,7 +618,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
                     ></ha-state-icon>`:V}
               ${e.name?I`<span class="name-text">${t.name}</span>`:V}
             </div>`:V}
-    </div>`;var l,c,d,h,u}};let ni=0;const si=new WeakMap;const oi=60,ri=60,ai=t=>String(Math.round(1e3*t)/1e3+0);function li(t){const[e,i]=Xe(t,[0,1]),n=Ke(oi,ri,46,e,i),s=t<360;return{layout:"tiles",height:s?135:155,minColumnWidth:128,styles:o`
+    </div>`;var l,c,d,h,u}};let si=0;const oi=new WeakMap;const ri=60,ai=60,li=t=>String(Math.round(1e3*t)/1e3+0);function ci(t){const[e,i]=Xe(t,[0,1]),n=Ke(ri,ai,46,e,i),s=t<360;return{layout:"tiles",height:s?135:155,minColumnWidth:128,styles:o`
       /* A definite width: the dial is a size container and can't size the tile itself. */
       .radial {
         display: flex;
@@ -718,7 +718,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-    `,render(e,{show:i,hass:o}){const r=function(t){let e=si.get(t);return e||(e="cd-g-"+ ++ni,si.set(t,e)),e}(e.config),a=e.span[1]-e.span[0]<=0,l=`stroke-dasharray: ${ai(100*(e.span[1]-e.span[0]))} 100; stroke-dashoffset: ${ai(100*-e.span[0])}`,c=(d=e.band.color,Object.prototype.hasOwnProperty.call(Ct,d)?Ct[d].fallback:d);var d;const h=function(t){return!t.includes("var(")&&("undefined"==typeof CSS||"function"!=typeof CSS.supports||CSS.supports("color",t))}(c)?`url(#${r}) ${c}`:`url(#${r})`,u=i.icon?6:0,p=(m=e.valueText,Math.min(22,Math.floor(124/Math.max(1,m.length))));var m;let f=V;if(i.target&&null!==e.targetPosition&&e.available){const i=Xe(t,[e.targetPosition,e.targetPosition])[0],[n,s]=Ge(oi,ri,39.5,i),[o,r]=Ge(oi,ri,52.5,i);f=q`<line class="tick" x1=${n.toFixed(2)} y1=${s.toFixed(2)} x2=${o.toFixed(2)} y2=${r.toFixed(2)}></line>`}return I`<div class="radial ${s?"cropped":""}">
+    `,render(e,{show:i,hass:o}){const r=function(t){let e=oi.get(t);return e||(e="cd-g-"+ ++si,oi.set(t,e)),e}(e.config),a=e.span[1]-e.span[0]<=0,l=`stroke-dasharray: ${li(100*(e.span[1]-e.span[0]))} 100; stroke-dashoffset: ${li(100*-e.span[0])}`,c=(d=e.band.color,Object.prototype.hasOwnProperty.call(Ct,d)?Ct[d].fallback:d);var d;const h=function(t){return!t.includes("var(")&&("undefined"==typeof CSS||"function"!=typeof CSS.supports||CSS.supports("color",t))}(c)?`url(#${r}) ${c}`:`url(#${r})`,u=i.icon?6:0,p=(m=e.valueText,Math.min(22,Math.floor(124/Math.max(1,m.length))));var m;let f=V;if(i.target&&null!==e.targetPosition&&e.available){const i=Xe(t,[e.targetPosition,e.targetPosition])[0],[n,s]=Ge(ri,ai,39.5,i),[o,r]=Ge(ri,ai,52.5,i);f=q`<line class="tick" x1=${n.toFixed(2)} y1=${s.toFixed(2)} x2=${o.toFixed(2)} y2=${r.toFixed(2)}></line>`}return I`<div class="radial ${s?"cropped":""}">
         <div class="dial">
           <svg viewBox="0 0 120 ${s?100:120}" aria-hidden="true">
             <defs>
@@ -727,7 +727,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
                 <stop class="stop-end" offset="1"></stop>
               </linearGradient>
             </defs>
-            <circle class="disc" cx=${oi} cy=${ri} r="34"></circle>
+            <circle class="disc" cx=${ri} cy=${ai} r="34"></circle>
             <path class="track" d=${n}></path>
             ${e.available?q`<path
                   class="value-arc ${a?"empty":""}"
@@ -739,12 +739,12 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
             ${f}
             ${e.available?q`${i.value?q`<text
                         class="value"
-                        x=${oi}
+                        x=${ri}
                         y=${64+u}
                         text-anchor="middle"
                         style=${p<22?`font-size: ${p}px`:V}
                       >${e.valueText}</text>
-                      <text class="unit" x=${oi} y=${80+u} text-anchor="middle">${e.unit}</text>`:V}`:q`<text class="na" x=${oi} y=${64} text-anchor="middle">${e.display}</text>`}
+                      <text class="unit" x=${ri} y=${80+u} text-anchor="middle">${e.unit}</text>`:V}`:function(t){const{lines:e,size:i}=Ye(t),n=64-1.2*(e.length-1)*i/2;return q`<text class="na" text-anchor="middle" style="font-size: ${i}px">${e.map((t,e)=>q`<tspan x=${ri} y=${li(n+1.2*e*i)}>${t}</tspan>`)}</text>`}(e.display)}
           </svg>
           ${i.icon&&e.available?I`<ha-state-icon
                   class="icon ${i.value?"":"centre"}"
@@ -754,7 +754,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
                 ></ha-state-icon>`:V}
         </div>
         ${i.name?I`<span class="name">${e.name}</span>`:V}
-      </div>`}}}const ci=li(360),di=li(270);function hi(t){const[e,i]=t;return Array.from({length:10},(t,n)=>{const s=(n+.5)/10;return s>e&&s<=i})}const ui={layout:"rows",height:50,minColumnWidth:180,styles:o`
+      </div>`}}}const di=ci(360),hi=ci(270);function ui(t){const[e,i]=t;return Array.from({length:10},(t,n)=>{const s=(n+.5)/10;return s>e&&s<=i})}const pi={layout:"rows",height:50,minColumnWidth:180,styles:o`
     /* Each row is measured on its own, so a narrow column (columns: 2 or 3) switches layout
        even when the card as a whole is wide. A container can't restyle itself, hence .seg. */
     .style-segmented .entity {
@@ -857,7 +857,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         padding-bottom: 0;
       }
     }
-  `,render(t,{show:e,hass:i}){const n=t.available?hi(t.span):hi([0,0]),s=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1;return I`<div class="seg">
+  `,render(t,{show:e,hass:i}){const n=t.available?ui(t.span):ui([0,0]),s=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1;return I`<div class="seg">
       ${e.icon?I`<ha-state-icon
               class="icon"
               .hass=${i}
@@ -871,7 +871,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         </div>
       </div>
       ${e.value?I`<span class="value">${t.display}</span>`:V}
-    </div>`}},pi={layout:"tiles",height:230,tilesPerRow:4,minColumnWidth:80,styles:o`
+    </div>`}},mi={layout:"tiles",height:230,tilesPerRow:4,minColumnWidth:80,styles:o`
     .style-tank .entity {
       display: flex;
       flex-direction: column;
@@ -943,7 +943,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
         ${e.target&&null!==t.targetPosition&&t.available?I`<div class="target"></div>`:V}
       </div>
       ${e.name?I`<span class="name">${t.name}</span>`:V}
-    `},mi={layout:"rows",height:44,minColumnWidth:140,styles:o`
+    `},fi={layout:"rows",height:44,minColumnWidth:140,styles:o`
     .style-thin .entity {
       display: flex;
       align-items: center;
@@ -1026,7 +1026,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
           ${e.target&&null!==t.targetPosition&&t.available?I`<div class="target"></div>`:V}
         </div>
       </div>
-    `},fi={bar:Ve,thin:mi,segmented:ui,tank:pi,ring:ci,needle:ii,arc:di},gi=o`
+    `},gi={bar:Ve,thin:fi,segmented:pi,tank:mi,ring:di,needle:ni,arc:hi},_i=o`
   :host {
     display: block;
     --cd-duration: 900ms;
@@ -1120,7 +1120,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
     border-radius: 50%;
     flex: none;
   }
-`;console.info("%c CHARTDECK %c 1.0.0 ","color:#fff;background:#3b8bff;font-weight:700","color:#3b8bff");const _i={rows:16,tiles:8};function yi(t){const e=_i[t.layout];return Math.max(1,Math.floor((368+e)/((t.minColumnWidth??0)+e)))}class vi extends lt{constructor(){super(...arguments),this._watched=new Set,this._items=[],this._detachers=new Map,this._readyScheduled=!1,this._readyAt=-1/0}static getStubConfig(t){const e=Object.values(t?.states??{}).filter(t=>t.entity_id.startsWith("sensor.")&&""!==t.state.trim()&&Number.isFinite(Number(t.state))),i=t=>"battery"===t.attributes?.device_class;return e.sort((t,e)=>i(t)!==i(e)?i(t)?-1:1:t.entity_id<e.entity_id?-1:t.entity_id>e.entity_id?1:0),{type:"custom:chartdeck-card",style:"bar",entities:e.slice(0,3).map(t=>t.entity_id)}}static getConfigElement(){return document.createElement("chartdeck-card-editor")}setConfig(t){const e=It(t);this._watched=function(t){const e=new Set;for(const i of t.entities){e.add(i.entity);for(const t of[i.min,i.max,i.target])"string"==typeof t&&""!==t&&e.add(t)}return e}(e),this._config=e}get _styleName(){return this._config?.style??"bar"}get _style(){return fi[this._styleName]}_legend(t){const e=this._config;if(!e?.show.legend||0===e.entities.length)return[];const i=t?.decimals??1;return function(t,e,i){const n=i?` ${i}`:"",s=[];return t.forEach((i,o)=>{const r=t[o+1],a=Mt(i.color);i.label?s.push({color:a,text:i.label}):Number.isFinite(i.from)?r?s.push({color:a,text:`${e(i.from)}–${e(r.from)}${n}`}):s.push({color:a,text:`${e(i.from)}${n}+`}):r&&s.push({color:a,text:`< ${e(r.from)}${n}`})}),s}(e.legendBands,t=>ze(t,i,this.hass),t?.unit??"")}_contentHeight(){const t=this._config;if(!t)return 0;const e=this._style,i=t.entities.length,n=void 0!==t.columns?Math.min(t.columns,yi(e)):"rows"===e.layout?1:Math.min(i,e.tilesPerRow??3,yi(e)),s=0===i?0:Math.ceil(i/Math.max(1,n));return 16+(t.title?73:0)+s*e.height+(this._legend().length>0?32:0)}getCardSize(){return Math.max(1,Math.ceil(this._contentHeight()/50))}getGridOptions(){const t=this._config?.entities.length??0,e="rows"===this._style.layout;return{columns:e||t<=1?6:12,rows:"auto",min_columns:e?6:3,min_rows:1}}shouldUpdate(t){if([...t.keys()].some(t=>"hass"!==t))return!0;if(!t.has("hass"))return!1;const e=t.get("hass"),i=this.hass;if(!e||!i)return!0;for(const n of this._watched)if(e.states[n]!==i.states[n])return!0;return e.themes?.darkMode!==i.themes?.darkMode||e.themes?.theme!==i.themes?.theme||e.locale!==i.locale}willUpdate(){const t=!1===this._config?.animate||"function"==typeof window.matchMedia&&!!window.matchMedia("(prefers-reduced-motion: reduce)")?.matches;this.toggleAttribute("static",t),(t||this.preview)&&this.setAttribute("ready","")}_scheduleReady(){if(this._readyScheduled||this.hasAttribute("ready")||0===this._items.length)return;this._readyScheduled=!0;const t=()=>{this.shadowRoot?.querySelector(".entity")?.getBoundingClientRect(),this.setAttribute("ready",""),this._readyAt=performance.now()};"function"==typeof requestAnimationFrame?requestAnimationFrame(t):setTimeout(t,16)}updated(){this._scheduleReady(),this._syncActions()}connectedCallback(){super.connectedCallback(),this.hasUpdated&&(this._syncActions(),this.hasAttribute("ready")&&!this.hasAttribute("static")&&performance.now()-this._readyAt<1e3&&(this.removeAttribute("ready"),this._readyScheduled=!1,this._scheduleReady()))}disconnectedCallback(){super.disconnectedCallback();for(const t of this._detachers.values())t();this._detachers.clear()}_syncActions(){const t=this.shadowRoot;if(!t)return;const e=new Set(t.querySelectorAll(".entity"));for(const[i,n]of this._detachers)e.has(i)||(n(),this._detachers.delete(i));for(const i of e)this._detachers.has(i)||this._detachers.set(i,St(i,()=>this._items[Number(i.dataset.index)].config))}_renderEntity(t,e,i,n){const s=this._config,o=(r=t.config,Et(r.tap_action)||Et(r.hold_action)||Et(r.double_tap_action));var r;const a=function(t){const e=Mt(t);return{start:e,end:`color-mix(in srgb, ${e} 80%, #fff)`}}(t.band.color),l=`--start:${t.span[0]};--end:${t.span[1]};--pos:${t.position};--target:${t.targetPosition??0};--c-start:${a.start};--c-end:${a.end}`;return I`<div
+`;console.info("%c CHARTDECK %c 1.0.0 ","color:#fff;background:#3b8bff;font-weight:700","color:#3b8bff");const yi={rows:16,tiles:8};function vi(t){const e=yi[t.layout];return Math.max(1,Math.floor((368+e)/((t.minColumnWidth??0)+e)))}class $i extends lt{constructor(){super(...arguments),this._watched=new Set,this._items=[],this._detachers=new Map,this._readyScheduled=!1,this._readyAt=-1/0}static getStubConfig(t){const e=Object.values(t?.states??{}).filter(t=>t.entity_id.startsWith("sensor.")&&""!==t.state.trim()&&Number.isFinite(Number(t.state))),i=t=>"battery"===t.attributes?.device_class;return e.sort((t,e)=>i(t)!==i(e)?i(t)?-1:1:t.entity_id<e.entity_id?-1:t.entity_id>e.entity_id?1:0),{type:"custom:chartdeck-card",style:"bar",entities:e.slice(0,3).map(t=>t.entity_id)}}static getConfigElement(){return document.createElement("chartdeck-card-editor")}setConfig(t){const e=It(t);this._watched=function(t){const e=new Set;for(const i of t.entities){e.add(i.entity);for(const t of[i.min,i.max,i.target])"string"==typeof t&&""!==t&&e.add(t)}return e}(e),this._config=e}get _styleName(){return this._config?.style??"bar"}get _style(){return gi[this._styleName]}_legend(t){const e=this._config;if(!e?.show.legend||0===e.entities.length)return[];const i=t?.decimals??1;return function(t,e,i){const n=i?` ${i}`:"",s=[];return t.forEach((i,o)=>{const r=t[o+1],a=Mt(i.color);i.label?s.push({color:a,text:i.label}):Number.isFinite(i.from)?r?s.push({color:a,text:`${e(i.from)}–${e(r.from)}${n}`}):s.push({color:a,text:`${e(i.from)}${n}+`}):r&&s.push({color:a,text:`< ${e(r.from)}${n}`})}),s}(e.legendBands,t=>ze(t,i,this.hass),t?.unit??"")}_contentHeight(){const t=this._config;if(!t)return 0;const e=this._style,i=t.entities.length,n=void 0!==t.columns?Math.min(t.columns,vi(e)):"rows"===e.layout?1:Math.min(i,e.tilesPerRow??3,vi(e)),s=0===i?0:Math.ceil(i/Math.max(1,n));return 16+(t.title?73:0)+s*e.height+(this._legend().length>0?32:0)}getCardSize(){return Math.max(1,Math.ceil(this._contentHeight()/50))}getGridOptions(){const t=this._config?.entities.length??0,e="rows"===this._style.layout;return{columns:e||t<=1?6:12,rows:"auto",min_columns:e?6:3,min_rows:1}}shouldUpdate(t){if([...t.keys()].some(t=>"hass"!==t))return!0;if(!t.has("hass"))return!1;const e=t.get("hass"),i=this.hass;if(!e||!i)return!0;for(const n of this._watched)if(e.states[n]!==i.states[n])return!0;return e.themes?.darkMode!==i.themes?.darkMode||e.themes?.theme!==i.themes?.theme||e.locale!==i.locale}willUpdate(){const t=!1===this._config?.animate||"function"==typeof window.matchMedia&&!!window.matchMedia("(prefers-reduced-motion: reduce)")?.matches;this.toggleAttribute("static",t),(t||this.preview)&&this.setAttribute("ready","")}_scheduleReady(){if(this._readyScheduled||this.hasAttribute("ready")||0===this._items.length)return;this._readyScheduled=!0;const t=()=>{this.shadowRoot?.querySelector(".entity")?.getBoundingClientRect(),this.setAttribute("ready",""),this._readyAt=performance.now()};"function"==typeof requestAnimationFrame?requestAnimationFrame(t):setTimeout(t,16)}updated(){this._scheduleReady(),this._syncActions()}connectedCallback(){super.connectedCallback(),this.hasUpdated&&(this._syncActions(),this.hasAttribute("ready")&&!this.hasAttribute("static")&&performance.now()-this._readyAt<1e3&&(this.removeAttribute("ready"),this._readyScheduled=!1,this._scheduleReady()))}disconnectedCallback(){super.disconnectedCallback();for(const t of this._detachers.values())t();this._detachers.clear()}_syncActions(){const t=this.shadowRoot;if(!t)return;const e=new Set(t.querySelectorAll(".entity"));for(const[i,n]of this._detachers)e.has(i)||(n(),this._detachers.delete(i));for(const i of e)this._detachers.has(i)||this._detachers.set(i,St(i,()=>this._items[Number(i.dataset.index)].config))}_renderEntity(t,e,i,n){const s=this._config,o=(r=t.config,Et(r.tap_action)||Et(r.hold_action)||Et(r.double_tap_action));var r;const a=function(t){const e=Mt(t);return{start:e,end:`color-mix(in srgb, ${e} 80%, #fff)`}}(t.band.color),l=`--start:${t.span[0]};--end:${t.span[1]};--pos:${t.position};--target:${t.targetPosition??0};--c-start:${a.start};--c-end:${a.end}`;return I`<div
       class="entity ${o?"interactive":""} ${t.available?"":"unavailable"}"
       data-index=${e}
       role="meter"
@@ -1132,7 +1132,7 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
       style=${l}
     >
       ${i.render(t,{show:s.show,hass:n})}
-    </div>`}render(){const t=this._config;if(!t)return V;const e=this.hass,i=this._style;let n,s;if(0===t.entities.length)this._items=[],n=I`<div class="hint">${Zt(e,"no_entities")}</div>`;else if(e){const o=We(t,e);s=o[0];const r=new Map,a=new Set;o.forEach((t,e)=>{r.set(t,a.has(t.entityId)?`${t.entityId}#${e}`:t.entityId),a.add(t.entityId)}),this._items=function(t,e){if("none"===e)return[...t];const i="ascending"===e?1:-1;return t.map((t,e)=>({item:t,index:e})).sort((t,e)=>{if(t.item.available!==e.item.available)return t.item.available?-1:1;if(t.item.available){const n=(t.item.position-e.item.position)*i;if(0!==n)return n}return t.index-e.index}).map(t=>t.item)}(o,t.sort);const l="tiles"===i.layout,c=function(t,e){if(void 0===e)return"rows"===t.layout?"grid-template-columns: repeat(1, minmax(0, 1fr))":"";const i=(e-1)*_i[t.layout];return`grid-template-columns: repeat(auto-fill, minmax(max(min(${t.minColumnWidth??0}px, 100%), calc((100% - ${i}px) / ${e} - 0.5px)), 1fr))`}(i,t.columns);n=I`<div
+    </div>`}render(){const t=this._config;if(!t)return V;const e=this.hass,i=this._style;let n,s;if(0===t.entities.length)this._items=[],n=I`<div class="hint">${Zt(e,"no_entities")}</div>`;else if(e){const o=We(t,e);s=o[0];const r=new Map,a=new Set;o.forEach((t,e)=>{r.set(t,a.has(t.entityId)?`${t.entityId}#${e}`:t.entityId),a.add(t.entityId)}),this._items=function(t,e){if("none"===e)return[...t];const i="ascending"===e?1:-1;return t.map((t,e)=>({item:t,index:e})).sort((t,e)=>{if(t.item.available!==e.item.available)return t.item.available?-1:1;if(t.item.available){const n=(t.item.position-e.item.position)*i;if(0!==n)return n}return t.index-e.index}).map(t=>t.item)}(o,t.sort);const l="tiles"===i.layout,c=function(t,e){if(void 0===e)return"rows"===t.layout?"grid-template-columns: repeat(1, minmax(0, 1fr))":"";const i=(e-1)*yi[t.layout];return`grid-template-columns: repeat(auto-fill, minmax(max(min(${t.minColumnWidth??0}px, 100%), calc((100% - ${i}px) / ${e} - 0.5px)), 1fr))`}(i,t.columns);n=I`<div
         class="entities layout-${i.layout} ${l&&void 0!==t.columns?"has-columns":""}"
         style=${c}
       >
@@ -1144,4 +1144,4 @@ const dt=1,ht=2,ut=3,pt=4,mt=t=>(...e)=>({_$litDirective$:t,values:e});let ft=cl
                     ><span class="dot" style="background:${t.color}"></span>${t.text}</span
                   >`)}
             </div>`:V}
-    </ha-card>`}}vi.properties={hass:{attribute:!1},preview:{type:Boolean},_config:{state:!0}},vi.styles=[gi,...Object.values(fi).map(t=>t.styles)],customElements.get("chartdeck-card")||customElements.define("chartdeck-card",vi);const $i=window.customCards??=[];$i.some(t=>"chartdeck-card"===t.type)||$i.push({type:"chartdeck-card",name:"Chartdeck",description:"Bars, gauges and charts, set up entirely from the visual editor.",preview:!0,documentationURL:"https://tempus2016.github.io/chartdeck/"});export{vi as ChartdeckCard};
+    </ha-card>`}}$i.properties={hass:{attribute:!1},preview:{type:Boolean},_config:{state:!0}},$i.styles=[_i,...Object.values(gi).map(t=>t.styles)],customElements.get("chartdeck-card")||customElements.define("chartdeck-card",$i);const bi=window.customCards??=[];bi.some(t=>"chartdeck-card"===t.type)||bi.push({type:"chartdeck-card",name:"Chartdeck",description:"Bars, gauges and charts, set up entirely from the visual editor.",preview:!0,documentationURL:"https://tempus2016.github.io/chartdeck/"});export{$i as ChartdeckCard};
