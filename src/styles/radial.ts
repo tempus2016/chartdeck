@@ -1,6 +1,7 @@
 import { css, html, nothing, svg } from 'lit';
 import { solidColor } from '../bands';
 import { arcPath, polar, sweepAngles } from '../geometry';
+import { fitStatusText } from '../status-text';
 import type { StyleModule } from './index';
 
 let counter = 0;
@@ -30,6 +31,15 @@ const num = (x: number) => String(Math.round(x * 1000) / 1000 + 0);
  */
 function valueFontSize(text: string): number {
   return Math.min(22, Math.floor(124 / Math.max(1, text.length)));
+}
+
+/** Status text (Unavailable, Entity not found) on one or two lines, sized to fit the hollow. */
+function statusText(text: string) {
+  const { lines, size } = fitStatusText(text);
+  const top = CY + 4 - ((lines.length - 1) * 1.2 * size) / 2;
+  return svg`<text class="na" text-anchor="middle" style="font-size: ${size}px">${lines.map(
+    (line, i) => svg`<tspan x=${CX} y=${num(top + i * 1.2 * size)}>${line}</tspan>`,
+  )}</text>`;
 }
 
 /** Ring (360) and three-quarter arc (270) gauges share one drawing. */
@@ -175,7 +185,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
                       <text class="unit" x=${CX} y=${CY + 20 + shift} text-anchor="middle">${e.unit}</text>`
                       : nothing
                   }`
-                : svg`<text class="na" x=${CX} y=${CY + 4} text-anchor="middle">${e.display}</text>`
+                : statusText(e.display)
             }
           </svg>
           ${
