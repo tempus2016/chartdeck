@@ -31,5 +31,9 @@ describe('adding a band', () => {
     expect((await addTo([{ from: '20' as unknown as number, color: 'red' }])).at(-1)!.from).toBe(30);
     expect((await addTo([])).at(-1)!.from).toBe(0);
     expect((await addTo([{ from: 'low' as unknown as number, color: 'red' }])).at(-1)!.from).toBe(0);
+    expect((await addTo([{ from: ' 20 ' as unknown as number, color: 'red' }])).at(-1)!.from).toBe(30);
+    for (const blank of ['', ' ', null, true]) {
+      expect((await addTo([{ from: blank as unknown as number, color: 'red' }])).at(-1)!.from, String(blank)).toBe(0);
+    }
   });
 });
