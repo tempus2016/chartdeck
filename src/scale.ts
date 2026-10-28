@@ -6,7 +6,9 @@ export function position(value: number, min: number, max: number): number {
 }
 
 export function fillSpan(value: number, min: number, max: number): [number, number] {
-  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return [0, 0];
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+    return [0, 0];
+  }
   const end = position(value, min, max);
   if (min < 0 && max > 0) {
     const zero = position(0, min, max);

@@ -25,5 +25,7 @@ describe('fillSpan', () => {
   });
   it('returns an empty span for an invalid range', () => {
     expect(fillSpan(5, 10, 10)).toEqual([0, 0]);
+    expect(fillSpan(5, 10, -10)).toEqual([0, 0]);
+    expect(fillSpan(NaN, -100, 100)).toEqual([0, 0]);
   });
 });
