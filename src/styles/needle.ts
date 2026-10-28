@@ -4,6 +4,7 @@ import { arcPath, needlePath, polar } from '../geometry';
 import { fitStatusText } from '../status-text';
 import type { Band } from '../types';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 const CX = 65;
 const CY = 66;
@@ -186,7 +187,7 @@ export const needle: StyleModule = {
                       class="icon"
                       .hass=${hass}
                       .stateObj=${e.stateObj}
-                      .icon=${e.config.icon}
+                      .icon=${iconOverride(e)}
                     ></ha-state-icon>`
                   : nothing
               }

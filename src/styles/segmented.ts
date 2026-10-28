@@ -1,5 +1,6 @@
 import { css, html, nothing } from 'lit';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 const CELLS = 10;
 
@@ -134,7 +135,7 @@ export const segmented: StyleModule = {
               class="icon"
               .hass=${hass}
               .stateObj=${e.stateObj}
-              .icon=${e.config.icon}
+              .icon=${iconOverride(e)}
             ></ha-state-icon>`
           : nothing
       }
