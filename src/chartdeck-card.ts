@@ -20,6 +20,8 @@ console.info(`%c CHARTDECK %c ${VERSION} `, 'color:#fff;background:#3b8bff;font-
 const TITLE_HEIGHT = 52;
 const PADDING_HEIGHT = 16;
 const LEGEND_HEIGHT = 32;
+/** How long the draw-in runs (the 900 ms --cd-duration, with a little slack). */
+const DRAW_IN_MS = 1000;
 
 function prefersReducedMotion(): boolean {
   if (typeof window.matchMedia !== 'function') return false;
@@ -42,6 +44,8 @@ export class ChartdeckCard extends LitElement {
   private _items: ResolvedEntity[] = [];
   private _detachers = new Map<HTMLElement, () => void>();
   private _readyScheduled = false;
+  /** performance.now() when `ready` was set, i.e. when the draw-in started. */
+  private _readyAt = -Infinity;
 
   static getStubConfig(hass: HomeAssistant): CardConfig {
     const numeric = Object.values(hass?.states ?? {}).filter(
@@ -152,6 +156,7 @@ export class ChartdeckCard extends LitElement {
       // animate from, so bars would appear at full value instead of growing in.
       this.shadowRoot?.querySelector('.entity')?.getBoundingClientRect();
       this.setAttribute('ready', '');
+      this._readyAt = performance.now();
     };
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(markReady);
     else setTimeout(markReady, 16);
@@ -164,7 +169,16 @@ export class ChartdeckCard extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
-    if (this.hasUpdated) this._syncActions();
+    if (!this.hasUpdated) return;
+    this._syncActions();
+    // Moved while drawing in (masonry re-lays out its columns just after the first render): the
+    // re-inserted element has lost its running transition and would snap to the final value, so
+    // start the draw-in over. Re-attached later (e.g. switching views), it stays drawn.
+    if (this.hasAttribute('ready') && !this.hasAttribute('static') && performance.now() - this._readyAt < DRAW_IN_MS) {
+      this.removeAttribute('ready');
+      this._readyScheduled = false;
+      this._scheduleReady();
+    }
   }
 
   disconnectedCallback(): void {

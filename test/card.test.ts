@@ -146,6 +146,35 @@ describe('chartdeck-card', () => {
     expect(card.hasAttribute('ready')).toBe(true);
   });
 
+  it('restarts the draw-in when moved in the page while it is still playing', async () => {
+    // Masonry re-lays out its columns after the first render and can move a card that has
+    // just started drawing in; a moved element loses its running transition and would snap
+    // to the final value, so the draw-in starts over instead.
+    const card = await mount(base());
+    await frame();
+    await frame();
+    expect(card.hasAttribute('ready')).toBe(true);
+    const other = document.createElement('div');
+    document.body.appendChild(other);
+    other.appendChild(card);
+    expect(card.hasAttribute('ready')).toBe(false);
+    await frame();
+    await frame();
+    expect(card.hasAttribute('ready')).toBe(true);
+  });
+
+  it('does not replay the draw-in when re-attached after it finished', async () => {
+    const card = await mount(base());
+    await frame();
+    await frame();
+    expect(card.hasAttribute('ready')).toBe(true);
+    const now = performance.now();
+    vi.spyOn(performance, 'now').mockReturnValue(now + 5000);
+    card.remove();
+    document.body.appendChild(card);
+    expect(card.hasAttribute('ready')).toBe(true);
+  });
+
   it('waits for entities to be drawn before setting ready', async () => {
     const card = document.createElement('chartdeck-card') as Card;
     card.setConfig(base());
