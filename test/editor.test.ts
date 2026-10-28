@@ -488,6 +488,14 @@ describe('editor: optional fields', () => {
 });
 
 describe('editor: schemas', () => {
+  it('lists the show toggles one per row, not in a two-column grid', async () => {
+    const { editor } = await mount(raw);
+    const schema = form(editor, 'display').schema as { name: string; type?: string; selector?: object }[];
+    const toggles = schema.filter((item) => item.name?.startsWith('show_'));
+    expect(toggles.map((t) => t.name)).toEqual(['show_name', 'show_value', 'show_icon', 'show_target', 'show_legend']);
+    for (const t of toggles) expect(t.selector).toEqual({ boolean: {} });
+  });
+
   it('memoises ha-form schemas per language', async () => {
     const { editor } = await mount(raw);
     const first = form(editor, 'display').schema;

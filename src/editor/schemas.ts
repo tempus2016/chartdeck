@@ -75,11 +75,8 @@ export function entityActionsSchema() {
 function buildDisplaySchema(hass?: HomeAssistant) {
   const toggle = (name: string) => ({ name, selector: { boolean: {} } });
   return [
-    {
-      type: 'grid',
-      name: '',
-      schema: ['show_name', 'show_value', 'show_icon', 'show_target', 'show_legend'].map(toggle),
-    },
+    // One toggle per row, label beside its switch; a grid spread them across the panel.
+    ...['show_name', 'show_value', 'show_icon', 'show_target', 'show_legend'].map(toggle),
     {
       type: 'grid',
       name: '',
