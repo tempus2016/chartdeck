@@ -1,5 +1,6 @@
 import { css, html, nothing } from 'lit';
 import type { StyleModule } from './index';
+import { iconOverride } from '../resolve';
 
 const CELLS = 10;
 
@@ -16,12 +17,18 @@ export function litCells(span: [number, number]): boolean[] {
 export const segmented: StyleModule = {
   layout: 'rows',
   height: 50,
+  minColumnWidth: 180,
   styles: css`
+    /* Each row is measured on its own, so a narrow column (columns: 2 or 3) switches layout
+       even when the card as a whole is wide. A container can't restyle itself, hence .seg. */
     .style-segmented .entity {
+      container-type: inline-size;
+      padding: 6px 0;
+    }
+    .style-segmented .seg {
       display: flex;
       align-items: flex-end;
       gap: 12px;
-      padding: 6px 0;
     }
     .style-segmented .icon {
       flex: none;
@@ -34,12 +41,23 @@ export const segmented: StyleModule = {
       min-width: 0;
     }
     .style-segmented .name {
+      display: flex;
+      gap: 8px;
       font-size: 14px;
       margin-bottom: 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--primary-text-color);
+    }
+    .style-segmented .name .label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .style-segmented .name .status {
+      flex: none;
+      margin-left: auto;
+      color: var(--secondary-text-color);
     }
     .style-segmented .cells {
       display: flex;
@@ -74,9 +92,11 @@ export const segmented: StyleModule = {
       outline: 2px solid var(--primary-text-color);
       outline-offset: 0;
     }
+    /* Every row reserves the card's longest value (--cd-value-ch), so the cell strips line up,
+       but never more than about a third (35 %) of the row. */
     .style-segmented .value {
       flex: none;
-      min-width: 48px;
+      min-width: min(max(48px, calc(var(--cd-value-ch, 4) * 1ch + 4px)), 35%);
       white-space: nowrap;
       text-align: right;
       font-size: 14px;
@@ -85,7 +105,7 @@ export const segmented: StyleModule = {
     }
     /* Narrow cards: the value joins the name line so the cells get the full width. */
     @container (max-width: 279px) {
-      .style-segmented .entity {
+      .style-segmented .seg {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
         grid-template-areas:
@@ -121,26 +141,36 @@ export const segmented: StyleModule = {
       show.target && e.available && e.targetPosition !== null
         ? Math.min(CELLS - 1, Math.max(0, Math.floor(e.targetPosition * CELLS)))
         : -1;
-    return html`
+    // Status text ("Unavailable") is wider than a reading, so it goes on the name line and
+    // the row keeps an empty value slot: every row's cells then end at the same place.
+    const status = !e.available;
+    return html`<div class="seg">
       ${
         show.icon
           ? html`<ha-state-icon
               class="icon"
               .hass=${hass}
               .stateObj=${e.stateObj}
-              .icon=${e.config.icon}
+              .icon=${iconOverride(e)}
             ></ha-state-icon>`
           : nothing
       }
       <div class="body">
-        ${show.name ? html`<div class="name">${e.name}</div>` : nothing}
+        ${
+          show.name || status
+            ? html`<div class="name">
+                ${show.name ? html`<span class="label">${e.name}</span>` : nothing}
+                ${status ? html`<span class="status">${e.display}</span>` : nothing}
+              </div>`
+            : nothing
+        }
         <div class="cells">
           ${lit.map(
             (on, i) => html`<i class="cell ${on ? 'on' : ''} ${i === mark ? 'mark' : ''}" style="--i:${i}"></i>`,
           )}
         </div>
       </div>
-      ${show.value ? html`<span class="value">${e.display}</span>` : nothing}
-    `;
+      ${show.value ? html`<span class="value">${e.available ? e.display : ''}</span>` : nothing}
+    </div>`;
   },
 };
