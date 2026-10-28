@@ -12,6 +12,7 @@ for (const tag of [
   'ha-entity-picker',
   'ha-icon-picker',
   'ha-icon-button',
+  'ha-switch',
 ]) {
   if (!customElements.get(tag)) customElements.define(tag, class extends StubElement {});
 }
@@ -84,6 +85,13 @@ function change(el: HTMLElement, value: Record<string, unknown>): void {
   el.dispatchEvent(new CustomEvent('value-changed', { detail: { value }, bubbles: true, composed: true }));
 }
 
+const toggle = (editor: Editor, name: string) =>
+  editor.shadowRoot!.querySelector(`ha-switch[data-name="${name}"]`) as HTMLElement & { checked: boolean };
+const flip = (sw: HTMLElement & { checked: boolean }, checked: boolean) => {
+  sw.checked = checked;
+  sw.dispatchEvent(new Event('change'));
+};
+
 afterEach(() => {
   document.body.innerHTML = '';
 });
@@ -143,16 +151,40 @@ describe('chartdeck-card-editor', () => {
 
   it('a Display toggle set back to its default removes the key', async () => {
     const { editor, events } = await mount({ type: 'custom:chartdeck-card', entities: ['sensor.a'] });
-    const f = form(editor, 'display');
-    const data = f.data as Record<string, unknown>;
-    expect(data).toMatchObject({ show_name: true, show_legend: false, sort: 'none', animate: true });
-    change(f, { ...data, show_legend: true });
+    expect(toggle(editor, 'show_name').checked).toBe(true);
+    expect(toggle(editor, 'show_legend').checked).toBe(false);
+    expect(toggle(editor, 'animate').checked).toBe(true);
+    flip(toggle(editor, 'show_legend'), true);
     expect(events.at(-1)!.show).toEqual({ legend: true });
     await editor.updateComplete;
-    change(f, { ...(f.data as Record<string, unknown>), show_legend: false });
+    flip(toggle(editor, 'show_legend'), false);
     expect(events.at(-1)).toEqual({ type: 'custom:chartdeck-card', entities: ['sensor.a'] });
-    change(f, { ...(f.data as Record<string, unknown>), animate: false, sort: 'descending' });
-    expect(events.at(-1)).toMatchObject({ animate: false, sort: 'descending' });
+    await editor.updateComplete;
+    flip(toggle(editor, 'animate'), false);
+    expect(events.at(-1)).toMatchObject({ animate: false });
+  });
+
+  it('names each switch for screen readers and toggles it from its label text', async () => {
+    const { editor, events } = await mount({ type: 'custom:chartdeck-card', entities: ['sensor.a'] });
+    expect(toggle(editor, 'show_legend').getAttribute('aria-label')).toBe('Show legend');
+    const row = toggle(editor, 'show_legend').closest('.toggle')!;
+    (row.querySelector('span') as HTMLElement).click();
+    expect(events.at(-1)!.show).toEqual({ legend: true });
+  });
+
+  it('a Display form change leaves the switch settings alone', async () => {
+    const start = { ...raw, show: { name: false }, animate: false } as CardConfig;
+    const { editor, events } = await mount(start);
+    const f = form(editor, 'display');
+    change(f, { ...(f.data as Record<string, unknown>), sort: 'descending' });
+    expect(events.at(-1)).toEqual({ ...start, sort: 'descending' });
+  });
+
+  it('shows explicit YAML values on the toggles and keeps the others when one changes', async () => {
+    const { editor, events } = await mount({ ...raw, show: { name: false } } as CardConfig);
+    expect(toggle(editor, 'show_name').checked).toBe(false);
+    flip(toggle(editor, 'show_icon'), false);
+    expect(events.at(-1)).toEqual({ ...raw, show: { name: false, icon: false } });
   });
 
   it('clearing a number removes it', async () => {
@@ -489,6 +521,22 @@ describe('editor: optional fields', () => {
 });
 
 describe('editor: schemas', () => {
+  it('lists the show toggles one per row as compact label + switch rows', async () => {
+    const { editor } = await mount(raw);
+    const rows = [...editor.shadowRoot!.querySelectorAll('.toggles .toggle')];
+    expect(rows.map((r) => r.querySelector('ha-switch')!.getAttribute('data-name'))).toEqual([
+      'show_name',
+      'show_value',
+      'show_icon',
+      'show_target',
+      'show_legend',
+      'animate',
+    ]);
+    expect(rows[4].textContent!.trim()).toBe('Show legend');
+    const schema = form(editor, 'display').schema as { name: string }[];
+    expect(JSON.stringify(schema)).not.toMatch(/show_|animate/);
+  });
+
   it('memoises ha-form schemas per language', async () => {
     const { editor } = await mount(raw);
     const first = form(editor, 'display').schema;
