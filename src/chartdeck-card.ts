@@ -23,6 +23,20 @@ const LEGEND_HEIGHT = 32;
 /** How long the draw-in runs (the 900 ms --cd-duration, with a little slack). */
 const DRAW_IN_MS = 1000;
 
+/** Gap between columns (px): see .layout-rows and .layout-tiles in shared.ts. */
+const COLUMN_GAP = { rows: 16, tiles: 8 };
+
+/**
+ * The entities grid. A set `columns` is a maximum: each column keeps the style's minimum width,
+ * so a narrow card drops to fewer columns rather than crushing or overlapping them.
+ */
+function columnsTemplate(style: StyleModule, columns: number | undefined): string {
+  if (columns === undefined) return style.layout === 'rows' ? 'grid-template-columns: repeat(1, minmax(0, 1fr))' : '';
+  const gaps = (columns - 1) * COLUMN_GAP[style.layout];
+  const min = style.minColumnWidth ?? 0;
+  return `grid-template-columns: repeat(auto-fill, minmax(max(${min}px, calc((100% - ${gaps}px) / ${columns})), 1fr))`;
+}
+
 function prefersReducedMotion(): boolean {
   if (typeof window.matchMedia !== 'function') return false;
   return !!window.matchMedia('(prefers-reduced-motion: reduce)')?.matches;
@@ -261,10 +275,7 @@ export class ChartdeckCard extends LitElement {
       });
       this._items = sortEntities(resolved, config.sort);
       const tiles = style.layout === 'tiles';
-      const grid =
-        !tiles || config.columns !== undefined
-          ? `grid-template-columns: repeat(${config.columns ?? 1}, minmax(0, 1fr))`
-          : '';
+      const grid = columnsTemplate(style, config.columns);
       body = html`<div
         class="entities layout-${style.layout} ${tiles && config.columns !== undefined ? 'has-columns' : ''}"
         style=${grid}

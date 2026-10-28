@@ -33,6 +33,7 @@ export function bandSegments(bands: Band[], min: number, max: number): { from: n
 export const needle: StyleModule = {
   layout: 'tiles',
   height: 140,
+  minColumnWidth: 134,
   styles: css`
     .needle-gauge {
       display: flex;

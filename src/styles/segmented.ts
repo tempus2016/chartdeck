@@ -16,6 +16,7 @@ export function litCells(span: [number, number]): boolean[] {
 export const segmented: StyleModule = {
   layout: 'rows',
   height: 50,
+  minColumnWidth: 180,
   styles: css`
     .style-segmented .entity {
       display: flex;

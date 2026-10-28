@@ -22,6 +22,8 @@ export interface StyleModule {
   height: number;
   /** Tiles layout: tiles per row when `columns` is unset (default 3). */
   tilesPerRow?: number;
+  /** Narrowest a column may get (px) before a set `columns` count drops to fewer. */
+  minColumnWidth?: number;
 }
 
 export const STYLES: Record<StyleName, StyleModule> = {

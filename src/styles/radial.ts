@@ -39,6 +39,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
   return {
     layout: 'tiles',
     height: 155,
+    minColumnWidth: 128,
     styles: css`
       .radial {
         display: flex;
