@@ -3,6 +3,7 @@ import type { PropertyValues } from 'lit';
 import { attachActions, isInteractive } from './actions';
 import { colorStops, legendItems } from './bands';
 import { normalizeConfig } from './config';
+import './editor/chartdeck-card-editor';
 import { formatNumber } from './format';
 import { localize } from './localize';
 import { resolveEntities, sortEntities, watchedEntityIds } from './resolve';
