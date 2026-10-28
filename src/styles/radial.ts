@@ -128,7 +128,10 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
       const empty = e.span[1] - e.span[0] <= 0;
       // Plain numbers (pathLength 100), not calc() on custom properties, so every engine draws them.
       const dash = `stroke-dasharray: ${num((e.span[1] - e.span[0]) * 100)} 100; stroke-dashoffset: ${num(-e.span[0] * 100)}`;
+      // A second paint after url() is used if the gradient reference can't be resolved, so
+      // the arc still draws. Attributes can't resolve var(), so theme variables get none.
       const solid = solidColor(e.band.color);
+      const paint = solid.includes('var(') ? `url(#${id})` : `url(#${id}) ${solid}`;
       const shift = show.icon ? 6 : 0;
       const size = valueFontSize(e.valueText);
       let tick = nothing as unknown;
@@ -143,8 +146,8 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
           <svg viewBox="0 0 120 120" aria-hidden="true">
             <defs>
               <linearGradient id=${id} x1="0" y1="1" x2="1" y2="0">
-                <stop class="stop-start" offset="0" stop-color=${solid}></stop>
-                <stop class="stop-end" offset="1" stop-color=${solid}></stop>
+                <stop class="stop-start" offset="0"></stop>
+                <stop class="stop-end" offset="1"></stop>
               </linearGradient>
             </defs>
             <circle class="disc" cx=${CX} cy=${CY} r="34"></circle>
@@ -156,7 +159,7 @@ export function radialStyle(sweep: 360 | 270): StyleModule {
                   d=${trackD}
                   pathLength="100"
                   style=${dash}
-                  stroke="url(#${id})"
+                  stroke=${paint}
                 ></path>`
                 : nothing
             }
