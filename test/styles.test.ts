@@ -127,6 +127,16 @@ describe('tank', () => {
     expect(q(card, '.target')).toBeNull();
   });
 
+  it('lays tiles out on an equal-width grid with the name as wide as its tile', () => {
+    const css = STYLES.tank.styles.cssText;
+    expect(css).toMatch(
+      /\.style-tank \.layout-tiles \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(auto-fit, minmax\(80px, 1fr\)\);/,
+    );
+    const name = css.match(/\.style-tank \.name \{[^}]*\}/)![0];
+    expect(name).toContain('max-width: 100%');
+    expect(name).not.toContain('72px');
+  });
+
   it('sizes four tanks without a title to 12 columns and auto rows', async () => {
     const card = await mount({ style: 'tank', entities: ['sensor.a', 'sensor.a', 'sensor.a', 'sensor.a'] });
     expect(card.getGridOptions().columns).toBe(12);
