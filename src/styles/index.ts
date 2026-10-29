@@ -26,6 +26,7 @@ import { radar } from './radar';
 import { polarArea } from './polar-area';
 import { treemap } from './treemap';
 import { icicle, sunburst } from './sunburst';
+import { groupedBars } from './grouped-bars';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -141,4 +142,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   treemap,
   sunburst,
   icicle,
+  grouped_bars: groupedBars,
 };
