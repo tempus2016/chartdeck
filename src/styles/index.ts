@@ -32,6 +32,7 @@ import { lollipop } from './lollipop';
 import { waterfall } from './waterfall';
 import { slope } from './slope';
 import { dumbbell } from './dumbbell';
+import { rangeArea } from './range-area';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -153,4 +154,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   waterfall,
   slope,
   dumbbell,
+  range_area: rangeArea,
 };
