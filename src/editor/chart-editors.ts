@@ -267,6 +267,13 @@ export function labelSchema(hass: HomeAssistant | undefined, config: CardConfig 
 }
 
 export const labelsVariant = (config: CardConfig | undefined) => (config?.labels === true ? 'labels' : '');
+registerStrings('en', {
+  editor_sync: 'Sync group (charts with the same name share the pointer and period steps)',
+});
+
+/** A group name shared with other charts on the dashboard. */
+export const SYNC_FIELDS: FieldBinding[] = [{ name: 'sync', path: ['sync'] }];
+export const SYNC_SCHEMA = [{ name: 'sync', selector: { text: {} } }];
 
 const cache = new Map<string, unknown[]>();
 
@@ -312,6 +319,7 @@ const LINE_FIELDS: FieldBinding[] = [
   ...AXES_FIELDS,
   ...ZOOM_FIELDS,
   ...ANNOTATION_FIELDS,
+  ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
 ];
 
@@ -338,6 +346,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
     ...axesSchema(ctx.hass),
     ...ZOOM_SCHEMA,
     ...ANNOTATION_SCHEMA,
+    ...SYNC_SCHEMA,
     ...layoutSchema(ctx.hass),
   ]);
   return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${annotationsEditor(ctx)}`;

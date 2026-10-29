@@ -51,6 +51,7 @@ import {
   validateAnnotations,
 } from '../chart/annotations';
 import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
+import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize, registerStrings } from '../localize';
@@ -193,6 +194,7 @@ export const line: ChartStyleModule = {
     validateZoomOptions(raw);
     validateAnnotations(raw);
     validateLabelOptions(raw);
+    validateSyncOptions(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -209,9 +211,13 @@ export const line: ChartStyleModule = {
     stopHover(host);
     stopZoom(host);
     stopAnnotations(host);
+    stopSync(host);
   },
   render(ctx) {
     const frame = historyFrame(ctx);
+    // Charts in a sync group share the pointer's time: another chart's shows here too.
+    const own = hoverTime(ctx.host);
+    const shared = syncChart(ctx, frame, own);
     const nav = periodNav(frame, ctx);
     const names = seriesHeader(frame, ctx);
     const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
@@ -263,7 +269,7 @@ export const line: ChartStyleModule = {
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, shown, view, scales, labels, layout.compact, ctx) : nothing}
         ${zoomLayer(ctx, zoom)} ${notes.overlay}
-        ${tooltip ? tooltipLayer(ctx, shown, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
+        ${tooltip ? tooltipLayer(ctx, shown, scales, own ?? shared, plotWidth(ctx)) : nothing}`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
