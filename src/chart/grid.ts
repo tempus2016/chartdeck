@@ -5,6 +5,7 @@ import type { Range } from '../history/types';
 import type { ChartContext } from '../styles/index';
 import { axisOptions, timeLabel, timeTicks, timeZoneOf, valueAxis, zoneOffset } from './axes';
 import type { AxisOptions, TimeUnit, ValueAxis } from './axes';
+import type { Hover } from './tooltip';
 import { VIEW_H, VIEW_W, plot } from './frame';
 import { linear } from './scale';
 
@@ -49,6 +50,12 @@ export function chartWidth(ctx: Pick<ChartContext, 'host' | 'requestUpdate'>): n
 export function stopChartWidth(host: HTMLElement): void {
   sizes.get(host)?.observer?.disconnect();
   sizes.delete(host);
+}
+
+/** Rough width of the plot itself in px: the card less its padding and value labels. */
+export function plotWidth(ctx: ChartContext): number {
+  const y = axisOptions(ctx.raw);
+  return Math.max(0, chartWidth(ctx) - 32 - (y.y && y.labels === 'outside' ? 40 : 0));
 }
 
 export interface PlotScales {
@@ -132,6 +139,8 @@ export interface ChartAreaOptions {
   defs?: SVGTemplateResult | typeof nothing;
   /** HTML over the plot (point labels, a tooltip), positioned in percent of the plot. */
   overlay?: TemplateResult | typeof nothing;
+  /** Pointer handlers for a hover tooltip; the plot then takes sideways touch drags. */
+  hover?: Hover;
 }
 
 /**
@@ -139,7 +148,7 @@ export interface ChartAreaOptions {
  * stretched SVG never distorts it. Outside labels get their own column and row; inside ones sit
  * over the plot's left and bottom edges.
  */
-export function chartArea({ axes, ctx, content, label, defs = nothing, overlay = nothing }: ChartAreaOptions) {
+export function chartArea({ axes, ctx, content, label, defs = nothing, overlay = nothing, hover }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
   const y = options.y && axes.value.ticks.length > 0;
@@ -156,7 +165,13 @@ export function chartArea({ axes, ctx, content, label, defs = nothing, overlay =
     : nothing;
   return html`<div class="plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''}">
     ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
-    <div class="plot-area">
+    <div
+      class="plot-area ${hover ? 'hoverable' : ''}"
+      @pointerdown=${hover?.move}
+      @pointermove=${hover?.move}
+      @pointerleave=${hover?.leave}
+      @pointercancel=${hover?.leave}
+    >
       ${plot(content, label, defs, gridLines(axes))} ${outside ? nothing : html`${yLabels}${xLabels}`} ${overlay}
     </div>
     ${outside ? xLabels : nothing}
