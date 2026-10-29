@@ -1,9 +1,14 @@
 import type { HomeAssistant } from '../types';
 import type { Point, Range, SeriesRequest } from './types';
 
-/** A state string or attribute value as a number, or null for a gap. */
+/**
+ * A state string or attribute value as a number, or null for a gap. On and off (binary sensors,
+ * switches, lights) read as 1 and 0, so their changes are readings too.
+ */
 export function toReading(raw: unknown): number | null {
   if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  if (raw === 'on') return 1;
+  if (raw === 'off') return 0;
   if (typeof raw !== 'string' || raw.trim() === '') return null;
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;

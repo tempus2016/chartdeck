@@ -37,6 +37,7 @@ import { sparklineStyle } from './sparkline';
 import { streamgraph } from './streamgraph';
 import { candlestick } from './candlestick';
 import { violin } from './violin';
+import { beeswarm } from './beeswarm';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -163,4 +164,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   streamgraph,
   candlestick,
   violin,
+  beeswarm,
 };
