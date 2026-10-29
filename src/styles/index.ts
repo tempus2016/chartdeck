@@ -40,6 +40,7 @@ import { violin } from './violin';
 import { beeswarm } from './beeswarm';
 import { sankey } from './sankey';
 import { timeline } from './timeline';
+import { climate } from './climate';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -169,4 +170,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   beeswarm,
   sankey,
   timeline,
+  climate,
 };
