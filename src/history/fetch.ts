@@ -23,14 +23,28 @@ interface CompressedState {
   lc?: number;
 }
 
-/** One entity's history (Home Assistant's compressed format) as points, oldest first. */
-export function parseHistory(rows: CompressedState[] | undefined, attribute?: string): Point[] {
+/** A state or attribute as a text point's words: numbers as written, anything else (absent, null) as none. */
+export function toText(raw: unknown): string | undefined {
+  if (typeof raw === 'string') return raw;
+  return typeof raw === 'number' || typeof raw === 'boolean' ? String(raw) : undefined;
+}
+
+/** One reading as a point: a number, or for a text series its words (with `v` null). */
+export function toPoint(t: number, raw: unknown, text = false): Point {
+  return text ? { t, v: null, s: toText(raw) } : { t, v: toReading(raw) };
+}
+
+/**
+ * One entity's history (Home Assistant's compressed format) as points, oldest first. `text` keeps
+ * the words instead of a number, for states like "heating" or "idle".
+ */
+export function parseHistory(rows: CompressedState[] | undefined, attribute?: string, text = false): Point[] {
   const points: Point[] = [];
   for (const row of rows ?? []) {
     const time = row.lu ?? row.lc;
     if (time === undefined) continue;
     const raw = attribute ? row.a?.[attribute] : row.s;
-    points.push({ t: Math.round(time * 1000), v: toReading(raw) });
+    points.push(toPoint(Math.round(time * 1000), raw, text));
   }
   return points;
 }
@@ -116,7 +130,9 @@ export async function loadHistory(
           no_attributes: true,
         })
         .then((result) => {
-          for (const id of plain) out.set(key({ entity: id }), parseHistory(result?.[id]));
+          for (const s of series.filter((x) => !x.attribute)) {
+            out.set(key(s), parseHistory(result?.[s.entity], undefined, s.text));
+          }
         }),
     );
   }
@@ -126,7 +142,7 @@ export async function loadHistory(
         .callWS<Record<string, CompressedState[]>>({ ...base, entity_ids: withAttributes, no_attributes: false })
         .then((result) => {
           for (const s of series.filter((x) => x.attribute)) {
-            out.set(key(s), parseHistory(result?.[s.entity], s.attribute));
+            out.set(key(s), parseHistory(result?.[s.entity], s.attribute, s.text));
           }
         }),
     );
@@ -159,5 +175,6 @@ export async function loadStatistics(
 
 /** The map key for a series: its entity, plus the attribute when there is one. */
 export function key(s: SeriesRequest): string {
-  return s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  const k = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  return s.text ? `${k}|text` : k;
 }

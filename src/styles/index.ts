@@ -39,6 +39,7 @@ import { candlestick } from './candlestick';
 import { violin } from './violin';
 import { beeswarm } from './beeswarm';
 import { sankey } from './sankey';
+import { timeline } from './timeline';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -167,4 +168,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   violin,
   beeswarm,
   sankey,
+  timeline,
 };
