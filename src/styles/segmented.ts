@@ -1,5 +1,5 @@
 import { css, html, nothing } from 'lit';
-import type { StyleModule } from './index';
+import type { ValueStyleModule } from './index';
 import { iconOverride } from '../resolve';
 
 const CELLS = 10;
@@ -14,8 +14,9 @@ export function litCells(span: [number, number]): boolean[] {
 }
 
 /** Segmented bar: ten cells that light in sequence. */
-export const segmented: StyleModule = {
+export const segmented: ValueStyleModule = {
   layout: 'rows',
+  group: 'bars',
   height: 50,
   minColumnWidth: 180,
   styles: css`

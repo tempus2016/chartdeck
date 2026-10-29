@@ -9,8 +9,8 @@ import { formatNumber } from './format';
 import { localize } from './localize';
 import { matchedIds, resolveBands, resolveEntities, sortEntities, watchedEntityIds } from './resolve';
 import type { ResolvedEntity } from './resolve';
-import { STYLES } from './styles/index';
-import type { StyleModule } from './styles/index';
+import { STYLES, isChart } from './styles/index';
+import type { StyleModule, ValueStyleModule } from './styles/index';
 import { shared } from './styles/shared';
 import type { CardConfig, HomeAssistant, NormalizedConfig, StyleName } from './types';
 import { VERSION } from './version';
@@ -31,7 +31,7 @@ const COLUMN_GAP = { rows: 16, tiles: 8 };
 const MASONRY_CONTENT_WIDTH = 368;
 
 /** How many of the style's columns fit a typical masonry card, since `columns` is only a maximum. */
-function columnsThatFit(style: StyleModule): number {
+function columnsThatFit(style: ValueStyleModule): number {
   const gap = COLUMN_GAP[style.layout];
   return Math.max(1, Math.floor((MASONRY_CONTENT_WIDTH + gap) / ((style.minColumnWidth ?? 0) + gap)));
 }
@@ -40,7 +40,7 @@ function columnsThatFit(style: StyleModule): number {
  * The entities grid. A set `columns` is a maximum: each column keeps the style's minimum width,
  * so a narrow card drops to fewer columns rather than crushing or overlapping them.
  */
-function columnsTemplate(style: StyleModule, columns: number | undefined): string {
+function columnsTemplate(style: ValueStyleModule, columns: number | undefined): string {
   if (columns === undefined) return style.layout === 'rows' ? 'grid-template-columns: repeat(1, minmax(0, 1fr))' : '';
   const gaps = (columns - 1) * COLUMN_GAP[style.layout];
   const min = style.minColumnWidth ?? 0;
@@ -98,7 +98,12 @@ export class ChartdeckCard extends LitElement {
 
   setConfig(config: CardConfig): void {
     const normalized = normalizeConfig(config);
+    const style = STYLES[normalized.style];
+    if (isChart(style)) style.validate?.(config);
     this._watched = watchedEntityIds(normalized);
+    if (isChart(style)) for (const id of style.watch?.(config) ?? []) this._watched.add(id);
+    // A different chart style may hold subscriptions the new one doesn't know about.
+    if (this._config && this._config.style !== normalized.style) this._disconnectStyle();
     this._config = normalized;
   }
 
@@ -132,6 +137,8 @@ export class ChartdeckCard extends LitElement {
     const config = this._config;
     if (!config) return 0;
     const style = this._style;
+    const chrome = (config.title ? TITLE_HEIGHT : 0) + PADDING_HEIGHT + (this._legend().length > 0 ? LEGEND_HEIGHT : 0);
+    if (isChart(style)) return chrome + style.height;
     const n = this._count();
     const perRow =
       config.columns !== undefined
@@ -140,12 +147,7 @@ export class ChartdeckCard extends LitElement {
           ? 1
           : Math.min(n, style.tilesPerRow ?? 3, columnsThatFit(style));
     const rows = n === 0 ? 0 : Math.ceil(n / Math.max(1, perRow));
-    return (
-      (config.title ? TITLE_HEIGHT : 0) +
-      PADDING_HEIGHT +
-      rows * style.height +
-      (this._legend().length > 0 ? LEGEND_HEIGHT : 0)
-    );
+    return chrome + rows * style.height;
   }
 
   getCardSize(): number {
@@ -159,6 +161,8 @@ export class ChartdeckCard extends LitElement {
    */
   getGridOptions(): { columns: number; rows: 'auto'; min_columns: number; min_rows: number } {
     const n = this._count();
+    // Charts need the room: a time axis squeezed into a quarter section is unreadable.
+    if (isChart(this._style)) return { columns: 12, rows: 'auto', min_columns: 6, min_rows: 2 };
     const rows = this._style.layout === 'rows';
     const columns = rows || n <= 1 ? 6 : 12;
     // Row styles need half a section: at 3 columns the icon, cells and value can't fit.
@@ -233,8 +237,14 @@ export class ChartdeckCard extends LitElement {
     }
   }
 
+  private _disconnectStyle(): void {
+    const style = this._config ? STYLES[this._config.style] : undefined;
+    if (style && isChart(style)) style.disconnect?.(this);
+  }
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
+    this._disconnectStyle();
     for (const detach of this._detachers.values()) detach();
     this._detachers.clear();
   }
@@ -259,7 +269,7 @@ export class ChartdeckCard extends LitElement {
     }
   }
 
-  private _renderEntity(e: ResolvedEntity, index: number, style: StyleModule, hass: HomeAssistant) {
+  private _renderEntity(e: ResolvedEntity, index: number, style: ValueStyleModule, hass: HomeAssistant) {
     const config = this._config!;
     const interactive = isInteractive(e.config);
     const stops = colorStops(e.band.color);
@@ -318,18 +328,31 @@ export class ChartdeckCard extends LitElement {
       // would squeeze all the cells.
       const values = this._items.filter((e) => e.available).map((e) => e.display.length);
       valueCh = values.length ? Math.max(...values) : undefined;
-      const tiles = style.layout === 'tiles';
-      const grid = columnsTemplate(style, config.columns);
-      body = html`<div
-        class="entities layout-${style.layout} ${tiles && config.columns !== undefined ? 'has-columns' : ''}"
-        style=${grid}
-      >
-        ${repeat(
-          this._items,
-          (e) => keys.get(e),
-          (e, i) => this._renderEntity(e, i, style, hass),
-        )}
-      </div>`;
+      if (isChart(style)) {
+        body = html`<div class="chart">
+          ${style.render({
+            items: this._items,
+            config,
+            raw: config.cardOptions as CardConfig,
+            hass,
+            requestUpdate: () => this.requestUpdate(),
+            host: this,
+          })}
+        </div>`;
+      } else {
+        const tiles = style.layout === 'tiles';
+        const grid = columnsTemplate(style, config.columns);
+        body = html`<div
+          class="entities layout-${style.layout} ${tiles && config.columns !== undefined ? 'has-columns' : ''}"
+          style=${grid}
+        >
+          ${repeat(
+            this._items,
+            (e) => keys.get(e),
+            (e, i) => this._renderEntity(e, i, style, hass),
+          )}
+        </div>`;
+      }
     }
     const legend = this._legend(first);
     return html`<ha-card .header=${config.title}>

@@ -3,7 +3,7 @@ import { solidColor } from '../bands';
 import { arcPath, polar, sweepAngles } from '../geometry';
 import { iconOverride } from '../resolve';
 import { fitStatusText } from '../status-text';
-import type { StyleModule } from './index';
+import type { ValueStyleModule } from './index';
 
 let counter = 0;
 const ids = new WeakMap<object, string>();
@@ -50,13 +50,14 @@ function statusText(text: string) {
 }
 
 /** Ring (360) and three-quarter arc (270) gauges share one drawing. */
-export function radialStyle(sweep: 360 | 270): StyleModule {
+export function radialStyle(sweep: 360 | 270): ValueStyleModule {
   const [a0, a1] = sweepAngles(sweep, [0, 1]);
   const trackD = arcPath(CX, CY, R, a0, a1);
   // The arc's open bottom is empty: crop the drawing just below its round end caps (~98).
   const cropped = sweep < 360;
   return {
     layout: 'tiles',
+    group: 'gauges',
     height: cropped ? 135 : 155,
     minColumnWidth: 128,
     styles: css`

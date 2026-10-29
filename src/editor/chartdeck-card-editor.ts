@@ -22,6 +22,7 @@ import {
 } from './schemas';
 import type { FieldBinding } from './schemas';
 import { thumbnail } from './thumbnails';
+import { STYLES, STYLE_GROUPS, isChart } from '../styles/index';
 import { sensorUnit } from './entities-editor';
 import './bands-editor';
 import './entities-editor';
@@ -99,6 +100,15 @@ export class ChartdeckCardEditor extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+    .style-group {
+      margin: 12px 0 6px;
+      font-size: 0.875em;
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    .style-group:first-child {
+      margin-top: 0;
     }
     .styles {
       display: grid;
@@ -279,22 +289,43 @@ export class ChartdeckCardEditor extends LitElement {
     this._commit(setOption(this._config, ['style'], style === 'bar' ? undefined : style));
   }
 
+  /** The style picker, one group of thumbnails per kind of style (bars, gauges, charts…). */
   protected renderStyle(): TemplateResult {
     const current = this._config?.style ?? 'bar';
-    return html`<div class="styles">
-      ${STYLE_NAMES.map(
-        (style) =>
-          html`<button
-            type="button"
-            class="style"
-            data-style=${style}
-            aria-pressed=${current === style ? 'true' : 'false'}
-            @click=${() => this._selectStyle(style)}
-          >
-            ${thumbnail(style)}<span>${this._label(`editor_style_${style}`)}</span>
-          </button>`,
-      )}
-    </div>`;
+    return html`${STYLE_GROUPS.map((group) => {
+      const names = STYLE_NAMES.filter((name) => STYLES[name].group === group);
+      if (!names.length) return nothing;
+      return html`<div class="style-group">${this._label(`editor_group_${group}`)}</div>
+        <div class="styles" data-group=${group}>
+          ${names.map((style) => {
+            const module = STYLES[style];
+            const picture = isChart(module)
+              ? html`<svg class="thumbnail" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">
+                  ${module.thumbnail()}
+                </svg>`
+              : thumbnail(style);
+            return html`<button
+              type="button"
+              class="style"
+              data-style=${style}
+              aria-pressed=${current === style ? 'true' : 'false'}
+              @click=${() => this._selectStyle(style)}
+            >
+              ${picture}<span>${this._label(`editor_style_${style}`)}</span>
+            </button>`;
+          })}
+        </div>`;
+    })}`;
+  }
+
+  /** The current chart style's own options, when it has any. */
+  protected renderChart(): TemplateResult | typeof nothing {
+    const module = STYLES[(this._config?.style ?? 'bar') as StyleName];
+    if (!module || !isChart(module) || !module.editor || !this._config) return nothing;
+    return this._panel(
+      'chart',
+      module.editor({ hass: this.hass, config: this._config, commit: (config) => this._commit(config) }),
+    );
   }
 
   protected renderDisplay(): TemplateResult {
@@ -340,8 +371,9 @@ export class ChartdeckCardEditor extends LitElement {
     if (!this._config) return nothing;
     return html`<div class="title">${this._form('title', titleSchema(), TITLE_FIELDS)}</div>
       ${this._panel('entities', this.renderEntities())} ${this._panel('style', this.renderStyle())}
-      ${this._panel('limits', this.renderLimits())} ${this._panel('colours', this.renderColours())}
-      ${this._panel('display', this.renderDisplay())} ${this._panel('actions', this.renderActions())}`;
+      ${this.renderChart()} ${this._panel('limits', this.renderLimits())}
+      ${this._panel('colours', this.renderColours())} ${this._panel('display', this.renderDisplay())}
+      ${this._panel('actions', this.renderActions())}`;
   }
 }
 

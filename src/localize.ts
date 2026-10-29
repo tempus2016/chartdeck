@@ -9,6 +9,13 @@ const STRINGS: Record<string, Record<string, string>> = {
     none_available: 'None of these entities are available.',
     editor_section_entities: 'Entities',
     editor_section_style: 'Style',
+    editor_section_chart: 'Chart',
+    editor_group_bars: 'Bars',
+    editor_group_gauges: 'Gauges',
+    editor_group_history: 'History charts',
+    editor_group_totals: 'Parts of a total',
+    editor_group_compare: 'Comparisons',
+    editor_group_distribution: 'Distributions',
     editor_section_limits: 'Limits',
     editor_section_colours: 'Colours',
     editor_section_display: 'Display',
@@ -96,6 +103,11 @@ const STRINGS: Record<string, Record<string, string>> = {
     editor_severity: 'Colours',
   },
 };
+
+/** Add strings for a language; styles register their own labels this way. */
+export function registerStrings(lang: string, strings: Record<string, string>): void {
+  STRINGS[lang] = { ...STRINGS[lang], ...strings };
+}
 
 /** The user's language code, e.g. `en`. */
 export function languageOf(hass: HomeAssistant | undefined): string {
