@@ -29,6 +29,7 @@ import { icicle, sunburst } from './sunburst';
 import { groupedBars } from './grouped-bars';
 import { bullet } from './bullet';
 import { lollipop } from './lollipop';
+import { waterfall } from './waterfall';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -147,4 +148,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   grouped_bars: groupedBars,
   bullet,
   lollipop,
+  waterfall,
 };
