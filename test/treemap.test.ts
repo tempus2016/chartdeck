@@ -247,13 +247,13 @@ describe('treemap editor', () => {
     } as CardConfig;
     const { ed, events } = await editor(raw);
     const form = ed.shadowRoot!.querySelector('.section-chart ha-form[data-section="chart"]') as Stub;
-    expect(form.data).toEqual({ treemap_color_by: 'group', group_by: ['area'] });
+    expect(form.data).toEqual({ treemap_color_by: 'group', group_by: ['area'], drill_down: true });
     form.dispatchEvent(
       new CustomEvent('value-changed', {
-        detail: { value: { treemap_color_by: 'bands', group_by: ['area', 'floor'] } },
+        detail: { value: { treemap_color_by: 'bands', group_by: ['area', 'floor'], drill_down: false } },
       }),
     );
-    expect(events.at(-1)).toEqual({ ...raw, color_by: 'bands', group_by: ['area', 'floor'] });
+    expect(events.at(-1)).toEqual({ ...raw, color_by: 'bands', group_by: ['area', 'floor'], drill_down: false });
   });
 
   it('sets and clears each listed entity’s own group', async () => {

@@ -4,6 +4,7 @@ import { baseColor, onFillText } from '../bands';
 import { SERIES_COLORS, shade } from '../chart/colors';
 import { buildTree, groupPath, parseGroupBy, validateGroups } from '../chart/hierarchy';
 import type { TreeNode } from '../chart/hierarchy';
+import { drillBar, drillStyles, drillTarget, drillView, validateDrill } from '../chart/drill';
 import { inset, squarify } from '../chart/treemap-layout';
 import type { Rect } from '../chart/treemap-layout';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
@@ -54,12 +55,14 @@ export interface TreemapBox {
 /**
  * Lay out a tree in a `width` × `height` box: each group gets a rectangle sized by its total
  * (with a name strip on top when there is room), and its entities share what is left of it.
- * Nodes with nothing to show are left out.
+ * Nodes with nothing to show are left out. Each top-level node takes the next series colour, or
+ * all of them `family` (drilled into a group, its parts keep its colour).
  */
 export function treemapLayout(
   root: TreeNode,
   width: number,
   height: number,
+  family?: number,
 ): { groups: TreemapBox[]; leaves: TreemapBox[] } {
   const groups: TreemapBox[] = [];
   const leaves: TreemapBox[] = [];
@@ -71,7 +74,7 @@ export function treemapLayout(
     );
     shown.forEach((child, i) => {
       const r = rects[i];
-      const s = top ? i : series;
+      const s = top && family === undefined ? i : series;
       if (child.entity) {
         leaves.push({ node: child, rect: inset(r, GAP), series: s, rank: i });
         return;
@@ -83,7 +86,7 @@ export function treemapLayout(
       place(child, inner, s, false);
     });
   };
-  place(root, { x: 0, y: 0, w: width, h: height }, 0, true);
+  place(root, { x: 0, y: 0, w: width, h: height }, family ?? 0, true);
   return { groups, leaves };
 }
 
@@ -178,9 +181,16 @@ function leaf(
 function group(box: TreemapBox, ctx: ChartContext, width: number, colorBy: TreemapColorBy, unit: string | undefined) {
   const color = baseColor(SERIES_COLORS[box.series % SERIES_COLORS.length]);
   const total = unit === undefined ? '' : totalText(box.node.value, ctx, unit);
+  const target = drillTarget(ctx, box.node, total ? `${box.node.name}, ${total}` : box.node.name);
   return html`<div
-    class="group"
+    class="group ${target ? 'drillable' : ''}"
     style="${position(box.rect, width)};background:${colorBy === 'bands' ? 'var(--cd-track)' : shade(color, 14)}"
+    role=${target ? 'button' : nothing}
+    tabindex=${target ? 0 : nothing}
+    aria-label=${target?.label ?? nothing}
+    data-path=${box.node.path.join('/')}
+    @click=${target?.click}
+    @keydown=${target?.keydown}
   >
     ${
       box.head
@@ -193,12 +203,17 @@ function group(box: TreemapBox, ctx: ChartContext, width: number, colorBy: Treem
   </div>`;
 }
 
-const FIELDS: FieldBinding[] = [{ name: 'treemap_color_by', path: ['color_by'], default: 'group' }, ...GROUP_FIELDS];
+const FIELDS: FieldBinding[] = [
+  { name: 'treemap_color_by', path: ['color_by'], default: 'group' },
+  ...GROUP_FIELDS,
+  { name: 'drill_down', path: ['drill_down'], default: true },
+];
 
 export function treemapEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema('treemap', ctx.hass, () => [
     { name: 'treemap_color_by', selector: choice(ctx.hass, 'treemap_color_by', TREEMAP_COLOR_BY) },
     groupBySchema(ctx.hass),
+    { name: 'drill_down', selector: { boolean: {} } },
   ]);
   return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS)} ${entityGroupsForm(ctx)}`;
 }
@@ -216,6 +231,7 @@ export const treemap: ChartStyleModule = {
   group: 'totals',
   height: 280,
   styles: css`
+    ${drillStyles}
     .treemap-head {
       display: flex;
       justify-content: flex-end;
@@ -341,6 +357,7 @@ export const treemap: ChartStyleModule = {
     <rect x="50" y="23" width="10" height="13" rx="3" fill="var(--success-color, #43a047)" opacity="0.7" />`,
   validate(raw: CardConfig) {
     validateGroups(raw);
+    validateDrill(raw);
     if (raw.color_by !== undefined && !TREEMAP_COLOR_BY.includes(raw.color_by as TreemapColorBy)) {
       throw new Error(`"color_by" must be one of: ${TREEMAP_COLOR_BY.join(', ')}`);
     }
@@ -349,17 +366,19 @@ export const treemap: ChartStyleModule = {
   disconnect: forget,
   render(ctx) {
     const width = measure(ctx);
-    const root = treeFor(ctx);
+    const tree = treeFor(ctx);
+    const view = drillView(ctx, tree);
+    const root = view.node;
     const colorBy = (ctx.raw.color_by as TreemapColorBy | undefined) ?? 'group';
     const unit = sharedUnit(ctx.items);
-    const { groups, leaves } = treemapLayout(root, width, HEIGHT);
+    // Drilled in, the parts keep the colour their top-level group has on the whole map.
+    const family = view.path.length
+      ? tree.children.filter((c) => c.value > 0).findIndex((c) => c.name === view.path[0])
+      : undefined;
+    const { groups, leaves } = treemapLayout(root, width, HEIGHT, family);
     const noReading = ctx.items.map((e, index) => ({ e, index })).filter(({ e }) => !e.available);
-    const total =
-      unit !== undefined && ctx.config.show.value && root.value > 0
-        ? localize(ctx.hass, 'treemap_total', {
-            value: totalText(root.value, ctx, unit),
-          })
-        : '';
+    const sum = unit !== undefined && ctx.config.show.value && root.value > 0 ? totalText(root.value, ctx, unit) : '';
+    const total = sum && !view.path.length ? localize(ctx.hass, 'treemap_total', { value: sum }) : '';
     const label = localize(ctx.hass, 'treemap_aria', {
       names: (root.children.length ? root.children : []).map((c) => c.name).join(', '),
     });
@@ -369,8 +388,8 @@ export const treemap: ChartStyleModule = {
           ${leaves.map((l) => leaf(l, ctx, width, colorBy, root.value))}
         </div>`
       : html`<div class="treemap-message">${localize(ctx.hass, 'treemap_empty')}</div>`;
-    return html`${total ? html`<div class="treemap-head"><span class="treemap-total">${total}</span></div>` : nothing}
-    ${body}
+    return html`${drillBar(ctx, tree, view, sum)}
+    ${total ? html`<div class="treemap-head"><span class="treemap-total">${total}</span></div>` : nothing} ${body}
     ${
       noReading.length
         ? html`<div class="treemap-missing">

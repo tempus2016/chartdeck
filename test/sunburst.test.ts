@@ -251,10 +251,12 @@ describe('sunburst and icicle editors', () => {
   it('writes the shape, colour and group levels for a sunburst', async () => {
     const raw = { type: 'custom:chartdeck-card', style: 'sunburst', entities: ['sensor.ev'] } as CardConfig;
     const { events, form, ed } = await editor(raw);
-    expect(form.data).toEqual({ sunburst_shape: 'full', hierarchy_color_by: 'group', group_by: [] });
+    expect(form.data).toEqual({ sunburst_shape: 'full', hierarchy_color_by: 'group', group_by: [], drill_down: true });
     form.dispatchEvent(
       new CustomEvent('value-changed', {
-        detail: { value: { sunburst_shape: 'half', hierarchy_color_by: 'bands', group_by: ['floor', 'area'] } },
+        detail: {
+          value: { sunburst_shape: 'half', hierarchy_color_by: 'bands', group_by: ['floor', 'area'], drill_down: true },
+        },
       }),
     );
     expect(events.at(-1)).toEqual({ ...raw, shape: 'half', color_by: 'bands', group_by: ['floor', 'area'] });
@@ -264,10 +266,12 @@ describe('sunburst and icicle editors', () => {
   it('writes the colour and group levels for an icicle, without a shape', async () => {
     const raw = { type: 'custom:chartdeck-card', style: 'icicle', entities: ['sensor.ev'] } as CardConfig;
     const { events, form } = await editor(raw);
-    expect(form.data).toEqual({ hierarchy_color_by: 'group', group_by: [] });
+    expect(form.data).toEqual({ hierarchy_color_by: 'group', group_by: [], drill_down: true });
     form.dispatchEvent(
-      new CustomEvent('value-changed', { detail: { value: { hierarchy_color_by: 'group', group_by: ['label'] } } }),
+      new CustomEvent('value-changed', {
+        detail: { value: { hierarchy_color_by: 'group', group_by: ['label'], drill_down: false } },
+      }),
     );
-    expect(events.at(-1)).toEqual({ ...raw, group_by: ['label'] });
+    expect(events.at(-1)).toEqual({ ...raw, group_by: ['label'], drill_down: false });
   });
 });

@@ -4,6 +4,7 @@ import { baseColor, onFillText } from '../bands';
 import { SERIES_COLORS, shade } from '../chart/colors';
 import { buildTree, groupPath, parseGroupBy, partition, treeHeight, validateGroups } from '../chart/hierarchy';
 import type { Span, TreeNode } from '../chart/hierarchy';
+import { drillBar, drillStyles, drillTarget, drillView, validateDrill } from '../chart/drill';
 import { sectorPath } from '../chart/polar';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { GROUP_FIELDS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
@@ -127,7 +128,11 @@ function noReading(ctx: ChartContext): TemplateResult | typeof nothing {
   </div>`;
 }
 
-const FIELDS: FieldBinding[] = [{ name: 'hierarchy_color_by', path: ['color_by'], default: 'group' }, ...GROUP_FIELDS];
+const FIELDS: FieldBinding[] = [
+  { name: 'hierarchy_color_by', path: ['color_by'], default: 'group' },
+  ...GROUP_FIELDS,
+  { name: 'drill_down', path: ['drill_down'], default: true },
+];
 const SUNBURST_FIELDS: FieldBinding[] = [{ name: 'sunburst_shape', path: ['shape'], default: 'full' }, ...FIELDS];
 
 export function sunburstEditor(ctx: ChartEditorContext): TemplateResult {
@@ -141,6 +146,7 @@ export function sunburstEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     groupBySchema(ctx.hass),
+    { name: 'drill_down', selector: { boolean: {} } },
   ]);
   return html`${chartForm(withGroupList(ctx), 'chart', schema, SUNBURST_FIELDS)} ${entityGroupsForm(ctx)}`;
 }
@@ -149,12 +155,14 @@ export function icicleEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema('icicle', ctx.hass, () => [
     { name: 'hierarchy_color_by', selector: choice(ctx.hass, 'hierarchy_color_by', HIERARCHY_COLOR_BY) },
     groupBySchema(ctx.hass),
+    { name: 'drill_down', selector: { boolean: {} } },
   ]);
   return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS)} ${entityGroupsForm(ctx)}`;
 }
 
 function validate(raw: CardConfig, shapes: boolean): void {
   validateGroups(raw);
+  validateDrill(raw);
   if (raw.color_by !== undefined && !HIERARCHY_COLOR_BY.includes(raw.color_by as HierarchyColorBy)) {
     throw new Error(`"color_by" must be one of: ${HIERARCHY_COLOR_BY.join(', ')}`);
   }
@@ -177,14 +185,31 @@ export function sunburstGeometry(shape: SunburstShape, levels: number) {
   };
 }
 
+/** A group's ring segment: tappable to drill into it when drilling is on. */
+function groupArc(ctx: ChartContext, node: TreeNode, label: string, d: string, fill: string) {
+  const target = drillTarget(ctx, node, label);
+  return svg`<path
+    class="arc group ${target ? 'drillable' : ''}"
+    data-path=${node.path.join('/')}
+    role=${target ? 'button' : nothing}
+    tabindex=${target ? 0 : nothing}
+    aria-label=${target?.label ?? label}
+    d=${d}
+    fill=${fill}
+    @click=${target?.click}
+    @keydown=${target?.keydown}
+  ><title>${label}</title></path>`;
+}
+
 /** The drawing for one tree root: a sunburst with the total in its middle, or a message. */
-export function drawSunburst(ctx: ChartContext, root: TreeNode, centre: TemplateResult | typeof nothing = nothing) {
+export function drawSunburst(ctx: ChartContext, root: TreeNode, tree: TreeNode = root) {
   if (root.value <= 0) return html`<div class="hierarchy-message">${localize(ctx.hass, 'hierarchy_empty')}</div>`;
   const shape = (ctx.raw.shape as SunburstShape | undefined) ?? 'full';
   const colorBy = (ctx.raw.color_by as HierarchyColorBy | undefined) ?? 'group';
   const unit = sharedUnit(ctx.items);
   const spans = partition(root);
-  const painted = paintSpans(spans, colorBy);
+  // Colours come from the whole tree, so a group keeps its colour when drilled into.
+  const painted = paintSpans(partition(tree), colorBy);
   const geo = sunburstGeometry(shape, treeHeight(root));
   const arcs = spans
     .filter((s) => s.level > 0)
@@ -196,8 +221,7 @@ export function drawSunburst(ctx: ChartContext, root: TreeNode, centre: Template
       return s.node.entity
         ? svg`<path class="entity arc leaf" data-index=${s.node.index} tabindex="0" role="img"
             aria-label=${label} d=${d} fill=${fill}><title>${label}</title></path>`
-        : svg`<path class="arc group" data-path=${s.node.path.join('/')} aria-label=${label} d=${d} fill=${fill}
-            ><title>${label}</title></path>`;
+        : groupArc(ctx, s.node, label, d, fill);
     });
   const total = unit !== undefined && ctx.config.show.value ? totalText(root.value, ctx, unit) : '';
   const names = root.children.filter((c) => c.value > 0).map((c) => c.name);
@@ -211,18 +235,19 @@ export function drawSunburst(ctx: ChartContext, root: TreeNode, centre: Template
     >
       <g class="sunburst-grow">${arcs}</g>
     </svg>
-    <div class="sunburst-centre">
-      ${centre} ${total ? html`<span class="centre-value">${total}</span>` : nothing}
-      ${root.path.length ? html`<span class="centre-name">${root.name}</span>` : nothing}
-    </div>
+    <div class="sunburst-centre">${total ? html`<span class="centre-value">${total}</span>` : nothing}</div>
   </div>`;
 }
 
 /** Top-level names and totals under a sunburst, so the colours mean something. */
-export function sunburstLegend(ctx: ChartContext, root: TreeNode): TemplateResult | typeof nothing {
+export function sunburstLegend(
+  ctx: ChartContext,
+  root: TreeNode,
+  tree: TreeNode = root,
+): TemplateResult | typeof nothing {
   const colorBy = (ctx.raw.color_by as HierarchyColorBy | undefined) ?? 'group';
   const unit = sharedUnit(ctx.items);
-  const painted = paintSpans(partition(root), colorBy);
+  const painted = paintSpans(partition(tree), colorBy);
   const top = root.children.filter((c) => c.value > 0);
   return html`<div class="hierarchy-legend">
     ${top.map((node) => {
@@ -235,18 +260,39 @@ export function sunburstLegend(ctx: ChartContext, root: TreeNode): TemplateResul
         ? html`<span class="entity legend-item" data-index=${node.index} tabindex="0" aria-label=${node.entity.label}
             >${swatch}${node.name} ${value}</span
           >`
-        : html`<span class="legend-item" data-path=${node.path.join('/')}>${swatch}${node.name} ${value}</span>`;
+        : legendGroup(ctx, node, swatch, value, unit);
     })}
   </div>`;
 }
 
+/** A group in the legend: a button that drills into it, or plain text when drilling is off. */
+function legendGroup(
+  ctx: ChartContext,
+  node: TreeNode,
+  swatch: TemplateResult,
+  value: TemplateResult | typeof nothing,
+  unit: string | undefined,
+) {
+  const target = drillTarget(ctx, node, nodeLabel(node, ctx, unit));
+  return html`<span
+    class="legend-item ${target ? 'drillable' : ''}"
+    data-path=${node.path.join('/')}
+    role=${target ? 'button' : nothing}
+    tabindex=${target ? 0 : nothing}
+    aria-label=${target?.label ?? nothing}
+    @click=${target?.click}
+    @keydown=${target?.keydown}
+    >${swatch}${node.name} ${value}</span
+  >`;
+}
+
 /** The drawing for one tree root as an icicle: a column per level, the root on the left. */
-export function drawIcicle(ctx: ChartContext, root: TreeNode) {
+export function drawIcicle(ctx: ChartContext, root: TreeNode, tree: TreeNode = root) {
   if (root.value <= 0) return html`<div class="hierarchy-message">${localize(ctx.hass, 'hierarchy_empty')}</div>`;
   const colorBy = (ctx.raw.color_by as HierarchyColorBy | undefined) ?? 'group';
   const unit = sharedUnit(ctx.items);
   const spans = partition(root);
-  const painted = paintSpans(spans, colorBy);
+  const painted = paintSpans(partition(tree), colorBy);
   const columns = treeHeight(root) + 1;
   const { show } = ctx.config;
   const names = root.children.filter((c) => c.value > 0).map((c) => c.name);
@@ -282,14 +328,38 @@ export function drawIcicle(ctx: ChartContext, root: TreeNode) {
           >
             ${inner}
           </div>`
-        : html`<div class="${cls} group" data-path=${s.node.path.join('/')} title=${label} style=${style}>
-            ${inner}
-          </div>`;
+        : icicleGroup(ctx, s.node, cls, label, style, inner);
     })}
   </div>`;
 }
 
+/** A group's cell: tappable to drill into it (not the left-hand total, which is where you are). */
+function icicleGroup(
+  ctx: ChartContext,
+  node: TreeNode,
+  cls: string,
+  label: string,
+  style: string,
+  inner: TemplateResult,
+) {
+  const target = cls.includes('text-root') ? undefined : drillTarget(ctx, node, label);
+  return html`<div
+    class="${cls} group ${target ? 'drillable' : ''}"
+    data-path=${node.path.join('/')}
+    title=${label}
+    style=${style}
+    role=${target ? 'button' : nothing}
+    tabindex=${target ? 0 : nothing}
+    aria-label=${target?.label ?? nothing}
+    @click=${target?.click}
+    @keydown=${target?.keydown}
+  >
+    ${inner}
+  </div>`;
+}
+
 const sharedStyles = css`
+  ${drillStyles}
   .hierarchy-message {
     display: flex;
     align-items: center;
@@ -408,14 +478,6 @@ export const sunburst: ChartStyleModule = {
       font-weight: 500;
       white-space: nowrap;
     }
-    .centre-name {
-      font-size: 0.75em;
-      color: var(--secondary-text-color);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 72px;
-    }
   `,
   thumbnail: () => svg`
     <circle cx="32" cy="20" r="7" fill="none" />
@@ -427,8 +489,10 @@ export const sunburst: ChartStyleModule = {
   validate: (raw) => validate(raw, true),
   editor: sunburstEditor,
   render(ctx) {
-    const root = hierarchyTree(ctx);
-    return html`${drawSunburst(ctx, root)} ${root.value > 0 ? sunburstLegend(ctx, root) : nothing} ${noReading(ctx)}`;
+    const tree = hierarchyTree(ctx);
+    const view = drillView(ctx, tree);
+    return html`${drillBar(ctx, tree, view, '')} ${drawSunburst(ctx, view.node, tree)}
+    ${view.node.value > 0 ? sunburstLegend(ctx, view.node, tree) : nothing} ${noReading(ctx)}`;
   },
 };
 
@@ -515,7 +579,8 @@ export const icicle: ChartStyleModule = {
   validate: (raw) => validate(raw, false),
   editor: icicleEditor,
   render(ctx) {
-    const root = hierarchyTree(ctx);
-    return html`${drawIcicle(ctx, root)} ${noReading(ctx)}`;
+    const tree = hierarchyTree(ctx);
+    const view = drillView(ctx, tree);
+    return html`${drillBar(ctx, tree, view, '')} ${drawIcicle(ctx, view.node, tree)} ${noReading(ctx)}`;
   },
 };
