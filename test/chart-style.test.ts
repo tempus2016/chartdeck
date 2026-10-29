@@ -133,7 +133,7 @@ describe('editor with chart styles', () => {
   it('groups the style picker and draws chart thumbnails from the style', async () => {
     const ed = await editor({});
     const groups = [...ed.shadowRoot!.querySelectorAll('.styles')].map((g) => g.getAttribute('data-group'));
-    expect(groups).toEqual(['bars', 'gauges', 'history']);
+    expect(groups).toEqual(['bars', 'gauges', 'history', 'totals']);
     expect(ed.shadowRoot!.querySelector('.style[data-style="fake"] svg rect')).not.toBeNull();
     expect(ed.shadowRoot!.querySelector('.style-group')!.textContent).toBe('Bars');
   });

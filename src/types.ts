@@ -1,6 +1,7 @@
 import type { Rule } from './fill';
 export type StyleName =
-  'bar' | 'thin' | 'segmented' | 'tank' | 'ring' | 'needle' | 'arc' | 'line' | 'column' | 'area' | 'combined';
+  'bar' | 'thin' | 'segmented' | 'tank' | 'ring' | 'needle' | 'arc' | 'line' | 'column' | 'area' | 'combined'
+  | 'pie';
 export const STYLE_NAMES: StyleName[] = [
   'bar',
   'thin',
@@ -13,6 +14,7 @@ export const STYLE_NAMES: StyleName[] = [
   'column',
   'area',
   'combined',
+  'pie',
 ];
 export type SortMode = 'none' | 'ascending' | 'descending';
 /** A number, or a string naming an entity whose state supplies the number. */

@@ -8,6 +8,7 @@ import { columnChart } from './column';
 import { combined } from './combined';
 import { line } from './line';
 import { needle } from './needle';
+import { pie } from './pie';
 import { arc, ring } from './radial';
 import { segmented } from './segmented';
 import { tank } from './tank';
@@ -112,4 +113,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   column: columnChart,
   area,
   combined,
+  pie,
 };
