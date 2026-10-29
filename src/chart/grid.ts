@@ -78,7 +78,8 @@ export interface PlotAxes {
 export function plotAxes(ctx: ChartContext, range: Range, data: [number, number] | undefined): PlotAxes {
   const options = axisOptions(ctx.raw);
   const value = valueAxis(data, options, VALUE_GAPS);
-  const count = Math.max(2, Math.min(8, Math.round(chartWidth(ctx) / TIME_LABEL_PX)));
+  // Count labels across the plot itself, not the card: the value labels take part of the width.
+  const count = Math.max(2, Math.min(8, Math.floor(plotWidth(ctx) / TIME_LABEL_PX)));
   const { unit, ticks } = timeTicks(range, count, zoneOffset(timeZoneOf(ctx.hass)));
   return {
     options,
