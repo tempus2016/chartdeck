@@ -30,4 +30,6 @@ export interface SeriesRequest {
   attribute?: string;
   /** Keep the words ("heating", "idle") in `Point.s` instead of reading a number (history only). */
   text?: boolean;
+  /** Read compass points (N, SSW) as degrees as well as numbers (history only; see `parseBearing`). */
+  bearing?: boolean;
 }

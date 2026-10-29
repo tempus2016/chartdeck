@@ -41,6 +41,7 @@ import { beeswarm } from './beeswarm';
 import { sankey } from './sankey';
 import { timeline } from './timeline';
 import { climate } from './climate';
+import { windRoseStyle } from './wind-rose';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -171,4 +172,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   sankey,
   timeline,
   climate,
+  wind_rose: windRoseStyle,
 };
