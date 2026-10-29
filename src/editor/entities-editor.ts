@@ -6,10 +6,12 @@ import { addEntity, entityId, moveEntity, removeEntity, setEntityOption } from '
 import {
   ENTITY_ACTION_FIELDS,
   ENTITY_ATTRIBUTE_FIELDS,
+  ENTITY_SERIES_FIELDS,
   ENTITY_TEXT_FIELDS,
   applyFormData,
   entityActionsSchema,
   entityAttributeSchema,
+  entitySeriesSchema,
   entityTextSchema,
   formData,
 } from './schemas';
@@ -44,6 +46,7 @@ export class CdEntitiesEditor extends LitElement {
     hass: { attribute: false },
     entities: { attribute: false },
     unit: { attribute: false },
+    chart: { attribute: false },
     _expanded: { state: true },
   };
 
@@ -105,6 +108,8 @@ export class CdEntitiesEditor extends LitElement {
   declare entities?: Item[];
   /** The card-wide unit, which entities without their own inherit. */
   declare unit?: string;
+  /** The card is a chart: show each entity's series options. */
+  declare chart?: boolean;
   /** Indexes of rows whose overrides are open. */
   declare _expanded: Set<number>;
 
@@ -201,6 +206,7 @@ export class CdEntitiesEditor extends LitElement {
     return html`<div class="overrides">
       ${this._form('entity-attribute', index, own, entityAttributeSchema(own.entity), ENTITY_ATTRIBUTE_FIELDS)}
       ${this._form('entity-text', index, own, entityTextSchema(), ENTITY_TEXT_FIELDS)}
+      ${this.chart ? this._form('entity-series', index, own, entitySeriesSchema(this.hass), ENTITY_SERIES_FIELDS) : nothing}
       <ha-icon-picker
         .hass=${this.hass}
         .label=${this._t('editor_icon')}

@@ -50,6 +50,13 @@ export const ENTITY_TEXT_FIELDS: FieldBinding[] = [
 
 export const ENTITY_ATTRIBUTE_FIELDS: FieldBinding[] = [{ name: 'attribute', path: ['attribute'] }];
 
+/** Per-series options, shown only when the card is a chart. */
+export const ENTITY_SERIES_FIELDS: FieldBinding[] = [
+  { name: 'series_color', path: ['color'] },
+  { name: 'curve', path: ['curve'] },
+  { name: 'dash', path: ['dash'], default: false },
+];
+
 /** Absent per-entity actions inherit the card's, so there are no defaults here. */
 export const ENTITY_ACTION_FIELDS: FieldBinding[] = ACTION_FIELDS.map(({ name, path }) => ({ name, path }));
 
@@ -78,6 +85,42 @@ export function entityAttributeSchema(entityId: string) {
     attributeSchemas.set(entityId, schema);
   }
   return schema;
+}
+
+let seriesCache: { language: string; schema: unknown[] } | undefined;
+
+/** Colour, line shape and dashes for one series. An empty shape follows the card's. */
+export function entitySeriesSchema(hass?: HomeAssistant) {
+  const language = languageOf(hass);
+  if (seriesCache?.language !== language) {
+    const t = (key: string) => localize(hass, key);
+    seriesCache = {
+      language,
+      schema: [
+        {
+          type: 'grid',
+          name: '',
+          schema: [
+            { name: 'series_color', selector: { text: {} } },
+            {
+              name: 'curve',
+              selector: {
+                select: {
+                  mode: 'dropdown',
+                  options: ['smooth', 'straight', 'step'].map((value) => ({
+                    value,
+                    label: t(`editor_curve_${value}`),
+                  })),
+                },
+              },
+            },
+          ],
+        },
+        { name: 'dash', selector: { boolean: {} } },
+      ],
+    };
+  }
+  return seriesCache.schema;
 }
 
 export function titleSchema() {

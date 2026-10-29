@@ -4,7 +4,7 @@ import { ChartdeckCard } from '../src/chartdeck-card';
 import { litCells } from '../src/styles/segmented';
 import { arcPath } from '../src/geometry';
 import { DEFAULT_BANDS } from '../src/config';
-import { STYLES } from '../src/styles';
+import { STYLES, isChart } from '../src/styles';
 import { bandSegments } from '../src/styles/needle';
 import { STYLE_NAMES } from '../src/types';
 import type { CardConfig } from '../src/types';
@@ -44,7 +44,8 @@ describe('litCells', () => {
 });
 
 describe('styles', () => {
-  const names = STYLE_NAMES.filter((n) => n in STYLES);
+  // Value styles only: whole-card charts are tested on their own.
+  const names = STYLE_NAMES.filter((n) => n in STYLES && !isChart(STYLES[n]));
 
   it('renders every registered style without throwing for available, unavailable and missing entities', async () => {
     for (const style of names) {
@@ -253,7 +254,7 @@ describe('unavailable entities', () => {
   it('share one treatment: empty mark, secondary-colour value, name in normal text colour', async () => {
     const shared = (await import('../src/styles/shared')).shared.cssText;
     expect(shared).toMatch(/\.entity\.unavailable \.value \{\s*color: var\(--secondary-text-color\);/);
-    for (const name of STYLE_NAMES) {
+    for (const name of STYLE_NAMES.filter((n) => !isChart(STYLES[n]))) {
       const css = STYLES[name].styles.cssText;
       // No style recolours the name (or the whole text block) of an unavailable entity.
       expect(css, name).not.toMatch(/\.unavailable[^{]*(\.text|\.name)[^{]*\{/);
