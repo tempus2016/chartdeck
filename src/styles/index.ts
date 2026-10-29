@@ -22,6 +22,7 @@ import { tank } from './tank';
 import { thin } from './thin';
 import { waffle } from './waffle';
 import { funnel } from './funnel';
+import { radar } from './radar';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -132,4 +133,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   heatmap,
   box,
   funnel,
+  radar,
 };
