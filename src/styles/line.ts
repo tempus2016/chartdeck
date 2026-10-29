@@ -17,6 +17,7 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotScales } from '../chart/grid';
 import { runPath, runs } from '../chart/paths';
+import { MAX_DOTS, dotSize, dotsPath, drawOrder, seriesStyle, validateSeriesStyle } from '../chart/series-style';
 import {
   hoverHandlers,
   hoverTime,
@@ -31,6 +32,7 @@ import { lineEditor } from '../editor/chart-editors';
 import { formatNumber } from '../format';
 import { localize, registerStrings } from '../localize';
 import type { ChartStyleModule } from './index';
+import type { Range } from '../history/types';
 import type { CardConfig, ResolvedBand } from '../types';
 
 /** Points kept per series after thinning: about two per pixel on a wide card. */
@@ -67,7 +69,8 @@ function bandGradient(id: string, bands: ResolvedBand[], scales: PlotScales): SV
   </linearGradient>`;
 }
 
-function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string): SVGTemplateResult {
+function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string, range: Range, raw: CardConfig) {
+  const style = seriesStyle(s.entity.config, raw);
   const thinned = downsample(s.points, MAX_POINTS);
   const d = runs(thinned)
     .map((run) =>
@@ -77,12 +80,28 @@ function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string): SVGTemp
       ),
     )
     .join('');
-  return svg`<path
-    class="line ${s.dash ? 'dashed' : ''}"
-    d=${d}
-    fill="none"
-    stroke=${stroke}
-  ></path>`;
+  // Dots mark real readings: not the carried value at the edges, and not on a crowded series.
+  const readings = style.dots ? thinned.filter((p) => p.v !== null && p.t !== range.start && p.t !== range.end) : [];
+  const dots =
+    readings.length > 0 && readings.length <= MAX_DOTS
+      ? svg`<path
+          class="dots"
+          d=${dotsPath(readings.map((p) => [scales.x(p.t), scales.y(p.v as number)]))}
+          fill="none"
+          stroke=${stroke}
+          style="stroke-width:${dotSize(style.width)}px"
+        ></path>`
+      : nothing;
+  return svg`<g class="series" data-series=${s.index}>
+    <path
+      class="line ${s.dash ? 'dashed' : ''}"
+      d=${d}
+      fill="none"
+      stroke=${stroke}
+      style="stroke-width:${style.width}px"
+    ></path>
+    ${dots}
+  </g>`;
 }
 
 function valueLabels(frame: HistoryFrame, scales: PlotScales, ctx: Parameters<ChartStyleModule['render']>[0]) {
@@ -112,9 +131,11 @@ export const line: ChartStyleModule = {
     ${gridStyles}
     ${tooltipStyles}
     .style-line .line {
-      stroke-width: 2.5;
       stroke-linecap: round;
       stroke-linejoin: round;
+    }
+    .style-line .dots {
+      stroke-linecap: round;
     }
     .style-line .line.dashed {
       stroke-dasharray: 6 5;
@@ -129,6 +150,7 @@ export const line: ChartStyleModule = {
     validateHistoryOptions(raw);
     validateAxisOptions(raw);
     validateTooltipOptions(raw);
+    validateSeriesStyle(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -151,8 +173,10 @@ export const line: ChartStyleModule = {
     const defs = byBands
       ? svg`${frame.series.map((s) => bandGradient(`cd-bands-${s.index}`, s.entity.bands, scales))}`
       : nothing;
-    const lines = svg`${frame.series.map((s) =>
-      seriesPath(s, scales, byBands ? `url(#cd-bands-${s.index})` : s.color),
+    // Listed order, last on top, with any series marked "on top" drawn after the rest.
+    const ordered = drawOrder(frame.series, (s) => seriesStyle(s.entity.config, ctx.raw).onTop);
+    const lines = svg`${ordered.map((s) =>
+      seriesPath(s, scales, byBands ? `url(#cd-bands-${s.index})` : s.color, frame.range, ctx.raw),
     )}`;
     const label = localize(ctx.hass, 'chart_aria', {
       style: localize(ctx.hass, 'editor_style_line'),

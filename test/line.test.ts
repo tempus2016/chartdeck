@@ -262,6 +262,8 @@ describe('line chart editor', () => {
       curve: 'smooth',
       color_by: 'series',
       labels: false,
+      line_width: 2.5,
+      dots: false,
       x_axis: true,
       y_axis: true,
       axis_labels: 'outside',
