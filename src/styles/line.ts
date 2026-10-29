@@ -2,6 +2,7 @@ import { css, html, nothing, svg } from 'lit';
 import type { SVGTemplateResult } from 'lit';
 import { baseColor } from '../bands';
 import { downsample } from '../chart/downsample';
+import { validateAxisOptions } from '../chart/axes';
 import {
   VIEW_H,
   VIEW_W,
@@ -9,13 +10,14 @@ import {
   frameMessage,
   frameStyles,
   historyFrame,
-  plot,
   seriesHeader,
   validateHistoryOptions,
 } from '../chart/frame';
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
+import { chartArea, gridStyles, plotAxes, stopChartWidth } from '../chart/grid';
+import type { PlotScales } from '../chart/grid';
 import { runPath, runs } from '../chart/paths';
-import { extent, linear, padDomain } from '../chart/scale';
+import { extent } from '../chart/scale';
 import { lineEditor } from '../editor/chart-editors';
 import { formatNumber } from '../format';
 import { localize, registerStrings } from '../localize';
@@ -37,27 +39,11 @@ registerStrings('en', {
   chart_aria: '{style} chart of {names}',
 });
 
-export interface Scales {
-  x: (t: number) => number;
-  y: (v: number) => number;
-  domain: [number, number];
-}
-
-/** Time across the full width, values up the height with a little headroom. */
-export function scalesFor(frame: HistoryFrame): Scales {
-  const domain = padDomain(extent(frame.series.map((s) => s.points)) ?? [0, 1]);
-  return {
-    x: linear([frame.range.start, frame.range.end], [0, VIEW_W]),
-    y: linear(domain, [VIEW_H, 0]),
-    domain,
-  };
-}
-
 /**
  * A vertical gradient with a hard stop at each band's start, in plot coordinates, so a line
  * changes colour where it crosses a threshold.
  */
-function bandGradient(id: string, bands: ResolvedBand[], scales: Scales): SVGTemplateResult {
+function bandGradient(id: string, bands: ResolvedBand[], scales: PlotScales): SVGTemplateResult {
   const [lo, hi] = scales.domain;
   const stop = (v: number) => Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
   const stops: SVGTemplateResult[] = [];
@@ -72,7 +58,7 @@ function bandGradient(id: string, bands: ResolvedBand[], scales: Scales): SVGTem
   </linearGradient>`;
 }
 
-function seriesPath(s: ChartSeries, scales: Scales, stroke: string): SVGTemplateResult {
+function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string): SVGTemplateResult {
   const thinned = downsample(s.points, MAX_POINTS);
   const d = runs(thinned)
     .map((run) =>
@@ -90,7 +76,7 @@ function seriesPath(s: ChartSeries, scales: Scales, stroke: string): SVGTemplate
   ></path>`;
 }
 
-function valueLabels(frame: HistoryFrame, scales: Scales, ctx: Parameters<ChartStyleModule['render']>[0]) {
+function valueLabels(frame: HistoryFrame, scales: PlotScales, ctx: Parameters<ChartStyleModule['render']>[0]) {
   return html`<div class="point-labels">
     ${frame.series.flatMap((s) => {
       // The points at either edge are carried readings, not new ones: no label.
@@ -114,6 +100,7 @@ export const line: ChartStyleModule = {
   height: 240,
   styles: css`
     ${frameStyles}
+    ${gridStyles}
     .style-line .line {
       stroke-width: 2.5;
       stroke-linecap: round;
@@ -130,18 +117,23 @@ export const line: ChartStyleModule = {
       stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 3" />`,
   validate(raw: CardConfig) {
     validateHistoryOptions(raw);
+    validateAxisOptions(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
   },
   editor: lineEditor,
-  disconnect: disconnectHistory,
+  disconnect(host) {
+    disconnectHistory(host);
+    stopChartWidth(host);
+  },
   render(ctx) {
     const frame = historyFrame(ctx);
     const header = seriesHeader(frame, ctx);
     const message = frameMessage(frame, ctx);
     if (message) return html`${header}${message}`;
-    const scales = scalesFor(frame);
+    const axes = plotAxes(ctx, frame.range, extent(frame.series.map((s) => s.points)));
+    const { scales } = axes;
     const byBands = ctx.raw.color_by === 'bands';
     const defs = byBands
       ? svg`${frame.series.map((s) => bandGradient(`cd-bands-${s.index}`, s.entity.bands, scales))}`
@@ -154,8 +146,13 @@ export const line: ChartStyleModule = {
       names: frame.series.map((s) => s.entity.name).join(', '),
     });
     return html`${header}
-      <div class="plot-wrap">
-        ${plot(lines, label, defs)} ${ctx.raw.labels === true ? valueLabels(frame, scales, ctx) : nothing}
-      </div>`;
+    ${chartArea({
+      axes,
+      ctx,
+      content: lines,
+      label,
+      defs,
+      overlay: ctx.raw.labels === true ? valueLabels(frame, scales, ctx) : nothing,
+    })}`;
   },
 };
