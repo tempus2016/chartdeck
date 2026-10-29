@@ -1,6 +1,6 @@
 import { html } from 'lit';
 import type { TemplateResult } from 'lit';
-import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
+import { AXIS_LABELS, DEFAULT_AXES, Y_SCALES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
@@ -140,6 +140,9 @@ registerStrings('en', {
   editor_grid_vertical: 'Lines down',
   editor_y_min: 'Lowest value shown',
   editor_y_max: 'Highest value shown',
+  editor_y_scale: 'Value scale',
+  editor_y_scale_linear: 'Even steps',
+  editor_y_scale_log: 'Logarithmic (powers of ten)',
   editor_tooltip: 'Show values on hover or touch',
   editor_line_width: 'Line width (px)',
   editor_dots: 'Dot at each reading',
@@ -179,6 +182,7 @@ export const AXES_FIELDS: FieldBinding[] = [
   { name: 'grid_vertical', path: ['gridlines', 'vertical'], default: DEFAULT_AXES.vertical },
   { name: 'y_min', path: ['y_min'] },
   { name: 'y_max', path: ['y_max'] },
+  { name: 'y_scale', path: ['y_scale'], default: DEFAULT_AXES.scale },
   { name: 'tooltip', path: ['tooltip'], default: true },
 ];
 
@@ -195,6 +199,7 @@ export function axesSchema(hass?: HomeAssistant) {
       ],
     },
     { name: 'axis_labels', selector: choice(hass, 'axis_labels', AXIS_LABELS) },
+    { name: 'y_scale', selector: choice(hass, 'y_scale', Y_SCALES) },
     {
       type: 'grid',
       name: '',

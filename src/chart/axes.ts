@@ -16,13 +16,25 @@ export interface AxisOptions {
   /** Fixed ends of the value axis; absent means fit the readings. */
   min?: number;
   max?: number;
+  /** Even steps, or powers of ten (`y_scale: log`). */
+  scale: YScale;
 }
+
+export const Y_SCALES = ['linear', 'log'] as const;
+export type YScale = (typeof Y_SCALES)[number];
 
 export const AXIS_LABELS = ['outside', 'inside'] as const;
 export type AxisLabels = (typeof AXIS_LABELS)[number];
 
 /** A chart without axis keys: labels in a margin, lines across but not down. */
-export const DEFAULT_AXES: AxisOptions = { x: true, y: true, labels: 'outside', horizontal: true, vertical: false };
+export const DEFAULT_AXES: AxisOptions = {
+  x: true,
+  y: true,
+  labels: 'outside',
+  horizontal: true,
+  vertical: false,
+  scale: 'linear',
+};
 
 type AxisRaw = CardConfig & {
   x_axis?: unknown;
@@ -31,6 +43,7 @@ type AxisRaw = CardConfig & {
   gridlines?: unknown;
   y_min?: unknown;
   y_max?: unknown;
+  y_scale?: unknown;
 };
 
 const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -59,6 +72,15 @@ export function validateAxisOptions(config: CardConfig): void {
   if (isNumber(raw.y_min) && isNumber(raw.y_max) && raw.y_min >= raw.y_max) {
     throw new Error('"y_min" must be below "y_max"');
   }
+  if (raw.y_scale !== undefined && !Y_SCALES.includes(raw.y_scale as YScale)) {
+    throw new Error(`"y_scale" must be one of: ${Y_SCALES.join(', ')}`);
+  }
+  if (raw.y_scale === 'log') {
+    // A log axis has no zero: its ends must be above it.
+    for (const k of ['y_min', 'y_max'] as const) {
+      if (isNumber(raw[k]) && raw[k] <= 0) throw new Error(`"${k}" must be above 0 on a log scale`);
+    }
+  }
 }
 
 /** The card's axis options with defaults filled in. Call after `validateAxisOptions`. */
@@ -73,6 +95,7 @@ export function axisOptions(config: CardConfig): AxisOptions {
     vertical: grid.vertical ?? DEFAULT_AXES.vertical,
     min: isNumber(raw.y_min) ? raw.y_min : undefined,
     max: isNumber(raw.y_max) ? raw.y_max : undefined,
+    scale: (raw.y_scale as YScale | undefined) ?? DEFAULT_AXES.scale,
   };
 }
 
@@ -97,6 +120,10 @@ export interface ValueAxis {
   domain: [number, number];
   ticks: number[];
   decimals: number;
+  /** Log axes: unlabelled steps between the labels, for fainter gridlines. */
+  minor?: number[];
+  /** Log axes: the decimals each tick needs, in step with `ticks`. */
+  tickDecimals?: number[];
 }
 
 /**

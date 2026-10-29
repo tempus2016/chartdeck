@@ -281,6 +281,7 @@ describe('line chart editor', () => {
       axis_labels: 'outside',
       grid_horizontal: true,
       grid_vertical: false,
+      y_scale: 'linear',
       tooltip: true,
       zoom: false,
       overview: false,

@@ -62,6 +62,7 @@ import {
 import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
+import { positivePoints } from '../chart/log-scale';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize, registerStrings } from '../localize';
@@ -80,6 +81,7 @@ registerStrings('en', {
   chart_error: "Couldn't load history: {error}",
   chart_no_data: 'No readings in this period.',
   chart_aria: '{style} chart of {names}',
+  chart_log_nothing: 'Nothing above zero to draw on a log scale.',
 });
 
 /**
@@ -87,8 +89,11 @@ registerStrings('en', {
  * changes colour where it crosses a threshold.
  */
 function bandGradient(id: string, bands: ResolvedBand[], scales: PlotScales): SVGTemplateResult {
-  const [lo, hi] = scales.domain;
-  const stop = (v: number) => Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+  // Through the scale, so a log axis puts each stop where the value is drawn (zero and below: the bottom).
+  const stop = (v: number) => {
+    const at = (VIEW_H - scales.y(v)) / VIEW_H;
+    return Number.isFinite(at) ? Math.min(1, Math.max(0, at)) : 0;
+  };
   const stops: SVGTemplateResult[] = [];
   bands.forEach((band, i) => {
     const from = Number.isFinite(band.from) ? stop(band.from) : 0;
@@ -319,9 +324,19 @@ export const line: ChartStyleModule = {
     const shown = zoom.zoomed
       ? frame.series.map((s) => ({ ...s, points: visiblePoints(s.points, view) }))
       : frame.series;
+    // A log axis has no place for zero or below: those readings are gaps in the drawing (the tooltip still reads them).
+    const log = ctx.raw.y_scale === 'log';
+    const drawn = log ? shown.map((s) => ({ ...s, points: positivePoints(s.points) })) : shown;
     // Threshold lines widen the value axis, so a target off the readings' range still shows.
-    const thresholds = annotationValues(ctx.raw, ctx.hass).map((v) => ({ t: view.start, v }));
-    const axes = plotAxes(ctx, view, extent([...shown.map((s) => s.points), thresholds]));
+    const thresholds = annotationValues(ctx.raw, ctx.hass)
+      .filter((v) => !log || v > 0)
+      .map((v) => ({ t: view.start, v }));
+    const data = extent([...drawn.map((s) => s.points), thresholds]);
+    if (log && !data) {
+      const empty = html`<div class="chart-message">${localize(ctx.hass, 'chart_log_nothing')}</div>`;
+      return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, empty);
+    }
+    const axes = plotAxes(ctx, view, data);
     const { scales } = axes;
     const tooltip = tooltipEnabled(ctx.raw) && !zoomBusy(ctx.host);
     const byBands = ctx.raw.color_by === 'bands';
@@ -329,7 +344,7 @@ export const line: ChartStyleModule = {
       ? svg`${shown.map((s) => bandGradient(`cd-bands-${s.index}`, s.entity.bands, scales))}`
       : nothing;
     // Listed order, last on top, with any series marked "on top" drawn after the rest.
-    const ordered = drawOrder(shown, (s) => seriesStyle(s.entity.config, ctx.raw).onTop);
+    const ordered = drawOrder(drawn, (s) => seriesStyle(s.entity.config, ctx.raw).onTop);
     const lines = svg`${ordered.map((s) =>
       seriesPath(s, scales, byBands ? `url(#cd-bands-${s.index})` : s.color, frame.range, ctx.raw),
     )}`;
@@ -369,7 +384,7 @@ export const line: ChartStyleModule = {
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
-        ${labels ? pointLabels(frame, shown, view, scales, labels, layout.compact, ctx) : nothing}
+        ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
         ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay}
         ${tooltip ? tooltipLayer(ctx, shown, scales, own ?? shared, plotWidth(ctx)) : nothing}`,
         hover,
