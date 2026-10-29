@@ -42,6 +42,56 @@ export const ACTION_FIELDS: FieldBinding[] = [
   { name: 'double_tap_action', path: ['double_tap_action'], default: { action: 'none' } },
 ];
 
+/** Ring, arc and needle options, under the style picker. Empty angles use the style's own. */
+export const GAUGE_FIELDS: FieldBinding[] = [
+  { name: 'start_angle', path: ['start_angle'] },
+  { name: 'end_angle', path: ['end_angle'] },
+  { name: 'center', path: ['center'], default: 'value' },
+  { name: 'center_text', path: ['center_text'] },
+  { name: 'tick_labels', path: ['tick_labels'], default: false },
+];
+
+const gaugeSchemas = new Map<string, unknown[]>();
+
+/**
+ * The gauge options for a style: the text field only while the centre shows custom text, and tick
+ * labels only on the needle (ring and arc have no scale).
+ */
+export function gaugeSchema(hass: HomeAssistant | undefined, style: string, center: unknown) {
+  const text = center === 'text';
+  const key = `${languageOf(hass)}|${style}|${text}`;
+  let schema = gaugeSchemas.get(key);
+  if (!schema) {
+    const angle = { number: { min: -360, max: 360, step: 1, mode: 'box', unit_of_measurement: '°' } };
+    schema = [
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'start_angle', selector: angle },
+          { name: 'end_angle', selector: angle },
+        ],
+      },
+      {
+        name: 'center',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: ['value', 'band', 'name', 'text', 'none'].map((value) => ({
+              value,
+              label: localize(hass, `editor_center_mode_${value}`),
+            })),
+          },
+        },
+      },
+      ...(text ? [{ name: 'center_text', selector: { text: {} } }] : []),
+      ...(style === 'needle' ? [{ name: 'tick_labels', selector: { boolean: {} } }] : []),
+    ];
+    gaugeSchemas.set(key, schema);
+  }
+  return schema;
+}
+
 /** Per-entity overrides edited through ha-form; paths are relative to the entity object. */
 export const ENTITY_TEXT_FIELDS: FieldBinding[] = [
   { name: 'name', path: ['name'] },

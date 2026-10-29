@@ -1,3 +1,4 @@
+import type { GaugeOptions } from './gauge';
 import type { Rule } from './fill';
 export type StyleName =
   | 'bar'
@@ -128,6 +129,8 @@ export interface MergedEntity extends EntityOptions {
   tap_action: ActionConfig;
   hold_action: ActionConfig;
   double_tap_action: ActionConfig;
+  /** Ring, arc and needle: angles, centre text and tick labels (the card's). */
+  gauge?: GaugeOptions;
 }
 export interface NormalizedConfig {
   title?: string;

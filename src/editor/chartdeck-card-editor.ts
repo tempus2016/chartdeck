@@ -10,23 +10,29 @@ import {
   COLOUR_TOGGLE_FIELDS,
   DISPLAY_FIELDS,
   DISPLAY_TOGGLE_FIELDS,
+  GAUGE_FIELDS,
   TITLE_FIELDS,
   actionsSchema,
   applyFormData,
   deepEqual,
   displaySchema,
   formData,
+  gaugeSchema,
   RULE_FIELDS,
   ruleSchema,
   titleSchema,
 } from './schemas';
 import type { FieldBinding } from './schemas';
+
 import { thumbnail } from './thumbnails';
 import { STYLES, STYLE_GROUPS, isChart } from '../styles/index';
 import { sensorUnit } from './entities-editor';
 import './bands-editor';
 import './entities-editor';
 import './limit-field';
+
+/** Styles with the gauge options (angles, centre text, tick labels). */
+const GAUGE_STYLES: StyleName[] = ['ring', 'arc', 'needle'];
 
 interface CardHelpers {
   createCardElement(config: Record<string, unknown>): Promise<HTMLElement>;
@@ -91,7 +97,8 @@ export class ChartdeckCardEditor extends LitElement {
       margin: 16px 0 4px;
       font-weight: 500;
     }
-    .rules-help {
+    .rules-help,
+    .gauge-help {
       margin: 0 0 8px;
       color: var(--secondary-text-color);
       font-size: 0.875em;
@@ -322,7 +329,13 @@ export class ChartdeckCardEditor extends LitElement {
             </button>`;
           })}
         </div>`;
-    })}`;
+    })}
+    ${
+      GAUGE_STYLES.includes(current as StyleName)
+        ? html`<p class="gauge-help">${this._label('editor_gauge_help')}</p>
+            ${this._form('gauge', gaugeSchema(this.hass, current as StyleName, this._config?.center), GAUGE_FIELDS)}`
+        : nothing
+    }`;
   }
 
   /** The current chart style's own options, when it has any. */
