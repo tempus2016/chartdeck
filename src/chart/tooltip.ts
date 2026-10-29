@@ -1,6 +1,7 @@
 import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { formatNumber, withUnit } from '../format';
+import { localize, registerStrings } from '../localize';
 import type { Point, Range } from '../history/types';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
@@ -140,6 +141,35 @@ function valueText(p: Point | undefined, s: ChartSeries, ctx: ChartContext): str
   return withUnit(formatNumber(p.v, s.entity.decimals, ctx.hass), s.entity.unit);
 }
 
+registerStrings('en', { chart_total: 'Total' });
+
+/** The units every series shares, or '' when they differ. */
+export function sharedUnit(series: readonly ChartSeries[]): string {
+  const units = new Set(series.map((s) => s.entity.unit));
+  return units.size === 1 ? [...units][0] : '';
+}
+
+/** A stack's total, as a tooltip's last row (`footer`). */
+export function totalRow(ctx: ChartContext, value: number | null, unit: string, decimals: number): TemplateResult {
+  return html`<div class="tooltip-row tooltip-total">
+    <span class="swatch"></span>
+    <span class="tooltip-name">${localize(ctx.hass, 'chart_total')}</span>
+    <span class="tooltip-value">${value === null ? '—' : withUnit(formatNumber(value, decimals, ctx.hass), unit)}</span>
+  </div>`;
+}
+
+/** What a chart other than a plain line changes in its tooltip. Every key is optional. */
+export interface TooltipOptions {
+  /** Where a point's dot sits, in plot units (a stacked layer sits on the ones below); null hides it. */
+  dotY?: (s: ChartSeries, p: Point) => number | null;
+  /** The heading for the hovered time (a whole day for a day's column); default the date and time. */
+  heading?: (t: number) => string;
+  /** One series' value (a low to high range); default its value with its unit. */
+  text?: (s: ChartSeries, p: Point | undefined) => string;
+  /** Rows after the series' own, from what each shows (a stack's total). */
+  footer?: (rows: { s: ChartSeries; p: Point | undefined }[]) => TemplateResult | typeof nothing;
+}
+
 /**
  * The guide line, a dot on each series at its nearest reading, and the tooltip box listing the
  * time and every series' value. Drawn in HTML over the plot so the dots stay round. The box sits
@@ -151,6 +181,7 @@ export function tooltipLayer(
   scales: PlotScales,
   t: number | undefined,
   plotWidth: number,
+  options: TooltipOptions = {},
 ): TemplateResult | typeof nothing {
   if (t === undefined) return nothing;
   const x = scales.x(t) / VIEW_W;
@@ -164,7 +195,9 @@ export function tooltipLayer(
     <div class="crosshair" style="left:${pct(x)}"></div>
     ${rows.map(({ s, p }) => {
       if (!p || p.v === null) return nothing;
-      const top = scales.y(p.v) / VIEW_H;
+      const y = options.dotY ? options.dotY(s, p) : scales.y(p.v);
+      if (y === null) return nothing;
+      const top = y / VIEW_H;
       if (!(top >= 0 && top <= 1)) return nothing;
       return html`<span
         class="hover-dot"
@@ -172,15 +205,16 @@ export function tooltipLayer(
       ></span>`;
     })}
     <div class="tooltip ${side}" style=${side.startsWith('pin') ? '' : `left:${pct(x)}`}>
-      <div class="tooltip-time">${formatDateTime(t, ctx.hass)}</div>
+      <div class="tooltip-time">${options.heading ? options.heading(t) : formatDateTime(t, ctx.hass)}</div>
       ${rows.map(
         ({ s, p }) =>
           html`<div class="tooltip-row">
             <span class="swatch" style="background:${s.color}"></span>
             <span class="tooltip-name">${s.entity.name}</span>
-            <span class="tooltip-value">${valueText(p, s, ctx)}</span>
+            <span class="tooltip-value">${options.text ? options.text(s, p) : valueText(p, s, ctx)}</span>
           </div>`,
       )}
+      ${options.footer ? options.footer(rows) : nothing}
     </div>
   </div>`;
 }
@@ -265,5 +299,13 @@ export const tooltipStyles = css`
     font-weight: 500;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
+  }
+  .tooltip-total {
+    margin-top: 2px;
+    padding-top: 2px;
+    border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));
+  }
+  .tooltip-total .swatch {
+    background: none;
   }
 `;
