@@ -23,6 +23,7 @@ import { thin } from './thin';
 import { waffle } from './waffle';
 import { funnel } from './funnel';
 import { radar } from './radar';
+import { polarArea } from './polar-area';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -134,4 +135,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   box,
   funnel,
   radar,
+  polar_area: polarArea,
 };
