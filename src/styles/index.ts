@@ -10,6 +10,7 @@ import { line } from './line';
 import { needle } from './needle';
 import { pie } from './pie';
 import { arc, ring } from './radial';
+import { rings } from './rings';
 import { segmented } from './segmented';
 import { tank } from './tank';
 import { thin } from './thin';
@@ -114,4 +115,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   area,
   combined,
   pie,
+  rings,
 };
