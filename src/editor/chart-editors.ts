@@ -10,6 +10,7 @@ import { CALENDAR_SPANS, PERIOD_UNITS, PERIOD_UNTIL } from '../history/period';
 import { languageOf, localize, registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
+import { annotationsEditor } from './annotations-editor';
 import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
 import type { FieldBinding } from './schemas';
 
@@ -219,6 +220,9 @@ export const ZOOM_SCHEMA = [
     ],
   },
 ];
+/** Shading the severity bands behind a history chart; the annotation list has its own editor. */
+export const ANNOTATION_FIELDS: FieldBinding[] = [{ name: 'zones', path: ['zones'], default: false }];
+export const ANNOTATION_SCHEMA = [{ name: 'zones', selector: { boolean: {} } }];
 
 const cache = new Map<string, unknown[]>();
 
@@ -263,6 +267,7 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
   ...ZOOM_FIELDS,
+  ...ANNOTATION_FIELDS,
   ...LAYOUT_FIELDS,
 ];
 
@@ -288,7 +293,8 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
     { name: 'labels', selector: { boolean: {} } },
     ...axesSchema(ctx.hass),
     ...ZOOM_SCHEMA,
+    ...ANNOTATION_SCHEMA,
     ...layoutSchema(ctx.hass),
   ]);
-  return chartForm(ctx, 'chart', schema, LINE_FIELDS);
+  return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${annotationsEditor(ctx)}`;
 }

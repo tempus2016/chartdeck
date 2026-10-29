@@ -42,6 +42,14 @@ import {
   zoomStyles,
   zoomView,
 } from '../chart/zoom';
+import {
+  annotationEntities,
+  annotationLayers,
+  annotationStyles,
+  annotationValues,
+  stopAnnotations,
+  validateAnnotations,
+} from '../chart/annotations';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { formatNumber } from '../format';
@@ -160,6 +168,7 @@ export const line: ChartStyleModule = {
     ${tooltipStyles}
     ${layoutStyles}
     ${zoomStyles}
+    ${annotationStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -183,6 +192,7 @@ export const line: ChartStyleModule = {
     validateSeriesStyle(raw);
     validateLayout(raw);
     validateZoomOptions(raw);
+    validateAnnotations(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -192,11 +202,13 @@ export const line: ChartStyleModule = {
     schema: entitySeriesSchema(hass),
     fields: entitySeriesFields(config.dots === true),
   }),
+  watch: annotationEntities,
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);
     stopHover(host);
     stopZoom(host);
+    stopAnnotations(host);
   },
   render(ctx) {
     const frame = historyFrame(ctx);
@@ -212,7 +224,9 @@ export const line: ChartStyleModule = {
     const shown = zoom.zoomed
       ? frame.series.map((s) => ({ ...s, points: visiblePoints(s.points, view) }))
       : frame.series;
-    const axes = plotAxes(ctx, view, extent(shown.map((s) => s.points)));
+    // Threshold lines widen the value axis, so a target off the readings' range still shows.
+    const marks = annotationValues(ctx.raw, ctx.hass).map((v) => ({ t: view.start, v }));
+    const axes = plotAxes(ctx, view, extent([...shown.map((s) => s.points), marks]));
     const { scales } = axes;
     const tooltip = tooltipEnabled(ctx.raw) && !zoomBusy(ctx.host);
     const byBands = ctx.raw.color_by === 'bands';
@@ -231,6 +245,7 @@ export const line: ChartStyleModule = {
           shown.map((s) => s.points),
         )
       : undefined;
+    const notes = annotationLayers(ctx, frame, scales, plotWidth(ctx));
     const label = localize(ctx.hass, 'chart_aria', {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
@@ -241,12 +256,12 @@ export const line: ChartStyleModule = {
       chartArea({
         axes,
         ctx,
-        content: lines,
+        content: svg`${notes.behind}${lines}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${ctx.raw.labels === true ? valueLabels(frame, shown, view, scales, ctx) : nothing} ${zoomLayer(ctx, zoom)}
-        ${tooltip ? tooltipLayer(ctx, shown, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
+        ${notes.overlay} ${tooltip ? tooltipLayer(ctx, shown, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
