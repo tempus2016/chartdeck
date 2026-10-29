@@ -31,6 +31,7 @@ import { bullet } from './bullet';
 import { lollipop } from './lollipop';
 import { waterfall } from './waterfall';
 import { slope } from './slope';
+import { dumbbell } from './dumbbell';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -151,4 +152,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   lollipop,
   waterfall,
   slope,
+  dumbbell,
 };
