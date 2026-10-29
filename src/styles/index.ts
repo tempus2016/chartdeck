@@ -42,6 +42,7 @@ import { sankey } from './sankey';
 import { timeline } from './timeline';
 import { climate } from './climate';
 import { windRoseStyle } from './wind-rose';
+import { day_clock } from './day-clock';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -173,4 +174,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   timeline,
   climate,
   wind_rose: windRoseStyle,
+  day_clock,
 };
