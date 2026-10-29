@@ -1,5 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
-import type { SVGTemplateResult } from 'lit';
+import type { SVGTemplateResult, TemplateResult } from 'lit';
 import { baseColor } from '../bands';
 import { downsample } from '../chart/downsample';
 import { validateAxisOptions } from '../chart/axes';
@@ -16,7 +16,7 @@ import {
 } from '../chart/frame';
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
-import type { PlotScales } from '../chart/grid';
+import type { PlotAxes, PlotScales } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
 import { runPath, runs } from '../chart/paths';
 import { MAX_DOTS, dotSize, dotsPath, drawOrder, seriesStyle, validateSeriesStyle } from '../chart/series-style';
@@ -52,10 +52,11 @@ import {
 } from '../chart/annotations';
 import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
+import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize, registerStrings } from '../localize';
-import type { ChartStyleModule } from './index';
+import type { ChartContext, ChartStyleModule } from './index';
 import type { Range } from '../history/types';
 import type { CardConfig, ResolvedBand } from '../types';
 
@@ -157,6 +158,54 @@ function pointLabels(
   );
 }
 
+/**
+ * One plot of `series`: the lines, value labels, tooltip and gridlines. `id` keeps band gradient
+ * ids apart when a card draws several plots (small multiples).
+ */
+function linePlot(
+  ctx: ChartContext,
+  frame: HistoryFrame,
+  series: ChartSeries[],
+  axes: PlotAxes,
+  width: number,
+  id: string,
+  over: TemplateResult | typeof nothing = nothing,
+  time = hoverTime(ctx.host),
+) {
+  const { scales } = axes;
+  const labels = labelOptions(ctx.raw);
+  const tooltip = tooltipEnabled(ctx.raw);
+  const byBands = ctx.raw.color_by === 'bands';
+  const defs = byBands
+    ? svg`${series.map((s) => bandGradient(`cd-bands-${s.index}${id}`, s.entity.bands, scales))}`
+    : nothing;
+  // Listed order, last on top, with any series marked "on top" drawn after the rest.
+  const ordered = drawOrder(series, (s) => seriesStyle(s.entity.config, ctx.raw).onTop);
+  const lines = svg`${ordered.map((s) =>
+    seriesPath(s, scales, byBands ? `url(#cd-bands-${s.index}${id})` : s.color, frame.range, ctx.raw),
+  )}`;
+  const label = localize(ctx.hass, 'chart_aria', {
+    style: localize(ctx.hass, 'editor_style_line'),
+    names: series.map((s) => s.entity.name).join(', '),
+  });
+  return chartArea({
+    axes,
+    ctx,
+    content: lines,
+    label,
+    defs,
+    overlay: html`${over} ${labels ? pointLabels(frame, series, frame.range, scales, labels, true, ctx) : nothing}
+    ${tooltip ? tooltipLayer(ctx, series, scales, time, width) : nothing}`,
+    hover: tooltip
+      ? hoverHandlers(
+          ctx,
+          frame.range,
+          series.map((s) => s.points),
+        )
+      : undefined,
+  });
+}
+
 export const line: ChartStyleModule = {
   layout: 'chart',
   group: 'history',
@@ -169,6 +218,7 @@ export const line: ChartStyleModule = {
     ${zoomStyles}
     ${annotationStyles}
     ${dataLabelStyles}
+    ${multiplesStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -195,6 +245,7 @@ export const line: ChartStyleModule = {
     validateAnnotations(raw);
     validateLabelOptions(raw);
     validateSyncOptions(raw);
+    validateMultiples(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -224,6 +275,17 @@ export const line: ChartStyleModule = {
     const message = frameMessage(frame, ctx);
     const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
+    const multiples = multiplesOptions(ctx.raw);
+    if (multiples) {
+      // One small chart per series: the period buttons stay above, each chart has its own title.
+      return chartFrame(
+        { ...layout, header: 'above' },
+        nav,
+        multiplesGrid(ctx, frame, multiples, own ?? shared, (s, axes, width) =>
+          linePlot(ctx, frame, [s], axes, width, `-${s.index}`, nothing, own ?? shared),
+        ),
+      );
+    }
     // Zoomed, the chart draws the readings in its window (and one either side), fitted to them.
     const zoom = zoomView(ctx, frame);
     const view = zoom.range;

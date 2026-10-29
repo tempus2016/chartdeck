@@ -76,12 +76,21 @@ export interface PlotAxes {
   label?: (t: number) => string;
 }
 
-/** Work out the axes for readings spanning `data` over `range`, sized to the card. */
-export function plotAxes(ctx: ChartContext, range: Range, data: [number, number] | undefined): PlotAxes {
+/**
+ * Work out the axes for readings spanning `data` over `range`, sized to the plot (or to `width`
+ * px, for a chart drawn smaller than the card) and `gaps` value labels.
+ */
+export function plotAxes(
+  ctx: ChartContext,
+  range: Range,
+  data: [number, number] | undefined,
+  width?: number,
+  gaps = VALUE_GAPS,
+): PlotAxes {
   const options = axisOptions(ctx.raw);
-  const value = valueAxis(data, options, VALUE_GAPS);
+  const value = valueAxis(data, options, gaps);
   // Count labels across the plot itself, not the card: the value labels take part of the width.
-  const count = Math.max(2, Math.min(8, Math.floor(plotWidth(ctx) / TIME_LABEL_PX)));
+  const count = Math.max(2, Math.min(8, Math.floor((width ?? plotWidth(ctx)) / TIME_LABEL_PX)));
   const { unit, ticks } = timeTicks(range, count, zoneOffset(timeZoneOf(ctx.hass)));
   return {
     options,

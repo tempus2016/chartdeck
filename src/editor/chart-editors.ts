@@ -4,6 +4,7 @@ import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
+import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
 import { AGGREGATES, GROUP_UNITS } from '../history/group';
@@ -275,6 +276,46 @@ registerStrings('en', {
 export const SYNC_FIELDS: FieldBinding[] = [{ name: 'sync', path: ['sync'] }];
 export const SYNC_SCHEMA = [{ name: 'sync', selector: { text: {} } }];
 
+registerStrings('en', {
+  editor_multiples: 'A small chart for each entity',
+  editor_multiples_scale: 'Value scale',
+  editor_multiples_scale_auto: 'The same when the units match',
+  editor_multiples_scale_shared: 'The same for every chart',
+  editor_multiples_scale_independent: 'Each chart its own',
+  editor_multiples_columns: 'Columns (empty fits the card)',
+});
+
+/** Small multiples: on/off, then how the charts share a scale and how many go across. */
+export const MULTIPLES_FIELDS: FieldBinding[] = [
+  { name: 'multiples', path: ['multiples'], default: false },
+  { name: 'multiples_scale', path: ['multiples_scale'], default: 'auto' },
+  { name: 'multiples_columns', path: ['multiples_columns'] },
+];
+
+export const multiplesVariant = (config: CardConfig | undefined) => (config?.multiples === true ? 'multiples' : '');
+
+/** The small-multiples fields; scale and columns show once it is on (cache under `multiplesVariant`). */
+export function multiplesSchema(hass: HomeAssistant | undefined, config: CardConfig | undefined) {
+  return [
+    { name: 'multiples', selector: { boolean: {} } },
+    ...(config?.multiples === true
+      ? [
+          {
+            type: 'grid',
+            name: '',
+            schema: [
+              { name: 'multiples_scale', selector: choice(hass, 'multiples_scale', MULTIPLES_SCALES) },
+              {
+                name: 'multiples_columns',
+                selector: { number: { min: 1, max: MAX_MULTIPLES_COLUMNS, mode: 'box' } },
+              },
+            ],
+          },
+        ]
+      : []),
+  ];
+}
+
 const cache = new Map<string, unknown[]>();
 
 /** Build a schema once per language (and per style), so ha-form isn't handed a new one each render. */
@@ -321,33 +362,39 @@ const LINE_FIELDS: FieldBinding[] = [
   ...ANNOTATION_FIELDS,
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
+  ...MULTIPLES_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema(`line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}`, ctx.hass, () => [
-    ...historySchema(ctx.hass, ctx.config),
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'curve', selector: choice(ctx.hass, 'curve', CURVES) },
-        { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
-      ],
-    },
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'line_width', selector: LINE_WIDTH_SELECTOR },
-        { name: 'dots', selector: { boolean: {} } },
-      ],
-    },
-    ...labelSchema(ctx.hass, ctx.config),
-    ...axesSchema(ctx.hass),
-    ...ZOOM_SCHEMA,
-    ...ANNOTATION_SCHEMA,
-    ...SYNC_SCHEMA,
-    ...layoutSchema(ctx.hass),
-  ]);
+  const schema = cachedSchema(
+    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}`,
+    ctx.hass,
+    () => [
+      ...historySchema(ctx.hass, ctx.config),
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'curve', selector: choice(ctx.hass, 'curve', CURVES) },
+          { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
+        ],
+      },
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'line_width', selector: LINE_WIDTH_SELECTOR },
+          { name: 'dots', selector: { boolean: {} } },
+        ],
+      },
+      ...labelSchema(ctx.hass, ctx.config),
+      ...axesSchema(ctx.hass),
+      ...ZOOM_SCHEMA,
+      ...ANNOTATION_SCHEMA,
+      ...SYNC_SCHEMA,
+      ...layoutSchema(ctx.hass),
+      ...multiplesSchema(ctx.hass, ctx.config),
+    ],
+  );
   return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${annotationsEditor(ctx)}`;
 }

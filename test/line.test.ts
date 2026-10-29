@@ -284,6 +284,8 @@ describe('line chart editor', () => {
       zones: false,
       header: 'above',
       compact: false,
+      multiples: false,
+      multiples_scale: 'auto',
     });
     form.dispatchEvent(
       new CustomEvent('value-changed', {
