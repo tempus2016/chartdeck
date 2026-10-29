@@ -27,6 +27,8 @@ import { polarArea } from './polar-area';
 import { treemap } from './treemap';
 import { icicle, sunburst } from './sunburst';
 import { groupedBars } from './grouped-bars';
+import { bullet } from './bullet';
+import { lollipop } from './lollipop';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -143,4 +145,6 @@ export const STYLES: Record<StyleName, StyleModule> = {
   sunburst,
   icicle,
   grouped_bars: groupedBars,
+  bullet,
+  lollipop,
 };
