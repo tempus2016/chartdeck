@@ -35,6 +35,7 @@ import { dumbbell } from './dumbbell';
 import { rangeArea } from './range-area';
 import { sparklineStyle } from './sparkline';
 import { streamgraph } from './streamgraph';
+import { candlestick } from './candlestick';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -159,4 +160,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   range_area: rangeArea,
   sparkline: sparklineStyle,
   streamgraph,
+  candlestick,
 };
