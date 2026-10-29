@@ -16,6 +16,7 @@ import {
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotScales } from '../chart/grid';
+import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
 import { runPath, runs } from '../chart/paths';
 import { MAX_DOTS, dotSize, dotsPath, drawOrder, seriesStyle, validateSeriesStyle } from '../chart/series-style';
 import {
@@ -130,6 +131,7 @@ export const line: ChartStyleModule = {
     ${frameStyles}
     ${gridStyles}
     ${tooltipStyles}
+    ${layoutStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -151,6 +153,7 @@ export const line: ChartStyleModule = {
     validateAxisOptions(raw);
     validateTooltipOptions(raw);
     validateSeriesStyle(raw);
+    validateLayout(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -165,7 +168,8 @@ export const line: ChartStyleModule = {
     const frame = historyFrame(ctx);
     const header = seriesHeader(frame, ctx);
     const message = frameMessage(frame, ctx);
-    if (message) return html`${header}${message}`;
+    const layout = chartLayout(ctx.raw);
+    if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
     const axes = plotAxes(ctx, frame.range, extent(frame.series.map((s) => s.points)));
     const { scales } = axes;
     const tooltip = tooltipEnabled(ctx.raw);
@@ -182,22 +186,26 @@ export const line: ChartStyleModule = {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
     });
-    return html`${header}
-    ${chartArea({
-      axes,
-      ctx,
-      content: lines,
-      label,
-      defs,
-      overlay: html`${ctx.raw.labels === true ? valueLabels(frame, scales, ctx) : nothing}
-      ${tooltip ? tooltipLayer(ctx, frame.series, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
-      hover: tooltip
-        ? hoverHandlers(
-            ctx,
-            frame.range,
-            frame.series.map((s) => s.points),
-          )
-        : undefined,
-    })}`;
+    return chartFrame(
+      layout,
+      header,
+      chartArea({
+        axes,
+        ctx,
+        content: lines,
+        label,
+        defs,
+        overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
+        ${ctx.raw.labels === true ? valueLabels(frame, scales, ctx) : nothing}
+        ${tooltip ? tooltipLayer(ctx, frame.series, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
+        hover: tooltip
+          ? hoverHandlers(
+              ctx,
+              frame.range,
+              frame.series.map((s) => s.points),
+            )
+          : undefined,
+      }),
+    );
   },
 };

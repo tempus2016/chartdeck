@@ -1,6 +1,7 @@
 import { html } from 'lit';
 import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
+import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
@@ -56,7 +57,31 @@ registerStrings('en', {
   editor_line_width: 'Line width (px)',
   editor_dots: 'Dot at each reading',
   editor_on_top: 'Draw above the other lines',
+  editor_compact: 'Compact',
+  editor_header: 'Names and values',
+  editor_header_above: 'Above the chart',
+  editor_header_over: 'Over the chart',
+  editor_header_hidden: 'Hidden',
 });
+
+/** Spacing and where the names and current values go, shared by every history chart. */
+export const LAYOUT_FIELDS: FieldBinding[] = [
+  { name: 'header', path: ['header'], default: 'above' },
+  { name: 'compact', path: ['compact'], default: false },
+];
+
+export function layoutSchema(hass?: HomeAssistant) {
+  return [
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'header', selector: choice(hass, 'header', HEADER_PLACES) },
+        { name: 'compact', selector: { boolean: {} } },
+      ],
+    },
+  ];
+}
 
 /** Axis labels, gridlines, the value range and the hover tooltip, shared by every history chart. Empty min/max fit the readings. */
 export const AXES_FIELDS: FieldBinding[] = [
@@ -137,6 +162,7 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...LAYOUT_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
@@ -160,6 +186,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
     },
     { name: 'labels', selector: { boolean: {} } },
     ...axesSchema(ctx.hass),
+    ...layoutSchema(ctx.hass),
   ]);
   return chartForm(ctx, 'chart', schema, LINE_FIELDS);
 }
