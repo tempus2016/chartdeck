@@ -38,6 +38,7 @@ import { streamgraph } from './streamgraph';
 import { candlestick } from './candlestick';
 import { violin } from './violin';
 import { beeswarm } from './beeswarm';
+import { sankey } from './sankey';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -165,4 +166,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   candlestick,
   violin,
   beeswarm,
+  sankey,
 };
