@@ -8,6 +8,7 @@ import { columnChart } from './column';
 import { combined } from './combined';
 import { line } from './line';
 import { needle } from './needle';
+import { pictograph } from './pictograph';
 import { pie } from './pie';
 import { arc, ring } from './radial';
 import { rings } from './rings';
@@ -116,4 +117,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   combined,
   pie,
   rings,
+  pictograph,
 };
