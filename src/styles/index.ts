@@ -15,6 +15,7 @@ import { rings } from './rings';
 import { segmented } from './segmented';
 import { tank } from './tank';
 import { thin } from './thin';
+import { waffle } from './waffle';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -118,4 +119,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   pie,
   rings,
   pictograph,
+  waffle,
 };
