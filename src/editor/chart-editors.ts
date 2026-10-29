@@ -4,6 +4,7 @@ import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
+import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
 import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
@@ -360,6 +361,7 @@ const LINE_FIELDS: FieldBinding[] = [
   ...AXES_FIELDS,
   ...ZOOM_FIELDS,
   ...ANNOTATION_FIELDS,
+  ...EXTREMES_FIELDS,
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
   ...MULTIPLES_FIELDS,
@@ -391,6 +393,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...axesSchema(ctx.hass),
       ...ZOOM_SCHEMA,
       ...ANNOTATION_SCHEMA,
+      ...extremesSchema(ctx.hass),
       ...SYNC_SCHEMA,
       ...layoutSchema(ctx.hass),
       ...multiplesSchema(ctx.hass, ctx.config),

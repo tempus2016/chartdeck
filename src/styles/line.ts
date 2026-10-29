@@ -50,6 +50,15 @@ import {
   stopAnnotations,
   validateAnnotations,
 } from '../chart/annotations';
+import {
+  extremesLayer,
+  extremesOn,
+  extremesOptions,
+  extremesStyles,
+  validateExtremes,
+  withEntityExtremes,
+  withEntityExtremesFields,
+} from '../chart/extremes';
 import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
@@ -162,6 +171,18 @@ function pointLabels(
  * One plot of `series`: the lines, value labels, tooltip and gridlines. `id` keeps band gradient
  * ids apart when a card draws several plots (small multiples).
  */
+/** Rough height of the plot itself in px: the frame less the time labels and top padding. */
+function plotHeight(compact: boolean, axes: { x: boolean; y: boolean; labels: string }): number {
+  const outside = axes.labels === 'outside';
+  return (compact ? 110 : 180) - (outside && axes.x ? (compact ? 14 : 18) : 0) - (outside && axes.y ? 6 : 0);
+}
+
+/** Roughly where a header laid over the plot sits, in px, so marks' labels keep clear of it. */
+function overHeaderBox(frame: HistoryFrame, compact: boolean, width: number) {
+  const chars = frame.series.reduce((n, s) => n + s.entity.name.length + s.entity.display.length + 6, 0);
+  return { l: 0, t: 0, r: Math.min(width, chars * 8), b: compact ? 24 : 34 };
+}
+
 function linePlot(
   ctx: ChartContext,
   frame: HistoryFrame,
@@ -218,6 +239,7 @@ export const line: ChartStyleModule = {
     ${zoomStyles}
     ${annotationStyles}
     ${dataLabelStyles}
+    ${extremesStyles}
     ${multiplesStyles}
     .style-line .line {
       stroke-linecap: round;
@@ -244,6 +266,7 @@ export const line: ChartStyleModule = {
     validateZoomOptions(raw);
     validateAnnotations(raw);
     validateLabelOptions(raw);
+    validateExtremes(raw);
     validateSyncOptions(raw);
     validateMultiples(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
@@ -251,10 +274,14 @@ export const line: ChartStyleModule = {
     }
   },
   editor: lineEditor,
-  entityFields: (hass, config) => ({
-    schema: entitySeriesSchema(hass),
-    fields: entitySeriesFields(config.dots === true),
-  }),
+  entityFields: (hass, config) => {
+    const schema = entitySeriesSchema(hass);
+    const fields = entitySeriesFields(config.dots === true);
+    // While the card marks highs, lows or averages, each series can opt out.
+    return extremesOn(extremesOptions(config))
+      ? { schema: withEntityExtremes(schema, hass), fields: withEntityExtremesFields(fields) }
+      : { schema, fields };
+  },
   watch: annotationEntities,
   disconnect(host) {
     disconnectHistory(host);
@@ -293,8 +320,8 @@ export const line: ChartStyleModule = {
       ? frame.series.map((s) => ({ ...s, points: visiblePoints(s.points, view) }))
       : frame.series;
     // Threshold lines widen the value axis, so a target off the readings' range still shows.
-    const marks = annotationValues(ctx.raw, ctx.hass).map((v) => ({ t: view.start, v }));
-    const axes = plotAxes(ctx, view, extent([...shown.map((s) => s.points), marks]));
+    const thresholds = annotationValues(ctx.raw, ctx.hass).map((v) => ({ t: view.start, v }));
+    const axes = plotAxes(ctx, view, extent([...shown.map((s) => s.points), thresholds]));
     const { scales } = axes;
     const tooltip = tooltipEnabled(ctx.raw) && !zoomBusy(ctx.host);
     const byBands = ctx.raw.color_by === 'bands';
@@ -315,6 +342,19 @@ export const line: ChartStyleModule = {
       : undefined;
     const notes = annotationLayers(ctx, frame, scales, plotWidth(ctx));
     const labels = labelOptions(ctx.raw);
+    const width = plotWidth(ctx);
+    const marks = extremesLayer({
+      ctx,
+      series: shown,
+      scales,
+      range: view,
+      group: frame.group,
+      timeWeighted: frame.source === 'history' && frame.group === undefined,
+      width,
+      height: plotHeight(layout.compact, axes.options),
+      until: Math.min(view.end, Date.now()),
+      obstacles: layout.header === 'over' ? [overHeaderBox(frame, layout.compact, width)] : [],
+    });
     const label = localize(ctx.hass, 'chart_aria', {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
@@ -325,12 +365,12 @@ export const line: ChartStyleModule = {
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${lines}${notes.front}`,
+        content: svg`${notes.behind}${marks.lines}${lines}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, shown, view, scales, labels, layout.compact, ctx) : nothing}
-        ${zoomLayer(ctx, zoom)} ${notes.overlay}
+        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay}
         ${tooltip ? tooltipLayer(ctx, shown, scales, own ?? shared, plotWidth(ctx)) : nothing}`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
