@@ -5,6 +5,7 @@ import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
+import { AGGREGATES, GROUP_UNITS } from '../history/group';
 import { CALENDAR_SPANS, PERIOD_UNITS, PERIOD_UNTIL } from '../history/period';
 import { languageOf, localize, registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
@@ -34,6 +35,20 @@ registerStrings('en', {
   editor_period_until_now: 'Now',
   editor_period_until_end: 'The end of the period',
   editor_period_navigate: 'Show previous and next buttons',
+  editor_group_by: 'Group readings by',
+  editor_group_by_none: "Don't group",
+  editor_group_by_hour: 'Hour',
+  editor_group_by_day: 'Day',
+  editor_group_by_week: 'Week',
+  editor_group_by_month: 'Month',
+  editor_aggregate: 'Combine with',
+  editor_aggregate_mean: 'Average',
+  editor_aggregate_sum: 'Sum',
+  editor_aggregate_min: 'Lowest',
+  editor_aggregate_max: 'Highest',
+  editor_aggregate_first: 'First',
+  editor_aggregate_last: 'Last',
+  editor_aggregate_change: 'Change (meters that count up)',
 });
 
 /** Fields every history chart shows first: what span it covers, and where the readings come from. */
@@ -45,20 +60,24 @@ export const HISTORY_FIELDS: FieldBinding[] = [
   { name: 'period_until', path: ['period', 'until'], default: 'now' },
   { name: 'period_navigate', path: ['period', 'navigate'], default: false },
   { name: 'source', path: ['source'], default: 'history' },
+  { name: 'group_by', path: ['group_by'], default: 'none' },
+  { name: 'aggregate', path: ['aggregate'], default: 'mean' },
 ];
 
 /** Which history fields apply to this config; part of a chart editor's schema cache key. */
 export function historyVariant(config: CardConfig | undefined): string {
   const period = config?.period as { calendar?: unknown } | undefined;
-  return period?.calendar ? 'calendar' : 'rolling';
+  return `${period?.calendar ? 'calendar' : 'rolling'}${config?.group_by ? '|grouped' : ''}`;
 }
 
 /**
  * The history fields as ha-form schema: a rolling span asks how far back, a calendar one whether
- * to draw to now or to its end. Cache it under `historyVariant(config)`.
+ * to draw to now or to its end, and grouped readings how to combine them. Cache it under
+ * `historyVariant(config)`.
  */
 export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
-  const calendar = historyVariant(config) === 'calendar';
+  const [span, grouped] = historyVariant(config).split('|');
+  const calendar = span === 'calendar';
   return [
     {
       type: 'grid',
@@ -76,6 +95,14 @@ export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
     },
     { name: 'period_navigate', selector: { boolean: {} } },
     { name: 'source', selector: choice(hass, 'source', SOURCES) },
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'group_by', selector: choice(hass, 'group_by', ['none', ...GROUP_UNITS]) },
+        ...(grouped ? [{ name: 'aggregate', selector: choice(hass, 'aggregate', AGGREGATES) }] : []),
+      ],
+    },
   ];
 }
 

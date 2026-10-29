@@ -4,8 +4,10 @@ import { baseColor } from '../bands';
 import { parsePeriod, periodRange, setSteps, stepsFor } from '../history/period';
 import type { Period } from '../history/period';
 import { key } from '../history/fetch';
+import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQueryFor } from '../history/group';
+import type { Grouping } from '../history/group';
 import { pauseStore, storeFor } from '../history/store';
-import { wallTime, zoneFor } from '../history/timezone';
+import { boundaries, startOf, wallTime, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
 import { localize, registerStrings } from '../localize';
@@ -47,6 +49,8 @@ export interface HistoryFrame {
   back: number;
   /** The time zone and first weekday calendar spans follow. */
   zone: Zone;
+  /** Set when readings are grouped: each point is then one group, from `t` to `end`. */
+  group?: Grouping;
 }
 
 registerStrings('en', {
@@ -74,6 +78,7 @@ registerStrings('en', {
 /** Checks for the options every history chart shares. */
 export function validateHistoryOptions(raw: CardConfig): void {
   parsePeriod(raw.period as CardConfig['period']);
+  parseGrouping(raw);
   if (raw.source !== undefined && !SOURCES.includes(raw.source as Source)) {
     throw new Error(`"source" must be one of: ${SOURCES.join(', ')}`);
   }
@@ -91,19 +96,31 @@ export function historyFrame(ctx: ChartContext, now = Date.now()): HistoryFrame 
   const source: Source = (ctx.raw.source as Source | undefined) ?? 'history';
   const zone = zoneFor(ctx.hass);
   const span = periodRange(period, now, zone, period.navigate ? stepsFor(ctx.host, period) : 0);
-  const range: Range = { start: span.start, end: span.end };
+  const group = parseGrouping(ctx.raw);
+  // Grouped, the chart starts where its first group does: the last 7 days by day from midnight.
+  const range: Range = { start: group ? startOf(group.unit, span.start, zone) : span.start, end: span.end };
   const requests = ctx.items.map((e) => ({ entity: e.entityId, attribute: e.config.attribute }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
-  const loaded = store.get(ctx.hass, requests, range, source, { live: span.live });
+  const statistics =
+    group && source === 'statistics' ? statisticsQueryFor(group, zone, ctx.hass.config?.time_zone) : undefined;
+  // Statistics groups load from one row early: the row before a group gives its `first`.
+  const load = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
+  const loaded = store.get(ctx.hass, requests, load, source, { live: span.live, statistics });
+  const bounds = group ? boundaries(group.unit, range.start, range.end, zone) : [];
   const cardCurve = (ctx.raw.curve as Curve | undefined) ?? 'smooth';
   // Readings stop at the present, even when the span runs on to the end of today.
   const until = Math.min(range.end, now);
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string; curve?: Curve; dash?: boolean };
     let points = loaded.data.get(key(requests[index])) ?? [];
-    // A sensor holds its last reading until it changes, so carry it on to the right edge.
     const last = points[points.length - 1];
-    if (source === 'history' && last && last.v !== null && last.t < until) {
+    if (group) {
+      points =
+        source === 'statistics'
+          ? groupStatistics(points, bounds, group.aggregate, until)
+          : groupHistory(points, bounds, group.aggregate, until);
+    } else if (source === 'history' && last && last.v !== null && last.t < until) {
+      // A sensor holds its last reading until it changes, so carry it on to the right edge.
       points = [...points, { t: until, v: last.v }];
     }
     return {
@@ -125,6 +142,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now()): HistoryFrame 
     live: span.live,
     back: span.back,
     zone,
+    group,
   };
 }
 

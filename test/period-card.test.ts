@@ -174,13 +174,14 @@ describe('period editor', () => {
   it('asks how far back for a rolling span, and writes a calendar span with navigation', async () => {
     const { form, raw, events, names } = await editor({});
     // The history fields lead the Chart section; the style's own fields follow.
-    expect(names.slice(0, 6)).toEqual([
+    expect(names.slice(0, 7)).toEqual([
       'period_calendar',
       'period_last',
       'period_unit',
       'period_offset',
       'period_navigate',
       'source',
+      'group_by',
     ]);
     form.dispatchEvent(
       new CustomEvent('value-changed', {
