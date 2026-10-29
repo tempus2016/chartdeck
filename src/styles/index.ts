@@ -4,6 +4,7 @@ import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant, NormalizedConfig, ShowOptions, StyleName } from '../types';
 import { area } from './area';
 import { bar } from './bar';
+import { bubble } from './bubble';
 import { columnChart } from './column';
 import { combined } from './combined';
 import { histogram } from './histogram';
@@ -124,4 +125,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   waffle,
   histogram,
   scatter,
+  bubble,
 };
