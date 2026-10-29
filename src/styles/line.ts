@@ -50,9 +50,9 @@ import {
   stopAnnotations,
   validateAnnotations,
 } from '../chart/annotations';
+import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
-import { formatNumber } from '../format';
 import { localize, registerStrings } from '../localize';
 import type { ChartStyleModule } from './index';
 import type { Range } from '../history/types';
@@ -60,8 +60,6 @@ import type { CardConfig, ResolvedBand } from '../types';
 
 /** Points kept per series after thinning: about two per pixel on a wide card. */
 const MAX_POINTS = 500;
-/** Above this many points a series gets no value labels: they would overlap. */
-const MAX_LABELS = 40;
 
 const COLOR_BY = ['series', 'bands'] as const;
 
@@ -128,34 +126,34 @@ export function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string, r
   </g>`;
 }
 
-function valueLabels(
+/** Value labels on the line's readings, kept clear of each other. */
+function pointLabels(
   frame: HistoryFrame,
   series: ChartSeries[],
   view: Range,
   scales: PlotScales,
+  options: NonNullable<ReturnType<typeof labelOptions>>,
+  compact: boolean,
   ctx: Parameters<ChartStyleModule['render']>[0],
 ) {
-  return html`<div class="point-labels">
-    ${series.flatMap((s) => {
-      // The points at either edge are carried readings, not new ones: no label (groups are all real).
-      const readings = s.points.filter(
-        (p) =>
-          p.v !== null &&
-          p.t >= view.start &&
-          p.t <= view.end &&
-          (frame.group !== undefined || (p.t !== frame.range.start && p.t !== frame.range.end)),
-      );
-      if (readings.length > MAX_LABELS) return [];
-      return readings.map(
-        (p) =>
-          html`<span
-            class="point-label"
-            style="left:${(scales.x(p.t) / VIEW_W) * 100}%;top:${(scales.y(p.v as number) / VIEW_H) * 100}%"
-            >${formatNumber(p.v as number, s.entity.decimals, ctx.hass)}</span
-          >`,
-      );
-    })}
-  </div>`;
+  const { range } = frame;
+  return dataLabels(
+    series.map((s) => ({
+      points: s.points.filter((p) => p.t >= view.start && p.t <= view.end),
+      decimals: s.entity.decimals,
+      color: s.color,
+    })),
+    options,
+    {
+      at: (p) => [scales.x(p.t) / VIEW_W, scales.y(p.v as number) / VIEW_H],
+      width: plotWidth(ctx),
+      // The plot's height less its time labels, roughly.
+      height: compact ? 96 : 162,
+      // The points at either edge are carried readings, not new ones (groups are all real).
+      skip: (p) => frame.group === undefined && (p.t === range.start || p.t === range.end),
+    },
+    ctx.hass,
+  );
 }
 
 export const line: ChartStyleModule = {
@@ -169,6 +167,7 @@ export const line: ChartStyleModule = {
     ${layoutStyles}
     ${zoomStyles}
     ${annotationStyles}
+    ${dataLabelStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -193,6 +192,7 @@ export const line: ChartStyleModule = {
     validateLayout(raw);
     validateZoomOptions(raw);
     validateAnnotations(raw);
+    validateLabelOptions(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -246,6 +246,7 @@ export const line: ChartStyleModule = {
         )
       : undefined;
     const notes = annotationLayers(ctx, frame, scales, plotWidth(ctx));
+    const labels = labelOptions(ctx.raw);
     const label = localize(ctx.hass, 'chart_aria', {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
@@ -260,8 +261,9 @@ export const line: ChartStyleModule = {
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
-        ${ctx.raw.labels === true ? valueLabels(frame, shown, view, scales, ctx) : nothing} ${zoomLayer(ctx, zoom)}
-        ${notes.overlay} ${tooltip ? tooltipLayer(ctx, shown, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
+        ${labels ? pointLabels(frame, shown, view, scales, labels, layout.compact, ctx) : nothing}
+        ${zoomLayer(ctx, zoom)} ${notes.overlay}
+        ${tooltip ? tooltipLayer(ctx, shown, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',

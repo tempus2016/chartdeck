@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
+import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
 import { AGGREGATES, GROUP_UNITS } from '../history/group';
@@ -223,6 +224,49 @@ export const ZOOM_SCHEMA = [
 /** Shading the severity bands behind a history chart; the annotation list has its own editor. */
 export const ANNOTATION_FIELDS: FieldBinding[] = [{ name: 'zones', path: ['zones'], default: false }];
 export const ANNOTATION_SCHEMA = [{ name: 'zones', selector: { boolean: {} } }];
+registerStrings('en', {
+  editor_labels_show: 'Which readings',
+  editor_labels_show_all: 'All (as many as fit)',
+  editor_labels_show_last: 'The latest',
+  editor_labels_show_minmax: 'Highest and lowest',
+  editor_labels_show_ends: 'First and latest',
+  editor_labels_position: 'Label position',
+  editor_labels_position_auto: 'Above peaks, below dips',
+  editor_labels_position_above: 'Above',
+  editor_labels_position_below: 'Below',
+  editor_labels_position_center: 'On the point',
+  editor_labels_overlap: 'Let labels overlap',
+});
+
+/** Value labels on a chart's readings: on/off, then which, where, and whether they may overlap. */
+export const LABEL_FIELDS: FieldBinding[] = [
+  { name: 'labels', path: ['labels'], default: false },
+  { name: 'labels_show', path: ['labels_show'], default: 'all' },
+  { name: 'labels_position', path: ['labels_position'], default: 'auto' },
+  { name: 'labels_overlap', path: ['labels_overlap'], default: false },
+];
+
+/** The label fields; the choices show once labels are on (cache under `labelsVariant`). */
+export function labelSchema(hass: HomeAssistant | undefined, config: CardConfig | undefined) {
+  return [
+    { name: 'labels', selector: { boolean: {} } },
+    ...(config?.labels === true
+      ? [
+          {
+            type: 'grid',
+            name: '',
+            schema: [
+              { name: 'labels_show', selector: choice(hass, 'labels_show', LABEL_SHOW) },
+              { name: 'labels_position', selector: choice(hass, 'labels_position', LABEL_POSITIONS) },
+            ],
+          },
+          { name: 'labels_overlap', selector: { boolean: {} } },
+        ]
+      : []),
+  ];
+}
+
+export const labelsVariant = (config: CardConfig | undefined) => (config?.labels === true ? 'labels' : '');
 
 const cache = new Map<string, unknown[]>();
 
@@ -262,7 +306,7 @@ const LINE_FIELDS: FieldBinding[] = [
   ...HISTORY_FIELDS,
   { name: 'curve', path: ['curve'], default: 'smooth' },
   { name: 'color_by', path: ['color_by'], default: 'series' },
-  { name: 'labels', path: ['labels'], default: false },
+  ...LABEL_FIELDS,
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
@@ -272,7 +316,7 @@ const LINE_FIELDS: FieldBinding[] = [
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema(`line|${historyVariant(ctx.config)}`, ctx.hass, () => [
+  const schema = cachedSchema(`line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}`, ctx.hass, () => [
     ...historySchema(ctx.hass, ctx.config),
     {
       type: 'grid',
@@ -290,7 +334,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
         { name: 'dots', selector: { boolean: {} } },
       ],
     },
-    { name: 'labels', selector: { boolean: {} } },
+    ...labelSchema(ctx.hass, ctx.config),
     ...axesSchema(ctx.hass),
     ...ZOOM_SCHEMA,
     ...ANNOTATION_SCHEMA,
