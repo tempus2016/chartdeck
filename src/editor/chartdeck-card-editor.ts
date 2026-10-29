@@ -193,14 +193,19 @@ export class ChartdeckCardEditor extends LitElement {
     this._commit(setOption(this._config, path, ev.detail?.value));
   }
 
+  /** The current chart style's per-entity options, if it has any. */
+  private _chartFields() {
+    const module = STYLES[(this._config?.style ?? 'bar') as StyleName];
+    return module && isChart(module) && this._config ? module.entityFields?.(this.hass, this._config) : undefined;
+  }
+
   /** Entity list, pickers and per-entity overrides, then the rules that add more. */
   protected renderEntities(): unknown {
     return html`<cd-entities-editor
         .hass=${this.hass}
         .entities=${this._config?.entities ?? []}
         .unit=${this._config?.unit}
-        .dots=${this._config?.dots === true}
-        .chart=${isChart(STYLES[(this._config?.style ?? 'bar') as StyleName] ?? STYLES.bar)}
+        .chartFields=${this._chartFields()}
         @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
       ></cd-entities-editor>
       ${this._ruleForm('include')} ${this._ruleForm('exclude')}`;

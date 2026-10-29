@@ -31,6 +31,7 @@ import {
 } from '../chart/tooltip';
 import { extent } from '../chart/scale';
 import { lineEditor } from '../editor/chart-editors';
+import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { formatNumber } from '../format';
 import { localize, registerStrings } from '../localize';
 import type { ChartStyleModule } from './index';
@@ -162,6 +163,10 @@ export const line: ChartStyleModule = {
     }
   },
   editor: lineEditor,
+  entityFields: (hass, config) => ({
+    schema: entitySeriesSchema(hass),
+    fields: entitySeriesFields(config.dots === true),
+  }),
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);

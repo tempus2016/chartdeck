@@ -145,3 +145,27 @@ describe('editor with chart styles', () => {
     expect(ed.shadowRoot!.querySelector('.section-chart .fake-editor')).not.toBeNull();
   });
 });
+
+describe('per-entity chart options', () => {
+  it('come from the chart style, and value styles have none', async () => {
+    const ed = document.createElement('chartdeck-card-editor') as HTMLElement & {
+      setConfig(c: CardConfig): void;
+      hass?: unknown;
+      updateComplete: Promise<boolean>;
+    };
+    ed.hass = makeHass({});
+    ed.setConfig({ type: 'custom:chartdeck-card', style: 'bar', entities: ['sensor.a'] } as CardConfig);
+    document.body.appendChild(ed);
+    await ed.updateComplete;
+    const list = () => ed.shadowRoot!.querySelector('cd-entities-editor') as Stub;
+    expect(list().chartFields).toBeUndefined();
+    (fake as Record<string, unknown>).entityFields = () => ({
+      schema: [{ name: 'group', selector: { text: {} } }],
+      fields: [{ name: 'group', path: ['group'] }],
+    });
+    ed.setConfig({ type: 'custom:chartdeck-card', style: 'fake', entities: ['sensor.a'] } as CardConfig);
+    await ed.updateComplete;
+    expect((list().chartFields as { fields: unknown[] }).fields).toEqual([{ name: 'group', path: ['group'] }]);
+    delete (fake as Record<string, unknown>).entityFields;
+  });
+});
