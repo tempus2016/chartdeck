@@ -33,6 +33,7 @@ import { waterfall } from './waterfall';
 import { slope } from './slope';
 import { dumbbell } from './dumbbell';
 import { rangeArea } from './range-area';
+import { sparklineStyle } from './sparkline';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -155,4 +156,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   slope,
   dumbbell,
   range_area: rangeArea,
+  sparkline: sparklineStyle,
 };
