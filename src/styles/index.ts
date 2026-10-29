@@ -4,6 +4,7 @@ import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant, NormalizedConfig, ShowOptions, StyleName } from '../types';
 import { area } from './area';
 import { bar } from './bar';
+import { columnChart } from './column';
 import { line } from './line';
 import { needle } from './needle';
 import { arc, ring } from './radial';
@@ -107,5 +108,6 @@ export const STYLES: Record<StyleName, StyleModule> = {
   needle,
   arc,
   line,
+  column: columnChart,
   area,
 };

@@ -78,7 +78,13 @@ export function increments(points: Point[]): (number | null)[] {
  *
  * A group with no value held at any time in it is a gap. For sum, a group with no readings is.
  */
-export function groupHistory(points: Point[], bounds: number[], aggregate: Aggregate, until: number): Point[] {
+export function groupHistory(
+  points: Point[],
+  bounds: number[],
+  aggregate: Aggregate,
+  until: number,
+  range = false,
+): Point[] {
   const ups = aggregate === 'change' ? increments(points) : [];
   const out: Point[] = [];
   // Index of the first point at or after the group's start.
@@ -112,6 +118,11 @@ export function groupHistory(points: Point[], bounds: number[], aggregate: Aggre
     }[];
     if (known.length === 0) continue;
     const values = known.map((h) => h.v);
+    if (range) {
+      // The group's spread, for range charts: every value that held in it.
+      group.min = Math.min(...values);
+      group.max = Math.max(...values);
+    }
     switch (aggregate) {
       case 'mean': {
         const time = known.reduce((a, h) => a + h.dt, 0);
@@ -153,7 +164,13 @@ export function groupHistory(points: Point[], bounds: number[], aggregate: Aggre
  * reading at the group's start), or the group's first row when there is none. A group that starts
  * after `until` (now) is a gap whatever the server sent.
  */
-export function groupStatistics(rows: Point[], bounds: number[], aggregate: Aggregate, until = Infinity): Point[] {
+export function groupStatistics(
+  rows: Point[],
+  bounds: number[],
+  aggregate: Aggregate,
+  until = Infinity,
+  range = false,
+): Point[] {
   const out: Point[] = [];
   let j = 0;
   for (let i = 0; i + 1 < bounds.length; i++) {
@@ -162,8 +179,16 @@ export function groupStatistics(rows: Point[], bounds: number[], aggregate: Aggr
     while (j < rows.length && rows[j].t < start) j++;
     let k = j;
     const values: number[] = [];
+    const lows: number[] = [];
+    const highs: number[] = [];
     // A row moved to the range's start is the previous period's: only `first` wants it.
-    for (; k < rows.length && rows[k].t < end; k++) if (rows[k].v !== null && !rows[k].carried) values.push(rows[k].v!);
+    for (; k < rows.length && rows[k].t < end; k++) {
+      const row = rows[k];
+      if (row.v === null || row.carried) continue;
+      values.push(row.v);
+      lows.push(row.min ?? row.v);
+      highs.push(row.max ?? row.v);
+    }
     let v: number | null = null;
     if (values.length && start < until) {
       if (aggregate === 'mean') v = values.reduce((a, x) => a + x, 0) / values.length;
@@ -180,7 +205,13 @@ export function groupStatistics(rows: Point[], bounds: number[], aggregate: Aggr
         v = (prior ?? carried)?.v ?? values[0];
       }
     }
-    out.push({ t: start, end, v });
+    const group: Point = { t: start, end, v };
+    // The group's spread, for range charts: lowest of the rows' lows to highest of their highs.
+    if (range && v !== null) {
+      group.min = Math.min(...lows);
+      group.max = Math.max(...highs);
+    }
+    out.push(group);
   }
   return out;
 }
@@ -216,8 +247,12 @@ export function statisticsQueryFor(
   grouping: Grouping,
   zone: Zone,
   serverTimeZone: string | undefined,
+  range = false,
 ): StatisticsQuery {
   const sameCalendar = zone.timeZone === serverTimeZone && (grouping.unit !== 'week' || zone.firstDay === 1);
   const period: StatisticsPeriod = grouping.unit === 'hour' || !sameCalendar ? 'hour' : grouping.unit;
-  return { period, ...COLUMNS[grouping.aggregate] };
+  const { types, value } = COLUMNS[grouping.aggregate];
+  // A range chart also wants each row's lowest and highest.
+  const wanted: StatisticField[] = range ? [...new Set<StatisticField>([...types, 'min', 'max'])] : types;
+  return { period, types: wanted, value };
 }
