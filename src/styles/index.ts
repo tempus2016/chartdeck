@@ -4,6 +4,7 @@ import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant, NormalizedConfig, ShowOptions, StyleName } from '../types';
 import { area } from './area';
 import { bar } from './bar';
+import { box } from './box-plot';
 import { bubble } from './bubble';
 import { columnChart } from './column';
 import { combined } from './combined';
@@ -128,4 +129,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   scatter,
   bubble,
   heatmap,
+  box,
 };
