@@ -21,6 +21,7 @@ import { segmented } from './segmented';
 import { tank } from './tank';
 import { thin } from './thin';
 import { waffle } from './waffle';
+import { funnel } from './funnel';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -130,4 +131,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   bubble,
   heatmap,
   box,
+  funnel,
 };
