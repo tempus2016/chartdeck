@@ -34,6 +34,7 @@ import { slope } from './slope';
 import { dumbbell } from './dumbbell';
 import { rangeArea } from './range-area';
 import { sparklineStyle } from './sparkline';
+import { streamgraph } from './streamgraph';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -157,4 +158,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   dumbbell,
   range_area: rangeArea,
   sparkline: sparklineStyle,
+  streamgraph,
 };
