@@ -25,6 +25,7 @@ import { funnel } from './funnel';
 import { radar } from './radar';
 import { polarArea } from './polar-area';
 import { treemap } from './treemap';
+import { icicle, sunburst } from './sunburst';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -138,4 +139,6 @@ export const STYLES: Record<StyleName, StyleModule> = {
   radar,
   polar_area: polarArea,
   treemap,
+  sunburst,
+  icicle,
 };
