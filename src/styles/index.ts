@@ -13,6 +13,7 @@ import { pictograph } from './pictograph';
 import { pie } from './pie';
 import { arc, ring } from './radial';
 import { rings } from './rings';
+import { scatter } from './scatter';
 import { segmented } from './segmented';
 import { tank } from './tank';
 import { thin } from './thin';
@@ -122,4 +123,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   pictograph,
   waffle,
   histogram,
+  scatter,
 };
