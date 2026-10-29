@@ -30,6 +30,18 @@ import {
   validateTooltipOptions,
 } from '../chart/tooltip';
 import { extent } from '../chart/scale';
+import {
+  overviewLines,
+  overviewStrip,
+  stopZoom,
+  validateZoomOptions,
+  visiblePoints,
+  zoomBusy,
+  zoomGestures,
+  zoomLayer,
+  zoomStyles,
+  zoomView,
+} from '../chart/zoom';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { formatNumber } from '../format';
@@ -108,12 +120,22 @@ export function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string, r
   </g>`;
 }
 
-function valueLabels(frame: HistoryFrame, scales: PlotScales, ctx: Parameters<ChartStyleModule['render']>[0]) {
+function valueLabels(
+  frame: HistoryFrame,
+  series: ChartSeries[],
+  view: Range,
+  scales: PlotScales,
+  ctx: Parameters<ChartStyleModule['render']>[0],
+) {
   return html`<div class="point-labels">
-    ${frame.series.flatMap((s) => {
+    ${series.flatMap((s) => {
       // The points at either edge are carried readings, not new ones: no label (groups are all real).
       const readings = s.points.filter(
-        (p) => p.v !== null && (frame.group !== undefined || (p.t !== frame.range.start && p.t !== frame.range.end)),
+        (p) =>
+          p.v !== null &&
+          p.t >= view.start &&
+          p.t <= view.end &&
+          (frame.group !== undefined || (p.t !== frame.range.start && p.t !== frame.range.end)),
       );
       if (readings.length > MAX_LABELS) return [];
       return readings.map(
@@ -137,6 +159,7 @@ export const line: ChartStyleModule = {
     ${gridStyles}
     ${tooltipStyles}
     ${layoutStyles}
+    ${zoomStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -159,6 +182,7 @@ export const line: ChartStyleModule = {
     validateTooltipOptions(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
+    validateZoomOptions(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -172,6 +196,7 @@ export const line: ChartStyleModule = {
     disconnectHistory(host);
     stopChartWidth(host);
     stopHover(host);
+    stopZoom(host);
   },
   render(ctx) {
     const frame = historyFrame(ctx);
@@ -181,18 +206,31 @@ export const line: ChartStyleModule = {
     const message = frameMessage(frame, ctx);
     const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
-    const axes = plotAxes(ctx, frame.range, extent(frame.series.map((s) => s.points)));
+    // Zoomed, the chart draws the readings in its window (and one either side), fitted to them.
+    const zoom = zoomView(ctx, frame);
+    const view = zoom.range;
+    const shown = zoom.zoomed
+      ? frame.series.map((s) => ({ ...s, points: visiblePoints(s.points, view) }))
+      : frame.series;
+    const axes = plotAxes(ctx, view, extent(shown.map((s) => s.points)));
     const { scales } = axes;
-    const tooltip = tooltipEnabled(ctx.raw);
+    const tooltip = tooltipEnabled(ctx.raw) && !zoomBusy(ctx.host);
     const byBands = ctx.raw.color_by === 'bands';
     const defs = byBands
-      ? svg`${frame.series.map((s) => bandGradient(`cd-bands-${s.index}`, s.entity.bands, scales))}`
+      ? svg`${shown.map((s) => bandGradient(`cd-bands-${s.index}`, s.entity.bands, scales))}`
       : nothing;
     // Listed order, last on top, with any series marked "on top" drawn after the rest.
-    const ordered = drawOrder(frame.series, (s) => seriesStyle(s.entity.config, ctx.raw).onTop);
+    const ordered = drawOrder(shown, (s) => seriesStyle(s.entity.config, ctx.raw).onTop);
     const lines = svg`${ordered.map((s) =>
       seriesPath(s, scales, byBands ? `url(#cd-bands-${s.index})` : s.color, frame.range, ctx.raw),
     )}`;
+    const hover = tooltipEnabled(ctx.raw)
+      ? hoverHandlers(
+          ctx,
+          view,
+          shown.map((s) => s.points),
+        )
+      : undefined;
     const label = localize(ctx.hass, 'chart_aria', {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
@@ -207,15 +245,14 @@ export const line: ChartStyleModule = {
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
-        ${ctx.raw.labels === true ? valueLabels(frame, scales, ctx) : nothing}
-        ${tooltip ? tooltipLayer(ctx, frame.series, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
-        hover: tooltip
-          ? hoverHandlers(
-              ctx,
-              frame.range,
-              frame.series.map((s) => s.points),
-            )
-          : undefined,
+        ${ctx.raw.labels === true ? valueLabels(frame, shown, view, scales, ctx) : nothing} ${zoomLayer(ctx, zoom)}
+        ${tooltip ? tooltipLayer(ctx, shown, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
+        hover,
+        gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
+        classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
+        below: zoom.options.overview
+          ? overviewStrip(ctx, zoom, frame.range, overviewLines(frame.series, frame.range))
+          : nothing,
       }),
     );
   },

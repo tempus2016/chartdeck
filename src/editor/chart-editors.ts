@@ -203,6 +203,23 @@ export function axesSchema(hass?: HomeAssistant) {
   ];
 }
 
+/** Zoom gestures and the overview strip, shared by every history chart. */
+export const ZOOM_FIELDS: FieldBinding[] = [
+  { name: 'zoom', path: ['zoom'], default: false },
+  { name: 'overview', path: ['overview'], default: false },
+];
+
+export const ZOOM_SCHEMA = [
+  {
+    type: 'grid',
+    name: '',
+    schema: [
+      { name: 'zoom', selector: { boolean: {} } },
+      { name: 'overview', selector: { boolean: {} } },
+    ],
+  },
+];
+
 const cache = new Map<string, unknown[]>();
 
 /** Build a schema once per language (and per style), so ha-form isn't handed a new one each render. */
@@ -245,6 +262,7 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...ZOOM_FIELDS,
   ...LAYOUT_FIELDS,
 ];
 
@@ -269,6 +287,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
     },
     { name: 'labels', selector: { boolean: {} } },
     ...axesSchema(ctx.hass),
+    ...ZOOM_SCHEMA,
     ...layoutSchema(ctx.hass),
   ]);
   return chartForm(ctx, 'chart', schema, LINE_FIELDS);

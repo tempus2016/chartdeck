@@ -276,6 +276,8 @@ describe('line chart editor', () => {
       grid_horizontal: true,
       grid_vertical: false,
       tooltip: true,
+      zoom: false,
+      overview: false,
       header: 'above',
       compact: false,
     });

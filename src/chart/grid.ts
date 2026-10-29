@@ -166,6 +166,23 @@ export interface ChartAreaOptions {
   /** Text for each label along the bottom or up the side, when they aren't times and plain values. */
   xLabel?: (v: number) => string;
   yLabel?: (v: number) => string;
+  /** Fuller pointer handling (zoom and pan), wrapping the tooltip's; used instead of `hover`. */
+  gestures?: Gestures;
+  /** Extra classes on the plot area, for a feature's own look (`zoomable`, `zoomed`). */
+  classes?: string;
+  /** Under the plot and its time labels, lined up with the plot (an overview strip). */
+  below?: TemplateResult | typeof nothing;
+}
+
+/** Every pointer handler the plot area can take. */
+export interface Gestures {
+  down(ev: PointerEvent): void;
+  move(ev: PointerEvent): void;
+  up(ev: PointerEvent): void;
+  cancel(ev: PointerEvent): void;
+  leave(ev: PointerEvent): void;
+  wheel(ev: WheelEvent): void;
+  dblclick(ev: MouseEvent): void;
 }
 
 /**
@@ -184,6 +201,9 @@ export function chartArea({
   right,
   xLabel,
   yLabel,
+  gestures,
+  classes = '',
+  below = nothing,
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
@@ -210,21 +230,23 @@ export function chartArea({
   const rLabels = r
     ? html`<div class="y-axis right">${outside ? rSizer : nothing}${rightLabels(r, ctx)}</div>`
     : nothing;
-  return html`<div
-    class="plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''}"
-  >
+  const wrap = `plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''} ${below === nothing ? '' : 'has-overview'}`;
+  return html`<div class=${wrap}>
     ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
     <div
-      class="plot-area ${hover ? 'hoverable' : ''}"
-      @pointerdown=${hover?.move}
-      @pointermove=${hover?.move}
-      @pointerleave=${hover?.leave}
-      @pointercancel=${hover?.leave}
+      class="plot-area ${hover ? 'hoverable' : ''} ${classes}"
+      @pointerdown=${gestures?.down ?? hover?.move}
+      @pointermove=${gestures?.move ?? hover?.move}
+      @pointerup=${gestures?.up}
+      @pointerleave=${gestures?.leave ?? hover?.leave}
+      @pointercancel=${gestures?.cancel ?? hover?.leave}
+      @wheel=${gestures?.wheel}
+      @dblclick=${gestures?.dblclick}
     >
       ${plot(content, label, defs, gridLines(axes))} ${outside ? nothing : html`${yLabels}${rLabels}${xLabels}`}
       ${overlay}
     </div>
-    ${outside ? html`${rLabels}${xLabels}` : nothing}
+    ${outside ? html`${rLabels}${xLabels}` : nothing} ${below}
   </div>`;
 }
 
