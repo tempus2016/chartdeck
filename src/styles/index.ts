@@ -6,6 +6,7 @@ import { area } from './area';
 import { bar } from './bar';
 import { columnChart } from './column';
 import { combined } from './combined';
+import { histogram } from './histogram';
 import { line } from './line';
 import { needle } from './needle';
 import { pictograph } from './pictograph';
@@ -120,4 +121,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   rings,
   pictograph,
   waffle,
+  histogram,
 };

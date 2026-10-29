@@ -108,19 +108,19 @@ function gridLines(axes: PlotAxes): SVGTemplateResult {
 
 const pct = (n: number) => `${Math.round(n * 10000) / 100}%`;
 
-function valueLabels(axes: PlotAxes, ctx: ChartContext) {
+function valueLabels(axes: PlotAxes, ctx: ChartContext, format?: (v: number) => string) {
   const { scales, value } = axes;
   return value.ticks.map((v) => {
     const top = scales.y(v) / VIEW_H;
     // Inside the plot the top label hangs below its line, so it doesn't leave the chart.
     const end = top < 0.08 ? 'top' : top > 0.92 ? 'bottom' : '';
     return html`<span class="axis-label ${end}" style="top:${pct(top)}"
-      >${formatNumber(v, value.decimals, ctx.hass)}</span
+      >${format ? format(v) : formatNumber(v, value.decimals, ctx.hass)}</span
     >`;
   });
 }
 
-function timeLabels(axes: PlotAxes, ctx: ChartContext) {
+function timeLabels(axes: PlotAxes, ctx: ChartContext, format?: (v: number) => string) {
   const { scales, range } = axes;
   const offset = zoneOffset(timeZoneOf(ctx.hass));
   return axes.times.map((t) => {
@@ -128,7 +128,7 @@ function timeLabels(axes: PlotAxes, ctx: ChartContext) {
     // Labels near an edge line up with it instead of centring off the chart.
     const edge = left < 0.05 ? 'start' : left > 0.95 ? 'end' : '';
     return html`<span class="axis-label ${edge}" style="left:${pct(left)}"
-      >${axes.label ? axes.label(t) : timeLabel(t, axes.unit, range.end - range.start, ctx.hass, offset)}</span
+      >${format ? format(t) : axes.label ? axes.label(t) : timeLabel(t, axes.unit, range.end - range.start, ctx.hass, offset)}</span
     >`;
   });
 }
@@ -163,6 +163,9 @@ export interface ChartAreaOptions {
   hover?: Hover;
   /** A second value axis on the right. */
   right?: RightAxis;
+  /** Text for each label along the bottom or up the side, when they aren't times and plain values. */
+  xLabel?: (v: number) => string;
+  yLabel?: (v: number) => string;
 }
 
 /**
@@ -179,18 +182,20 @@ export function chartArea({
   overlay = nothing,
   hover,
   right,
+  xLabel,
+  yLabel,
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
   const y = options.y && axes.value.ticks.length > 0;
   const x = options.x && axes.times.length > 0;
-  const yTicks = y ? valueLabels(axes, ctx) : [];
+  const yTicks = y ? valueLabels(axes, ctx, yLabel) : [];
   const yLabels = y ? html`<div class="y-axis">${yTicks}</div>` : nothing;
-  const xLabels = x ? html`<div class="x-axis">${timeLabels(axes, ctx)}</div>` : nothing;
+  const xLabels = x ? html`<div class="x-axis">${timeLabels(axes, ctx, xLabel)}</div>` : nothing;
   const sizer = y
     ? html`<span class="axis-sizer" aria-hidden="true"
         >${axes.value.ticks
-          .map((v) => formatNumber(v, axes.value.decimals, ctx.hass))
+          .map((v) => (yLabel ? yLabel(v) : formatNumber(v, axes.value.decimals, ctx.hass)))
           .reduce((a, b) => (b.length > a.length ? b : a), '')}</span
       >`
     : nothing;
