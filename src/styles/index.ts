@@ -24,6 +24,7 @@ import { waffle } from './waffle';
 import { funnel } from './funnel';
 import { radar } from './radar';
 import { polarArea } from './polar-area';
+import { treemap } from './treemap';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -136,4 +137,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   funnel,
   radar,
   polar_area: polarArea,
+  treemap,
 };
