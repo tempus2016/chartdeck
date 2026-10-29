@@ -30,6 +30,7 @@ import { groupedBars } from './grouped-bars';
 import { bullet } from './bullet';
 import { lollipop } from './lollipop';
 import { waterfall } from './waterfall';
+import { slope } from './slope';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -149,4 +150,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   bullet,
   lollipop,
   waterfall,
+  slope,
 };
