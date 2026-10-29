@@ -1,5 +1,6 @@
 import type { HomeAssistant } from '../types';
-import { key, loadHistory, loadStatistics, statisticsPeriod, toReading } from './fetch';
+import { defaultStatisticsQuery, key, loadHistory, loadStatistics, toReading } from './fetch';
+import type { StatisticsQuery } from './fetch';
 import type { Point, Range, SeriesRequest, Source } from './types';
 
 export type LoadStatus = 'loading' | 'ready' | 'error';
@@ -15,18 +16,33 @@ const STATISTICS_REFRESH_MS: Record<string, number> = {
   '5minute': 5 * 60_000,
   hour: 3_600_000,
   day: 86_400_000,
+  week: 86_400_000,
   month: 86_400_000,
 };
 
+export interface GetOptions {
+  /**
+   * The range reaches the present, so new states belong in it (default true). A fixed past span
+   * (an offset, or stepped back with the buttons) is loaded once and left alone.
+   */
+  live?: boolean;
+  /** Statistics only: the period and columns to ask for (default: a period that fits the span). */
+  statistics?: StatisticsQuery;
+}
+
 /**
  * One card's loaded history. It loads when what is asked for changes shape (entities, source,
- * or a start earlier than what it has), then keeps up by itself: new states from `hass` are
- * appended and points older than the range are dropped, so a rolling chart never refetches.
- * Statistics have no live feed, so they reload once a period, on a timer.
+ * statistics columns), or reaches outside what it has (a start earlier than it loaded from, or a
+ * past span it loaded being left for a later one). A live range keeps up by itself: new states
+ * from `hass` are appended and points older than the range are dropped, so a rolling chart never
+ * refetches. Statistics have no live feed, so a live range reloads them once a period, on a timer.
+ * A past range gets neither: nothing new can happen in it.
  */
 export class HistoryStore {
   private shape = '';
   private loadedFrom = Infinity;
+  /** The end of what is loaded; Infinity while it is kept up to date with live states. */
+  private loadedTo = -Infinity;
   private status: LoadStatus = 'loading';
   private error?: string;
   private data = new Map<string, Point[]>();
@@ -39,16 +55,23 @@ export class HistoryStore {
 
   constructor(private readonly onChange: () => void) {}
 
-  get(hass: HomeAssistant, series: SeriesRequest[], range: Range, source: Source): Loaded {
-    const shape = `${source}|${series.map(key).join(',')}`;
+  get(hass: HomeAssistant, series: SeriesRequest[], range: Range, source: Source, options: GetOptions = {}): Loaded {
+    const live = options.live ?? true;
+    const query = source === 'statistics' ? (options.statistics ?? defaultStatisticsQuery(range)) : undefined;
+    const shape = `${source}|${series.map(key).join(',')}|${query ? JSON.stringify(query) : ''}`;
     const away = this.pausedAt !== undefined && Date.now() - this.pausedAt > PAUSE_RELOAD_MS;
-    const resumedStatistics = this.pausedAt !== undefined && source === 'statistics';
+    const resumedStatistics = this.pausedAt !== undefined && source === 'statistics' && live;
     this.pausedAt = undefined;
-    if (shape !== this.shape || range.start < this.loadedFrom || away || resumedStatistics) {
+    // A past span that still rolls with the clock (the last 7 days, a week ago) moves a little on
+    // every redraw; reload once it has moved by a minute or 1 % of the span, not every time.
+    const margin = Math.max(60_000, (range.end - range.start) / 100);
+    const outside =
+      range.start < this.loadedFrom || (live ? this.loadedTo !== Infinity : range.end > this.loadedTo + margin);
+    if (shape !== this.shape || outside || (away && live) || resumedStatistics) {
       this.shape = shape;
-      this.load(hass, series, range, source);
+      this.load(hass, series, range, live, query);
     }
-    if (this.status === 'ready' && source === 'history') this.appendLive(hass, series);
+    if (this.status === 'ready' && source === 'history' && this.loadedTo === Infinity) this.appendLive(hass, series);
     const data = new Map<string, Point[]>();
     for (const [k, points] of this.data) data.set(k, trim(points, range));
     return { status: this.status, data, error: this.error };
@@ -70,19 +93,25 @@ export class HistoryStore {
     this.timer = undefined;
     this.shape = '';
     this.loadedFrom = Infinity;
+    this.loadedTo = -Infinity;
     this.generation++;
   }
 
-  private load(hass: HomeAssistant, series: SeriesRequest[], range: Range, source: Source): void {
+  private load(
+    hass: HomeAssistant,
+    series: SeriesRequest[],
+    range: Range,
+    live: boolean,
+    query: StatisticsQuery | undefined,
+  ): void {
     const generation = ++this.generation;
     this.status = 'loading';
     // Count the span as covered from the moment it is asked for, so redraws while it loads (or
     // after it fails) don't ask again.
     this.loadedFrom = range.start;
+    this.loadedTo = live ? Infinity : range.end;
     clearTimeout(this.timer);
-    const period = statisticsPeriod(range);
-    const request =
-      source === 'statistics' ? loadStatistics(hass, series, range, period) : loadHistory(hass, series, range);
+    const request = query ? loadStatistics(hass, series, range, query) : loadHistory(hass, series, range);
     request.then(
       (data) => {
         if (generation !== this.generation) return;
@@ -91,12 +120,12 @@ export class HistoryStore {
         this.error = undefined;
         this.seen.clear();
         for (const s of series) this.seen.set(key(s), hass.states[s.entity]);
-        if (source === 'statistics') {
+        if (query && live) {
           // Reload when the next statistics period has been written.
           this.timer = setTimeout(() => {
             this.shape = '';
             this.onChange();
-          }, STATISTICS_REFRESH_MS[period]);
+          }, STATISTICS_REFRESH_MS[query.period]);
         }
         this.onChange();
       },
@@ -126,15 +155,16 @@ export class HistoryStore {
 }
 
 /**
- * Points within the range. The last point before the start is kept, moved to the start, so a
- * line begins at the left edge with the value it had then rather than at the first change.
+ * Points within the range. The last point before the start is kept, moved to the start and
+ * marked `carried`, so a line begins at the left edge with the value it had then rather than at
+ * the first change (and grouping knows it is not a reading taken in the range).
  */
 export function trim(points: Point[], range: Range): Point[] {
   let first = 0;
   while (first < points.length && points[first].t < range.start) first++;
   const inside = points.slice(first).filter((p) => p.t <= range.end);
   const before = points[first - 1];
-  return before ? [{ ...before, t: range.start }, ...inside] : inside;
+  return before ? [{ ...before, t: range.start, carried: true }, ...inside] : inside;
 }
 
 /** Away longer than this, a card reloads its history instead of carrying on. */

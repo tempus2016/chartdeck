@@ -256,8 +256,12 @@ describe('line chart editor', () => {
     await ed.updateComplete;
     const form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
     expect(form.data).toEqual({
+      period_calendar: 'rolling',
       period_last: 24,
       period_unit: 'hour',
+      period_offset: 0,
+      period_until: 'now',
+      period_navigate: false,
       source: 'history',
       curve: 'smooth',
       color_by: 'series',

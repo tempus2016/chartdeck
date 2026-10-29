@@ -10,6 +10,7 @@ import {
   frameMessage,
   frameStyles,
   historyFrame,
+  periodNav,
   seriesHeader,
   validateHistoryOptions,
 } from '../chart/frame';
@@ -166,7 +167,9 @@ export const line: ChartStyleModule = {
   },
   render(ctx) {
     const frame = historyFrame(ctx);
-    const header = seriesHeader(frame, ctx);
+    const nav = periodNav(frame, ctx);
+    const names = seriesHeader(frame, ctx);
+    const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
     const message = frameMessage(frame, ctx);
     const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
