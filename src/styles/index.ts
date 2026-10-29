@@ -7,6 +7,7 @@ import { bar } from './bar';
 import { bubble } from './bubble';
 import { columnChart } from './column';
 import { combined } from './combined';
+import { heatmap } from './heatmap';
 import { histogram } from './histogram';
 import { line } from './line';
 import { needle } from './needle';
@@ -126,4 +127,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   histogram,
   scatter,
   bubble,
+  heatmap,
 };
