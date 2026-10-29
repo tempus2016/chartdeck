@@ -36,6 +36,7 @@ import { rangeArea } from './range-area';
 import { sparklineStyle } from './sparkline';
 import { streamgraph } from './streamgraph';
 import { candlestick } from './candlestick';
+import { violin } from './violin';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -161,4 +162,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   sparkline: sparklineStyle,
   streamgraph,
   candlestick,
+  violin,
 };
