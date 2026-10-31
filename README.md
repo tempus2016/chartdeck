@@ -22,7 +22,7 @@
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
 
-> **1.0 brings seven bar and gauge styles; history charts are next.** See the
+> **1.2 brings the first history chart, a line chart with axes, hover readout and a compact layout.** See the
 > [roadmap board][roadmap] for what is coming and in what order.
 
 ![The seven Chartdeck styles in a light theme: classic bar, thin bar, segmented, tank, ring, needle and arc](images/preview-v1.png)
@@ -52,7 +52,8 @@ This page is the summary. What changed in each version is on the [releases page]
 | Ring | CPU, memory, disk | 1.0 |
 | Half circle with needle | Power, speed | 1.0 |
 | Three-quarter arc | Temperature, humidity, CO₂ | 1.0 |
-| Line, area and column charts | History over hours and days | [Planned][roadmap] |
+| Line chart | How a sensor changed over hours, days or months | 1.2 |
+| Area and column charts | Filled history, totals per hour or day | [Planned][roadmap] |
 | Pie, donut, pictograph, tally | Sharing out a total, counting | [Planned][roadmap] |
 | Histogram, scatter, heatmap and more | Patterns over weeks | [Planned][roadmap] |
 
