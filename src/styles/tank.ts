@@ -1,10 +1,11 @@
 import { css, html, nothing } from 'lit';
-import type { StyleModule } from './index';
+import type { ValueStyleModule } from './index';
 import { iconOverride } from '../resolve';
 
 /** Vertical tank: a 40 x 140 tube that fills from the bottom. */
-export const tank: StyleModule = {
+export const tank: ValueStyleModule = {
   layout: 'tiles',
+  group: 'bars',
   height: 230,
   tilesPerRow: 4,
   minColumnWidth: 80,

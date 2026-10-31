@@ -3,7 +3,7 @@ import { baseColor } from '../bands';
 import { arcPath, needlePath, polar } from '../geometry';
 import { fitStatusText } from '../status-text';
 import type { ResolvedBand } from '../types';
-import type { StyleModule } from './index';
+import type { ValueStyleModule } from './index';
 import { iconOverride } from '../resolve';
 
 const CX = 65;
@@ -58,8 +58,9 @@ function statusLines(text: string, width: number, max: number, min: number, last
 }
 
 /** Half-circle gauge: banded arc, ticks, and a needle that overshoots into place. */
-export const needle: StyleModule = {
+export const needle: ValueStyleModule = {
   layout: 'tiles',
+  group: 'gauges',
   height: 140,
   minColumnWidth: 134,
   styles: css`

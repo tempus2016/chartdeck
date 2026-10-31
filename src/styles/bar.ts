@@ -1,11 +1,12 @@
 import { css, html, nothing } from 'lit';
 import { onFillText } from '../bands';
-import type { StyleModule } from './index';
+import type { ValueStyleModule } from './index';
 import { iconOverride } from '../resolve';
 
 /** Classic bar: icon, then a 34 px track with name and value inside. */
-export const bar: StyleModule = {
+export const bar: ValueStyleModule = {
   layout: 'rows',
+  group: 'bars',
   height: 46,
   minColumnWidth: 160,
   styles: css`

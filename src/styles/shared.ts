@@ -51,6 +51,11 @@ export const shared = css`
     /* Styles adapt to the card's width (narrow sections columns) with @container rules. */
     container-type: inline-size;
   }
+  /* Whole-card styles (charts) draw into this; each chart style sizes its own contents. */
+  .chart {
+    position: relative;
+    width: 100%;
+  }
   .layout-rows {
     display: grid;
     column-gap: 16px;

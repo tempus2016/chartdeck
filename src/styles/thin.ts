@@ -1,10 +1,11 @@
 import { css, html, nothing } from 'lit';
-import type { StyleModule } from './index';
+import type { ValueStyleModule } from './index';
 import { iconOverride } from '../resolve';
 
 /** Thin bar: name and value above an 8 px track. */
-export const thin: StyleModule = {
+export const thin: ValueStyleModule = {
   layout: 'rows',
+  group: 'bars',
   height: 44,
   minColumnWidth: 140,
   styles: css`
