@@ -67,6 +67,9 @@ function drawing(style: StyleName) {
         <line x1="32" y1="32" x2=${tipX} y2=${tipY} stroke=${TEXT} stroke-width="2.5" stroke-linecap="round" />
         <circle cx="32" cy="32" r="3" fill=${TEXT} />`;
     }
+    default:
+      // Chart styles draw their own thumbnails.
+      return svg``;
   }
 }
 

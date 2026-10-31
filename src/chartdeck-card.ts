@@ -170,6 +170,8 @@ export class ChartdeckCard extends LitElement {
   }
 
   protected shouldUpdate(changed: PropertyValues): boolean {
+    // A bare requestUpdate() (a chart's data arriving) always draws.
+    if (changed.size === 0) return true;
     if ([...changed.keys()].some((key) => key !== 'hass')) return true;
     if (!changed.has('hass')) return false;
     const prev = changed.get('hass') as HomeAssistant | undefined;
@@ -226,6 +228,9 @@ export class ChartdeckCard extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     if (!this.hasUpdated) return;
+    // A chart that was moved or hidden may have missed its data arriving: draw again.
+    const style = this._config ? STYLES[this._config.style] : undefined;
+    if (style && isChart(style)) this.requestUpdate();
     this._syncActions();
     // Moved while drawing in (masonry re-lays out its columns just after the first render): the
     // re-inserted element has lost its running transition and would snap to the final value, so

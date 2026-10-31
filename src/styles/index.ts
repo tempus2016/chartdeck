@@ -2,6 +2,7 @@ import type { CSSResult, SVGTemplateResult, TemplateResult } from 'lit';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant, NormalizedConfig, ShowOptions, StyleName } from '../types';
 import { bar } from './bar';
+import { line } from './line';
 import { needle } from './needle';
 import { arc, ring } from './radial';
 import { segmented } from './segmented';
@@ -92,4 +93,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   ring,
   needle,
   arc,
+  line,
 };

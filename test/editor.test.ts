@@ -136,7 +136,8 @@ describe('chartdeck-card-editor', () => {
     const { editor, events } = await mount(raw);
     const button = (name: string) =>
       editor.shadowRoot!.querySelector(`button[data-style="${name}"]`) as HTMLButtonElement;
-    expect(editor.shadowRoot!.querySelectorAll('button[data-style]')).toHaveLength(7);
+    const { STYLE_NAMES } = await import('../src/types');
+    expect(editor.shadowRoot!.querySelectorAll('button[data-style]')).toHaveLength(STYLE_NAMES.length);
     expect(button('tank').getAttribute('aria-pressed')).toBe('true');
     expect(button('bar').getAttribute('aria-pressed')).toBe('false');
     expect(button('ring').querySelector('svg')).not.toBeNull();

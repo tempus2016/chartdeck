@@ -1,6 +1,6 @@
 import type { Rule } from './fill';
-export type StyleName = 'bar' | 'thin' | 'segmented' | 'tank' | 'ring' | 'needle' | 'arc';
-export const STYLE_NAMES: StyleName[] = ['bar', 'thin', 'segmented', 'tank', 'ring', 'needle', 'arc'];
+export type StyleName = 'bar' | 'thin' | 'segmented' | 'tank' | 'ring' | 'needle' | 'arc' | 'line';
+export const STYLE_NAMES: StyleName[] = ['bar', 'thin', 'segmented', 'tank', 'ring', 'needle', 'arc', 'line'];
 export type SortMode = 'none' | 'ascending' | 'descending';
 /** A number, or a string naming an entity whose state supplies the number. */
 export type Limit = number | string;
@@ -37,6 +37,12 @@ export interface EntityConfig extends EntityOptions {
   entity: string;
   /** Read this attribute as the value instead of the state. */
   attribute?: string;
+  /** Charts: this series' colour (a palette name or any CSS colour). */
+  color?: string;
+  /** Line and area charts: smooth, straight or step. */
+  curve?: string;
+  /** Line charts: draw this series dashed. */
+  dash?: boolean;
 }
 export interface ShowOptions {
   name: boolean;
@@ -122,5 +128,8 @@ export interface HomeAssistant {
   language?: string;
   themes?: { darkMode?: boolean; theme?: string };
   formatEntityState?(stateObj: HassEntity, state?: string): string;
+  /** Home Assistant's websocket call; charts load history and statistics with it. */
+  callWS?<T>(msg: Record<string, unknown>): Promise<T>;
+  config?: { time_zone?: string };
   formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;
 }

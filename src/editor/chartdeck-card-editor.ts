@@ -199,6 +199,7 @@ export class ChartdeckCardEditor extends LitElement {
         .hass=${this.hass}
         .entities=${this._config?.entities ?? []}
         .unit=${this._config?.unit}
+        .chart=${isChart(STYLES[(this._config?.style ?? 'bar') as StyleName] ?? STYLES.bar)}
         @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
       ></cd-entities-editor>
       ${this._ruleForm('include')} ${this._ruleForm('exclude')}`;
