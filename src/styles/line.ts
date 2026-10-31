@@ -14,9 +14,18 @@ import {
   validateHistoryOptions,
 } from '../chart/frame';
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
-import { chartArea, gridStyles, plotAxes, stopChartWidth } from '../chart/grid';
+import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotScales } from '../chart/grid';
 import { runPath, runs } from '../chart/paths';
+import {
+  hoverHandlers,
+  hoverTime,
+  stopHover,
+  tooltipEnabled,
+  tooltipLayer,
+  tooltipStyles,
+  validateTooltipOptions,
+} from '../chart/tooltip';
 import { extent } from '../chart/scale';
 import { lineEditor } from '../editor/chart-editors';
 import { formatNumber } from '../format';
@@ -101,6 +110,7 @@ export const line: ChartStyleModule = {
   styles: css`
     ${frameStyles}
     ${gridStyles}
+    ${tooltipStyles}
     .style-line .line {
       stroke-width: 2.5;
       stroke-linecap: round;
@@ -118,6 +128,7 @@ export const line: ChartStyleModule = {
   validate(raw: CardConfig) {
     validateHistoryOptions(raw);
     validateAxisOptions(raw);
+    validateTooltipOptions(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -126,6 +137,7 @@ export const line: ChartStyleModule = {
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);
+    stopHover(host);
   },
   render(ctx) {
     const frame = historyFrame(ctx);
@@ -134,6 +146,7 @@ export const line: ChartStyleModule = {
     if (message) return html`${header}${message}`;
     const axes = plotAxes(ctx, frame.range, extent(frame.series.map((s) => s.points)));
     const { scales } = axes;
+    const tooltip = tooltipEnabled(ctx.raw);
     const byBands = ctx.raw.color_by === 'bands';
     const defs = byBands
       ? svg`${frame.series.map((s) => bandGradient(`cd-bands-${s.index}`, s.entity.bands, scales))}`
@@ -152,7 +165,15 @@ export const line: ChartStyleModule = {
       content: lines,
       label,
       defs,
-      overlay: ctx.raw.labels === true ? valueLabels(frame, scales, ctx) : nothing,
+      overlay: html`${ctx.raw.labels === true ? valueLabels(frame, scales, ctx) : nothing}
+      ${tooltip ? tooltipLayer(ctx, frame.series, scales, hoverTime(ctx.host), plotWidth(ctx)) : nothing}`,
+      hover: tooltip
+        ? hoverHandlers(
+            ctx,
+            frame.range,
+            frame.series.map((s) => s.points),
+          )
+        : undefined,
     })}`;
   },
 };

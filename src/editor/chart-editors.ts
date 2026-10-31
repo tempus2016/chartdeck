@@ -51,9 +51,10 @@ registerStrings('en', {
   editor_grid_vertical: 'Lines down',
   editor_y_min: 'Lowest value shown',
   editor_y_max: 'Highest value shown',
+  editor_tooltip: 'Show values on hover or touch',
 });
 
-/** Axis labels, gridlines and the value range, shared by every history chart. Empty min/max fit the readings. */
+/** Axis labels, gridlines, the value range and the hover tooltip, shared by every history chart. Empty min/max fit the readings. */
 export const AXES_FIELDS: FieldBinding[] = [
   { name: 'x_axis', path: ['x_axis'], default: DEFAULT_AXES.x },
   { name: 'y_axis', path: ['y_axis'], default: DEFAULT_AXES.y },
@@ -62,6 +63,7 @@ export const AXES_FIELDS: FieldBinding[] = [
   { name: 'grid_vertical', path: ['gridlines', 'vertical'], default: DEFAULT_AXES.vertical },
   { name: 'y_min', path: ['y_min'] },
   { name: 'y_max', path: ['y_max'] },
+  { name: 'tooltip', path: ['tooltip'], default: true },
 ];
 
 export function axesSchema(hass?: HomeAssistant) {
@@ -85,6 +87,7 @@ export function axesSchema(hass?: HomeAssistant) {
         { name: 'y_max', selector: { number: { mode: 'box', step: 'any' } } },
       ],
     },
+    { name: 'tooltip', selector: { boolean: {} } },
   ];
 }
 

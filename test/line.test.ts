@@ -267,6 +267,7 @@ describe('line chart editor', () => {
       axis_labels: 'outside',
       grid_horizontal: true,
       grid_vertical: false,
+      tooltip: true,
     });
     form.dispatchEvent(
       new CustomEvent('value-changed', {
