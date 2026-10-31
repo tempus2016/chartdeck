@@ -270,6 +270,8 @@ describe('line chart editor', () => {
       grid_horizontal: true,
       grid_vertical: false,
       tooltip: true,
+      header: 'above',
+      compact: false,
     });
     form.dispatchEvent(
       new CustomEvent('value-changed', {
