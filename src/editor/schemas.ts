@@ -1,6 +1,7 @@
 import { languageOf, localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import { setOption } from './edit';
+import { MAX_LINE_WIDTH, MIN_LINE_WIDTH } from '../chart/series-style';
 
 /** One ha-form field and where it lives in the card config. */
 export interface FieldBinding {
@@ -54,8 +55,30 @@ export const ENTITY_ATTRIBUTE_FIELDS: FieldBinding[] = [{ name: 'attribute', pat
 export const ENTITY_SERIES_FIELDS: FieldBinding[] = [
   { name: 'series_color', path: ['color'] },
   { name: 'curve', path: ['curve'] },
+  { name: 'line_width', path: ['line_width'] },
   { name: 'dash', path: ['dash'], default: false },
+  { name: 'on_top', path: ['on_top'], default: false },
 ];
+
+/** Line width in px, for the card and for each series. */
+export const LINE_WIDTH_SELECTOR = {
+  number: { min: MIN_LINE_WIDTH, max: MAX_LINE_WIDTH, step: 0.5, mode: 'box', unit_of_measurement: 'px' },
+};
+
+const seriesFields = new Map<boolean, FieldBinding[]>();
+
+/**
+ * The series fields, with the dots switch showing the card's setting until the entity sets its
+ * own; switching it back to the card's setting removes the entity's key.
+ */
+export function entitySeriesFields(cardDots: boolean): FieldBinding[] {
+  let fields = seriesFields.get(cardDots);
+  if (!fields) {
+    fields = [...ENTITY_SERIES_FIELDS, { name: 'dots', path: ['dots'], default: cardDots }];
+    seriesFields.set(cardDots, fields);
+  }
+  return fields;
+}
 
 /** Absent per-entity actions inherit the card's, so there are no defaults here. */
 export const ENTITY_ACTION_FIELDS: FieldBinding[] = ACTION_FIELDS.map(({ name, path }) => ({ name, path }));
@@ -89,7 +112,7 @@ export function entityAttributeSchema(entityId: string) {
 
 let seriesCache: { language: string; schema: unknown[] } | undefined;
 
-/** Colour, line shape and dashes for one series. An empty shape follows the card's. */
+/** Colour, line shape, width, dashes, dots and drawing order for one series. Empty ones follow the card. */
 export function entitySeriesSchema(hass?: HomeAssistant) {
   const language = languageOf(hass);
   if (seriesCache?.language !== language) {
@@ -116,7 +139,16 @@ export function entitySeriesSchema(hass?: HomeAssistant) {
             },
           ],
         },
-        { name: 'dash', selector: { boolean: {} } },
+        {
+          type: 'grid',
+          name: '',
+          schema: [
+            { name: 'line_width', selector: LINE_WIDTH_SELECTOR },
+            { name: 'dash', selector: { boolean: {} } },
+            { name: 'dots', selector: { boolean: {} } },
+            { name: 'on_top', selector: { boolean: {} } },
+          ],
+        },
       ],
     };
   }

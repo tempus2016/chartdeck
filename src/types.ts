@@ -43,6 +43,12 @@ export interface EntityConfig extends EntityOptions {
   curve?: string;
   /** Line charts: draw this series dashed. */
   dash?: boolean;
+  /** Line charts: this series' line width in px (else the card's). */
+  line_width?: number;
+  /** Line charts: a dot at each reading (else the card's setting). */
+  dots?: boolean;
+  /** Line charts: draw this series above the others. */
+  on_top?: boolean;
 }
 export interface ShowOptions {
   name: boolean;

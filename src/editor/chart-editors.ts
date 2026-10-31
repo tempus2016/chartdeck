@@ -2,12 +2,13 @@ import { html } from 'lit';
 import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
 import { CURVES } from '../chart/paths';
+import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
 import { PERIOD_UNITS } from '../history/period';
 import { languageOf, localize, registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { HomeAssistant } from '../types';
-import { applyFormData, formData } from './schemas';
+import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
 import type { FieldBinding } from './schemas';
 
 /** A dropdown of fixed values, labelled from `editor_<prefix>_<value>`. */
@@ -52,6 +53,9 @@ registerStrings('en', {
   editor_y_min: 'Lowest value shown',
   editor_y_max: 'Highest value shown',
   editor_tooltip: 'Show values on hover or touch',
+  editor_line_width: 'Line width (px)',
+  editor_dots: 'Dot at each reading',
+  editor_on_top: 'Draw above the other lines',
 });
 
 /** Axis labels, gridlines, the value range and the hover tooltip, shared by every history chart. Empty min/max fit the readings. */
@@ -130,6 +134,8 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'curve', path: ['curve'], default: 'smooth' },
   { name: 'color_by', path: ['color_by'], default: 'series' },
   { name: 'labels', path: ['labels'], default: false },
+  { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
+  { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
 ];
 
@@ -142,6 +148,14 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       schema: [
         { name: 'curve', selector: choice(ctx.hass, 'curve', CURVES) },
         { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
+      ],
+    },
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'line_width', selector: LINE_WIDTH_SELECTOR },
+        { name: 'dots', selector: { boolean: {} } },
       ],
     },
     { name: 'labels', selector: { boolean: {} } },
