@@ -1,9 +1,10 @@
 import { html } from 'lit';
 import type { TemplateResult } from 'lit';
+import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
 import { CURVES } from '../chart/paths';
 import { SOURCES } from '../chart/frame';
 import { PERIOD_UNITS } from '../history/period';
-import { languageOf, localize } from '../localize';
+import { languageOf, localize, registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { HomeAssistant } from '../types';
 import { applyFormData, formData } from './schemas';
@@ -37,6 +38,53 @@ export function historySchema(hass?: HomeAssistant) {
       ],
     },
     { name: 'source', selector: choice(hass, 'source', SOURCES) },
+  ];
+}
+
+registerStrings('en', {
+  editor_x_axis: 'Time labels',
+  editor_y_axis: 'Value labels',
+  editor_axis_labels: 'Axis labels',
+  editor_axis_labels_outside: 'Beside the chart',
+  editor_axis_labels_inside: 'Over the chart',
+  editor_grid_horizontal: 'Lines across',
+  editor_grid_vertical: 'Lines down',
+  editor_y_min: 'Lowest value shown',
+  editor_y_max: 'Highest value shown',
+});
+
+/** Axis labels, gridlines and the value range, shared by every history chart. Empty min/max fit the readings. */
+export const AXES_FIELDS: FieldBinding[] = [
+  { name: 'x_axis', path: ['x_axis'], default: DEFAULT_AXES.x },
+  { name: 'y_axis', path: ['y_axis'], default: DEFAULT_AXES.y },
+  { name: 'axis_labels', path: ['axis_labels'], default: DEFAULT_AXES.labels },
+  { name: 'grid_horizontal', path: ['gridlines', 'horizontal'], default: DEFAULT_AXES.horizontal },
+  { name: 'grid_vertical', path: ['gridlines', 'vertical'], default: DEFAULT_AXES.vertical },
+  { name: 'y_min', path: ['y_min'] },
+  { name: 'y_max', path: ['y_max'] },
+];
+
+export function axesSchema(hass?: HomeAssistant) {
+  return [
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'x_axis', selector: { boolean: {} } },
+        { name: 'y_axis', selector: { boolean: {} } },
+        { name: 'grid_horizontal', selector: { boolean: {} } },
+        { name: 'grid_vertical', selector: { boolean: {} } },
+      ],
+    },
+    { name: 'axis_labels', selector: choice(hass, 'axis_labels', AXIS_LABELS) },
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'y_min', selector: { number: { mode: 'box', step: 'any' } } },
+        { name: 'y_max', selector: { number: { mode: 'box', step: 'any' } } },
+      ],
+    },
   ];
 }
 
@@ -79,6 +127,7 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'curve', path: ['curve'], default: 'smooth' },
   { name: 'color_by', path: ['color_by'], default: 'series' },
   { name: 'labels', path: ['labels'], default: false },
+  ...AXES_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
@@ -93,6 +142,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     { name: 'labels', selector: { boolean: {} } },
+    ...axesSchema(ctx.hass),
   ]);
   return chartForm(ctx, 'chart', schema, LINE_FIELDS);
 }

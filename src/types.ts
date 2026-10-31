@@ -124,7 +124,7 @@ export interface HomeAssistant {
   >;
   devices?: Record<string, { id: string; area_id?: string | null; labels?: string[] }>;
   areas?: Record<string, { area_id: string; floor_id?: string | null }>;
-  locale?: { language: string; number_format?: string };
+  locale?: { language: string; number_format?: string; time_format?: string; time_zone?: string };
   language?: string;
   themes?: { darkMode?: boolean; theme?: string };
   formatEntityState?(stateObj: HassEntity, state?: string): string;

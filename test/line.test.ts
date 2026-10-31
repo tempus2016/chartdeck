@@ -167,6 +167,79 @@ describe('line chart', () => {
   });
 });
 
+describe('line chart axes', () => {
+  const labels = (card: Card, sel: string) => qa(card, `${sel} .axis-label`).map((e) => e.textContent!.trim());
+
+  it('labels values and times beside the plot, with lines across, by default', async () => {
+    const card = await mount({});
+    expect(q(card, '.plot-wrap')!.classList.contains('axes-outside')).toBe(true);
+    const values = labels(card, '.y-axis');
+    expect(values.length).toBeGreaterThanOrEqual(3);
+    expect(values.every((v) => /^-?\d+$/.test(v))).toBe(true);
+    expect(q(card, '.axis-sizer')!.textContent!.length).toBe(Math.max(...values.map((v) => v.length)));
+    expect(labels(card, '.x-axis').length).toBeGreaterThanOrEqual(2);
+    expect(qa(card, '.grid line')).toHaveLength(values.length);
+    // The y axis column sits outside the plot area; the x axis row below it.
+    expect(q(card, '.plot-area .y-axis')).toBeNull();
+    expect(q(card, '.plot-area .x-axis')).toBeNull();
+  });
+
+  it('draws labels over the plot, lines down, a fixed range, or nothing at all', async () => {
+    const inside = await mount({
+      axis_labels: 'inside',
+      gridlines: { vertical: true, horizontal: false },
+      y_min: 0,
+      y_max: 40,
+    } as Partial<CardConfig>);
+    expect(q(inside, '.plot-area .y-axis')).not.toBeNull();
+    expect(labels(inside, '.y-axis')).toEqual(['0', '10', '20', '30', '40']);
+    expect(q(inside, '.y-axis .axis-label.top')!.textContent).toBe('40');
+    expect(q(inside, '.y-axis .axis-label.bottom')!.textContent).toBe('0');
+    expect(qa(inside, '.grid line')).toHaveLength(labels(inside, '.x-axis').length);
+    const bare = await mount({ x_axis: false, y_axis: false, gridlines: { horizontal: false } } as Partial<CardConfig>);
+    expect(q(bare, '.y-axis')).toBeNull();
+    expect(q(bare, '.x-axis')).toBeNull();
+    expect(qa(bare, '.grid line')).toHaveLength(0);
+    expect(qa(bare, 'path.line')).toHaveLength(2);
+  });
+
+  it('redraws when the card is resized enough to fit a different number of time labels', async () => {
+    let fire: (w: number) => void = () => undefined;
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: (r: { contentRect: { width: number } }[]) => void) {
+          fire = (width) => cb([{ contentRect: { width } }]);
+        }
+        observe() {}
+        disconnect = disconnect;
+      },
+    );
+    try {
+      const card = await mount({ period: { last: 7, unit: 'day' } } as Partial<CardConfig>);
+      const before = labels(card, '.x-axis').length;
+      fire(10);
+      await card.updateComplete;
+      expect(labels(card, '.x-axis').length).toBeLessThan(before);
+      fire(12);
+      fire(10);
+      card.remove();
+      expect(disconnect).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('checks its axis options', () => {
+    const card = document.createElement('chartdeck-card') as Card;
+    const set = (extra: Record<string, unknown>) => () =>
+      card.setConfig({ type: 'x', style: 'line', entities: ['sensor.in'], ...extra } as CardConfig);
+    expect(set({ axis_labels: 'left' })).toThrow(/axis_labels/);
+    expect(set({ y_min: 10, y_max: 0 })).toThrow(/y_min/);
+  });
+});
+
 describe('line chart editor', () => {
   it('shows the Chart section and writes period, source, shape and labels', async () => {
     const ed = document.createElement('chartdeck-card-editor') as HTMLElement & {
@@ -189,6 +262,11 @@ describe('line chart editor', () => {
       curve: 'smooth',
       color_by: 'series',
       labels: false,
+      x_axis: true,
+      y_axis: true,
+      axis_labels: 'outside',
+      grid_horizontal: true,
+      grid_vertical: false,
     });
     form.dispatchEvent(
       new CustomEvent('value-changed', {
@@ -196,6 +274,12 @@ describe('line chart editor', () => {
       }),
     );
     expect(events.at(-1)).toEqual({ ...raw, period: { last: 7, unit: 'day' }, labels: true });
+    form.dispatchEvent(
+      new CustomEvent('value-changed', {
+        detail: { value: { ...(form.data as object), grid_vertical: true, axis_labels: 'inside', y_min: 0 } },
+      }),
+    );
+    expect(events.at(-1)).toEqual({ ...raw, gridlines: { vertical: true }, axis_labels: 'inside', y_min: 0 });
     const list = ed.shadowRoot!.querySelector('cd-entities-editor') as Stub;
     expect(list.chart).toBe(true);
   });

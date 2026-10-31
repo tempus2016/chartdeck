@@ -119,8 +119,17 @@ export function frameMessage(frame: HistoryFrame, ctx: ChartContext): TemplateRe
   return undefined;
 }
 
-/** The stretched SVG plot area, with a clip that draws the contents in from the left. */
-export function plot(content: SVGTemplateResult, label: string, defs: SVGTemplateResult | typeof nothing = nothing) {
+/**
+ * The stretched SVG plot area, with a clip that draws the contents in from the left and keeps
+ * them inside the plot (a reading past a fixed axis end is cut off at the edge). `background`
+ * (gridlines) sits behind, outside the clip, so it doesn't draw in.
+ */
+export function plot(
+  content: SVGTemplateResult,
+  label: string,
+  defs: SVGTemplateResult | typeof nothing = nothing,
+  background: SVGTemplateResult | typeof nothing = nothing,
+) {
   return html`<svg
     class="plot"
     viewBox="0 0 ${VIEW_W} ${VIEW_H}"
@@ -130,10 +139,11 @@ export function plot(content: SVGTemplateResult, label: string, defs: SVGTemplat
   >
     <defs>
       <clipPath id="cd-draw-in">
-        <rect class="draw-in" x="0" y="-10" width=${VIEW_W} height=${VIEW_H + 20}></rect>
+        <rect class="draw-in" x="0" y="-2" width=${VIEW_W} height=${VIEW_H + 4}></rect>
       </clipPath>
       ${defs}
     </defs>
+    ${background}
     <g clip-path="url(#cd-draw-in)">${content}</g>
   </svg>`;
 }
