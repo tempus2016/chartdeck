@@ -130,7 +130,15 @@ export interface HomeAssistant {
   >;
   devices?: Record<string, { id: string; area_id?: string | null; labels?: string[] }>;
   areas?: Record<string, { area_id: string; floor_id?: string | null }>;
-  locale?: { language: string; number_format?: string; time_format?: string; time_zone?: string };
+  locale?: {
+    language: string;
+    number_format?: string;
+    time_format?: string;
+    /** `server` uses `config.time_zone`; `local` (the default) the browser's. */
+    time_zone?: string;
+    /** `language`, or a weekday name such as `monday`. */
+    first_weekday?: string;
+  };
   language?: string;
   themes?: { darkMode?: boolean; theme?: string };
   formatEntityState?(stateObj: HassEntity, state?: string): string;

@@ -6,6 +6,10 @@ export interface Point {
   /** Long-term statistics only: the period's lowest and highest. */
   min?: number | null;
   max?: number | null;
+  /** The reading from before the range, moved to its start: the value then, not a new reading. */
+  carried?: boolean;
+  /** A grouped value: where its group ends (its `t` is where the group starts). */
+  end?: number;
 }
 
 /** Where a chart's readings come from. */

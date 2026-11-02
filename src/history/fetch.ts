@@ -36,14 +36,37 @@ interface StatisticRow {
   min?: number | null;
   max?: number | null;
   state?: number | null;
+  change?: number | null;
+  sum?: number | null;
 }
 
-/** One statistic's rows as points: the mean (or the state, for meters) with min and max kept. */
-export function parseStatistics(rows: StatisticRow[] | undefined): Point[] {
+/** Periods Home Assistant keeps long-term statistics for. */
+export type StatisticsPeriod = '5minute' | 'hour' | 'day' | 'week' | 'month';
+/** Columns of a statistics row. */
+export type StatisticField = 'mean' | 'min' | 'max' | 'state' | 'change';
+
+/** What to ask the recorder for: the row length, the columns, and which column is the value. */
+export interface StatisticsQuery {
+  period: StatisticsPeriod;
+  types: StatisticField[];
+  value: StatisticField;
+}
+
+const finite = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+/**
+ * One statistic's rows as points. The value is the `value` column (falling back to the mean or
+ * the state, so a meter and a measurement both draw), with min and max kept.
+ */
+export function parseStatistics(rows: StatisticRow[] | undefined, value?: StatisticField): Point[] {
   return (rows ?? []).map((row) => {
     const t = typeof row.start === 'number' ? row.start : Date.parse(row.start);
-    const v = row.mean ?? row.state ?? null;
-    return { t, v: typeof v === 'number' && Number.isFinite(v) ? v : null, min: row.min ?? null, max: row.max ?? null };
+    let v: number | null;
+    if (value === 'change') v = finite(row.change);
+    else if (value === 'state') v = finite(row.state) ?? finite(row.mean);
+    else if (value === 'min' || value === 'max') v = finite(row[value]) ?? finite(row.mean) ?? finite(row.state);
+    else v = finite(row.mean) ?? finite(row.state);
+    return { t, v, min: row.min ?? null, max: row.max ?? null };
   });
 }
 
@@ -54,6 +77,11 @@ export function statisticsPeriod(range: Range): '5minute' | 'hour' | 'day' | 'mo
   if (days <= 35) return 'hour';
   if (days <= 400) return 'day';
   return 'month';
+}
+
+/** The plain query: mean, min, max and state, at a period that fits the span. */
+export function defaultStatisticsQuery(range: Range): StatisticsQuery {
+  return { period: statisticsPeriod(range), types: ['mean', 'min', 'max', 'state'], value: 'mean' };
 }
 
 /** Load history for every series in one or two calls (attributes need the full format). */
@@ -102,12 +130,12 @@ export async function loadHistory(
   return out;
 }
 
-/** Load long-term statistics (mean, min and max) for every series in one call. */
+/** Load long-term statistics for every series in one call. */
 export async function loadStatistics(
   hass: HomeAssistant,
   series: SeriesRequest[],
   range: Range,
-  period = statisticsPeriod(range),
+  query: StatisticsQuery = defaultStatisticsQuery(range),
 ): Promise<Map<string, Point[]>> {
   const out = new Map<string, Point[]>();
   if (!hass.callWS || series.length === 0) return out;
@@ -117,10 +145,10 @@ export async function loadStatistics(
     start_time: new Date(range.start).toISOString(),
     end_time: new Date(range.end).toISOString(),
     statistic_ids: ids,
-    period,
-    types: ['mean', 'min', 'max', 'state'],
+    period: query.period,
+    types: query.types,
   });
-  for (const s of series) out.set(key(s), parseStatistics(result?.[s.entity]));
+  for (const s of series) out.set(key(s), parseStatistics(result?.[s.entity], query.value));
   return out;
 }
 

@@ -21,7 +21,7 @@ const H = 3_600_000;
 describe('period', () => {
   it('defaults to the last 24 hours and checks its keys', () => {
     expect(parsePeriod(undefined)).toEqual(DEFAULT_PERIOD);
-    expect(parsePeriod({ last: '7', unit: 'day' } as never)).toEqual({ last: 7, unit: 'day' });
+    expect(parsePeriod({ last: '7', unit: 'day' } as never)).toEqual({ ...DEFAULT_PERIOD, last: 7, unit: 'day' });
     expect(() => parsePeriod({ last: 0 } as never)).toThrow(/period.last/);
     expect(() => parsePeriod({ unit: 'year' } as never)).toThrow(/period.unit/);
     expect(() => parsePeriod('today' as never)).toThrow(/period/);
@@ -131,7 +131,7 @@ describe('store', () => {
       { t: 300, v: 4 },
     ];
     expect(trim(pts, { start: 100, end: 200 })).toEqual([
-      { t: 100, v: 2 },
+      { t: 100, v: 2, carried: true },
       { t: 150, v: 3 },
     ]);
   });

@@ -5,10 +5,10 @@ import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
-import { PERIOD_UNITS } from '../history/period';
+import { CALENDAR_SPANS, PERIOD_UNITS, PERIOD_UNTIL } from '../history/period';
 import { languageOf, localize, registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
-import type { HomeAssistant } from '../types';
+import type { CardConfig, HomeAssistant } from '../types';
 import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
 import type { FieldBinding } from './schemas';
 
@@ -22,23 +22,59 @@ export function choice(hass: HomeAssistant | undefined, prefix: string, values: 
   };
 }
 
-/** Fields every history chart shows first: how far back, and where the readings come from. */
+registerStrings('en', {
+  editor_period_calendar: 'Period',
+  editor_period_calendar_rolling: 'The last…',
+  editor_period_calendar_day: 'Today',
+  editor_period_calendar_week: 'This week',
+  editor_period_calendar_month: 'This month',
+  editor_period_calendar_year: 'This year',
+  editor_period_offset: 'Periods back (0 is the current one)',
+  editor_period_until: 'Draw up to',
+  editor_period_until_now: 'Now',
+  editor_period_until_end: 'The end of the period',
+  editor_period_navigate: 'Show previous and next buttons',
+});
+
+/** Fields every history chart shows first: what span it covers, and where the readings come from. */
 export const HISTORY_FIELDS: FieldBinding[] = [
+  { name: 'period_calendar', path: ['period', 'calendar'], default: 'rolling' },
   { name: 'period_last', path: ['period', 'last'], default: 24 },
   { name: 'period_unit', path: ['period', 'unit'], default: 'hour' },
+  { name: 'period_offset', path: ['period', 'offset'], default: 0 },
+  { name: 'period_until', path: ['period', 'until'], default: 'now' },
+  { name: 'period_navigate', path: ['period', 'navigate'], default: false },
   { name: 'source', path: ['source'], default: 'history' },
 ];
 
-export function historySchema(hass?: HomeAssistant) {
+/** Which history fields apply to this config; part of a chart editor's schema cache key. */
+export function historyVariant(config: CardConfig | undefined): string {
+  const period = config?.period as { calendar?: unknown } | undefined;
+  return period?.calendar ? 'calendar' : 'rolling';
+}
+
+/**
+ * The history fields as ha-form schema: a rolling span asks how far back, a calendar one whether
+ * to draw to now or to its end. Cache it under `historyVariant(config)`.
+ */
+export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
+  const calendar = historyVariant(config) === 'calendar';
   return [
     {
       type: 'grid',
       name: '',
       schema: [
-        { name: 'period_last', selector: { number: { min: 1, mode: 'box' } } },
-        { name: 'period_unit', selector: choice(hass, 'period_unit', PERIOD_UNITS) },
+        { name: 'period_calendar', selector: choice(hass, 'period_calendar', ['rolling', ...CALENDAR_SPANS]) },
+        ...(calendar
+          ? [{ name: 'period_until', selector: choice(hass, 'period_until', PERIOD_UNTIL) }]
+          : [
+              { name: 'period_last', selector: { number: { min: 1, mode: 'box' } } },
+              { name: 'period_unit', selector: choice(hass, 'period_unit', PERIOD_UNITS) },
+            ]),
+        { name: 'period_offset', selector: { number: { min: 0, mode: 'box' } } },
       ],
     },
+    { name: 'period_navigate', selector: { boolean: {} } },
     { name: 'source', selector: choice(hass, 'source', SOURCES) },
   ];
 }
@@ -166,8 +202,8 @@ const LINE_FIELDS: FieldBinding[] = [
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema('line', ctx.hass, () => [
-    ...historySchema(ctx.hass),
+  const schema = cachedSchema(`line|${historyVariant(ctx.config)}`, ctx.hass, () => [
+    ...historySchema(ctx.hass, ctx.config),
     {
       type: 'grid',
       name: '',
