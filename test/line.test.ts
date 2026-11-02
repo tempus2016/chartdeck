@@ -263,6 +263,8 @@ describe('line chart editor', () => {
       period_until: 'now',
       period_navigate: false,
       source: 'history',
+      group_by: 'none',
+      aggregate: 'mean',
       curve: 'smooth',
       color_by: 'series',
       labels: false,

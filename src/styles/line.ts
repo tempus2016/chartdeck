@@ -109,8 +109,10 @@ function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string, range: R
 function valueLabels(frame: HistoryFrame, scales: PlotScales, ctx: Parameters<ChartStyleModule['render']>[0]) {
   return html`<div class="point-labels">
     ${frame.series.flatMap((s) => {
-      // The points at either edge are carried readings, not new ones: no label.
-      const readings = s.points.filter((p) => p.v !== null && p.t !== frame.range.start && p.t !== frame.range.end);
+      // The points at either edge are carried readings, not new ones: no label (groups are all real).
+      const readings = s.points.filter(
+        (p) => p.v !== null && (frame.group !== undefined || (p.t !== frame.range.start && p.t !== frame.range.end)),
+      );
       if (readings.length > MAX_LABELS) return [];
       return readings.map(
         (p) =>
