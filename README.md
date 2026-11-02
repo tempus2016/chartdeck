@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/tempus2016/chartdeck/releases"><img src="https://img.shields.io/github/v/release/tempus2016/chartdeck?include_prereleases" alt="Latest Release"></a>
-  <a href="https://hacs.xyz/docs/faq/custom_repositories/"><img src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg" alt="HACS Custom"></a>
+  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" alt="HACS Default"></a>
   <a href="https://github.com/tempus2016/chartdeck/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2025.1+-blue" alt="HA Version">
   <a href="https://github.com/tempus2016/chartdeck/releases"><img src="https://img.shields.io/github/downloads/tempus2016/chartdeck/total" alt="Downloads"></a>
@@ -59,11 +59,10 @@ This page is the summary. What changed in each version is on the [releases page]
 
 ## Installation
 
-Until Chartdeck is in the HACS default list, add it as a custom repository:
+Chartdeck is in the HACS default store:
 
-1. Open HACS, choose ⋮ → **Custom repositories**.
-2. Add `https://github.com/tempus2016/chartdeck` with the type **Dashboard**.
-3. Search for *Chartdeck*, download it, and reload your browser.
+1. Open HACS and search for *Chartdeck*.
+2. Download it, then reload your browser.
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tempus2016&repository=chartdeck&category=lovelace)
 
