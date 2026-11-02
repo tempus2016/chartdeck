@@ -2,6 +2,7 @@ import type { CSSResult, SVGTemplateResult, TemplateResult } from 'lit';
 import type { FieldBinding } from '../editor/schemas';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant, NormalizedConfig, ShowOptions, StyleName } from '../types';
+import { area } from './area';
 import { bar } from './bar';
 import { line } from './line';
 import { needle } from './needle';
@@ -106,4 +107,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   needle,
   arc,
   line,
+  area,
 };
