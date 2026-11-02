@@ -182,7 +182,10 @@ describe('grouped line chart', () => {
     hass.callWS = vi.fn(async (msg: Record<string, unknown>) => {
       const start = Date.parse(msg.start_time as string);
       if (msg.type === 'recorder/statistics_during_period') {
-        return { 'sensor.energy': Array.from({ length: 4 }, (_, i) => ({ start: start + i * 24 * H, change: i + 1 })) };
+        // Daily rows start at local midnight, and the recorder has none for a day not yet begun.
+        const day0 = startOf('day', start + 24 * H, london);
+        const rows = Array.from({ length: 4 }, (_, i) => ({ start: day0 + i * 24 * H, change: i + 1 }));
+        return { 'sensor.energy': rows.filter((r) => r.start <= Date.now()) };
       }
       return {
         'sensor.energy': [
