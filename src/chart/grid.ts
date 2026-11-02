@@ -133,6 +133,23 @@ function timeLabels(axes: PlotAxes, ctx: ChartContext) {
   });
 }
 
+/** A second value axis, up the right side, for series in another unit. */
+export interface RightAxis {
+  value: ValueAxis;
+  /** Value to plot units, as `PlotScales.y`. */
+  y: (v: number) => number;
+}
+
+function rightLabels(right: RightAxis, ctx: ChartContext) {
+  return right.value.ticks.map((v) => {
+    const top = right.y(v) / VIEW_H;
+    const end = top < 0.08 ? 'top' : top > 0.92 ? 'bottom' : '';
+    return html`<span class="axis-label ${end}" style="top:${pct(top)}"
+      >${formatNumber(v, right.value.decimals, ctx.hass)}</span
+    >`;
+  });
+}
+
 export interface ChartAreaOptions {
   axes: PlotAxes;
   ctx: ChartContext;
@@ -144,6 +161,8 @@ export interface ChartAreaOptions {
   overlay?: TemplateResult | typeof nothing;
   /** Pointer handlers for a hover tooltip; the plot then takes sideways touch drags. */
   hover?: Hover;
+  /** A second value axis on the right. */
+  right?: RightAxis;
 }
 
 /**
@@ -151,7 +170,16 @@ export interface ChartAreaOptions {
  * stretched SVG never distorts it. Outside labels get their own column and row; inside ones sit
  * over the plot's left and bottom edges.
  */
-export function chartArea({ axes, ctx, content, label, defs = nothing, overlay = nothing, hover }: ChartAreaOptions) {
+export function chartArea({
+  axes,
+  ctx,
+  content,
+  label,
+  defs = nothing,
+  overlay = nothing,
+  hover,
+  right,
+}: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
   const y = options.y && axes.value.ticks.length > 0;
@@ -166,7 +194,20 @@ export function chartArea({ axes, ctx, content, label, defs = nothing, overlay =
           .reduce((a, b) => (b.length > a.length ? b : a), '')}</span
       >`
     : nothing;
-  return html`<div class="plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''}">
+  const r = right && options.y && right.value.ticks.length > 0 ? right : undefined;
+  const rSizer = r
+    ? html`<span class="axis-sizer" aria-hidden="true"
+        >${r.value.ticks
+          .map((v) => formatNumber(v, r.value.decimals, ctx.hass))
+          .reduce((a, b) => (b.length > a.length ? b : a), '')}</span
+      >`
+    : nothing;
+  const rLabels = r
+    ? html`<div class="y-axis right">${outside ? rSizer : nothing}${rightLabels(r, ctx)}</div>`
+    : nothing;
+  return html`<div
+    class="plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''}"
+  >
     ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
     <div
       class="plot-area ${hover ? 'hoverable' : ''}"
@@ -175,9 +216,10 @@ export function chartArea({ axes, ctx, content, label, defs = nothing, overlay =
       @pointerleave=${hover?.leave}
       @pointercancel=${hover?.leave}
     >
-      ${plot(content, label, defs, gridLines(axes))} ${outside ? nothing : html`${yLabels}${xLabels}`} ${overlay}
+      ${plot(content, label, defs, gridLines(axes))} ${outside ? nothing : html`${yLabels}${rLabels}${xLabels}`}
+      ${overlay}
     </div>
-    ${outside ? xLabels : nothing}
+    ${outside ? html`${rLabels}${xLabels}` : nothing}
   </div>`;
 }
 
@@ -248,6 +290,22 @@ export const gridStyles = css`
   }
   .x-axis .axis-label.end {
     transform: translateX(-100%);
+  }
+  .plot-wrap.has-right {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .axes-outside .y-axis.right {
+    grid-column: 3;
+    padding-right: 0;
+    padding-left: 6px;
+  }
+  .axes-outside .y-axis.right .axis-label {
+    right: auto;
+    left: 6px;
+  }
+  .axes-inside .y-axis.right .axis-label {
+    left: auto;
+    right: 2px;
   }
   .axes-inside .y-axis,
   .axes-inside .x-axis {

@@ -5,7 +5,7 @@ import { parsePeriod, periodRange, setSteps, stepsFor } from '../history/period'
 import type { Period } from '../history/period';
 import { key } from '../history/fetch';
 import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQueryFor } from '../history/group';
-import type { Grouping } from '../history/group';
+import type { Aggregate, Grouping } from '../history/group';
 import { pauseStore, storeFor } from '../history/store';
 import { boundaries, startOf, wallTime, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
@@ -94,6 +94,12 @@ export function validateHistoryOptions(raw: CardConfig): void {
 export interface FrameOptions {
   /** Keep each group's lowest and highest (`min`, `max` on its point), for range charts. */
   range?: boolean;
+  /**
+   * How to combine one series' grouped history, when it differs from the card's (a meter's change
+   * beside a temperature's average). Statistics load one column for every series, so they use
+   * the card's.
+   */
+  aggregate?: (entity: ResolvedEntity) => Aggregate | undefined;
 }
 
 /** Load (or reuse) the card's history and pair it with its entities. */
@@ -126,7 +132,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
       points =
         source === 'statistics'
           ? groupStatistics(points, bounds, group.aggregate, until, options.range === true)
-          : groupHistory(points, bounds, group.aggregate, until, options.range === true);
+          : groupHistory(points, bounds, options.aggregate?.(entity) ?? group.aggregate, until, options.range === true);
     } else if (source === 'history' && last && last.v !== null && last.t < until) {
       // A sensor holds its last reading until it changes, so carry it on to the right edge.
       points = [...points, { t: until, v: last.v }];

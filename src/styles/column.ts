@@ -140,7 +140,7 @@ interface Drawn {
 }
 
 /** A column from `lo` to `hi` (values), `left`/`width` in plot units, with its outer end(s) rounded. */
-function column(
+export function column(
   scales: PlotScales,
   left: number,
   width: number,

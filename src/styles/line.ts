@@ -72,7 +72,8 @@ function bandGradient(id: string, bands: ResolvedBand[], scales: PlotScales): SV
   </linearGradient>`;
 }
 
-function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string, range: Range, raw: CardConfig) {
+/** One series' line (and dots), for the line chart and the combined chart. */
+export function seriesPath(s: ChartSeries, scales: PlotScales, stroke: string, range: Range, raw: CardConfig) {
   const style = seriesStyle(s.entity.config, raw);
   const thinned = downsample(s.points, MAX_POINTS);
   const d = runs(thinned)
