@@ -72,6 +72,8 @@ export interface PlotAxes {
   unit: TimeUnit;
   range: Range;
   scales: PlotScales;
+  /** The text under each time label, when a chart names its own (a column's day); else the time's. */
+  label?: (t: number) => string;
 }
 
 /** Work out the axes for readings spanning `data` over `range`, sized to the card. */
@@ -126,7 +128,7 @@ function timeLabels(axes: PlotAxes, ctx: ChartContext) {
     // Labels near an edge line up with it instead of centring off the chart.
     const edge = left < 0.05 ? 'start' : left > 0.95 ? 'end' : '';
     return html`<span class="axis-label ${edge}" style="left:${pct(left)}"
-      >${timeLabel(t, axes.unit, range.end - range.start, ctx.hass, offset)}</span
+      >${axes.label ? axes.label(t) : timeLabel(t, axes.unit, range.end - range.start, ctx.hass, offset)}</span
     >`;
   });
 }

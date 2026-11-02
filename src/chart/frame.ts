@@ -90,8 +90,14 @@ export function validateHistoryOptions(raw: CardConfig): void {
   }
 }
 
+/** What a chart asks of its history beyond the readings. */
+export interface FrameOptions {
+  /** Keep each group's lowest and highest (`min`, `max` on its point), for range charts. */
+  range?: boolean;
+}
+
 /** Load (or reuse) the card's history and pair it with its entities. */
-export function historyFrame(ctx: ChartContext, now = Date.now()): HistoryFrame {
+export function historyFrame(ctx: ChartContext, now = Date.now(), options: FrameOptions = {}): HistoryFrame {
   const period = parsePeriod(ctx.raw.period as CardConfig['period']);
   const source: Source = (ctx.raw.source as Source | undefined) ?? 'history';
   const zone = zoneFor(ctx.hass);
@@ -102,7 +108,9 @@ export function historyFrame(ctx: ChartContext, now = Date.now()): HistoryFrame 
   const requests = ctx.items.map((e) => ({ entity: e.entityId, attribute: e.config.attribute }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const statistics =
-    group && source === 'statistics' ? statisticsQueryFor(group, zone, ctx.hass.config?.time_zone) : undefined;
+    group && source === 'statistics'
+      ? statisticsQueryFor(group, zone, ctx.hass.config?.time_zone, options.range === true)
+      : undefined;
   // Statistics groups load from one row early: the row before a group gives its `first`.
   const load = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
   const loaded = store.get(ctx.hass, requests, load, source, { live: span.live, statistics });
@@ -117,8 +125,8 @@ export function historyFrame(ctx: ChartContext, now = Date.now()): HistoryFrame 
     if (group) {
       points =
         source === 'statistics'
-          ? groupStatistics(points, bounds, group.aggregate, until)
-          : groupHistory(points, bounds, group.aggregate, until);
+          ? groupStatistics(points, bounds, group.aggregate, until, options.range === true)
+          : groupHistory(points, bounds, group.aggregate, until, options.range === true);
     } else if (source === 'history' && last && last.v !== null && last.t < until) {
       // A sensor holds its last reading until it changes, so carry it on to the right edge.
       points = [...points, { t: until, v: last.v }];
