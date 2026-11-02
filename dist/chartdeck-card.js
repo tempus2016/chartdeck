@@ -306,9 +306,9 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
     background: color-mix(in srgb, var(--card-background-color, #fff) 80%, transparent);
     white-space: nowrap;
   }
-`,zn=new WeakMap;function jn(t){let e=zn.get(t.host);if(!e){const i={width:t.host.clientWidth||400};e=i,zn.set(t.host,i),"undefined"!=typeof ResizeObserver&&(i.observer=new ResizeObserver(e=>{const n=Math.round(e[e.length-1].contentRect.width);Math.round(n/70)!==Math.round(i.width/70)&&(i.width=n,t.requestUpdate())}),i.observer.observe(t.host))}return e.width}function Hn(t){const e=pi(t.raw);return Math.max(0,jn(t)-32-(e.y&&"outside"===e.labels?40:0))}const Fn=t=>Math.round(1e4*t)/100+"%";function Dn({axes:t,ctx:e,content:i,label:n,defs:o=q,overlay:r=q,hover:a}){const{options:s}=t,l="outside"===s.labels,c=s.y&&t.value.ticks.length>0,d=s.x&&t.times.length>0,h=c?function(t,e){const{scales:i,value:n}=t;return n.ticks.map(t=>{const o=i.y(t)/Cn;return I`<span class="axis-label ${o<.08?"top":o>.92?"bottom":""}" style="top:${Fn(o)}"
+`,zn=new WeakMap;function jn(t){const e=pi(t.raw);return Math.max(0,function(t){let e=zn.get(t.host);if(!e){const i={width:t.host.clientWidth||400};e=i,zn.set(t.host,i),"undefined"!=typeof ResizeObserver&&(i.observer=new ResizeObserver(e=>{const n=Math.round(e[e.length-1].contentRect.width);Math.round(n/70)!==Math.round(i.width/70)&&(i.width=n,t.requestUpdate())}),i.observer.observe(t.host))}return e.width}(t)-32-(e.y&&"outside"===e.labels?40:0))}const Hn=t=>Math.round(1e4*t)/100+"%";function Fn({axes:t,ctx:e,content:i,label:n,defs:o=q,overlay:r=q,hover:a}){const{options:s}=t,l="outside"===s.labels,c=s.y&&t.value.ticks.length>0,d=s.x&&t.times.length>0,h=c?function(t,e){const{scales:i,value:n}=t;return n.ticks.map(t=>{const o=i.y(t)/Cn;return I`<span class="axis-label ${o<.08?"top":o>.92?"bottom":""}" style="top:${Hn(o)}"
       >${We(t,n.decimals,e.hass)}</span
-    >`})}(t,e):[],u=c?I`<div class="y-axis">${h}</div>`:q,p=d?I`<div class="x-axis">${function(t,e){const{scales:i,range:n}=t,o=xi(Mi(e.hass));return t.times.map(r=>{const a=i.x(r)/Mn;return I`<span class="axis-label ${a<.05?"start":a>.95?"end":""}" style="left:${Fn(a)}"
+    >`})}(t,e):[],u=c?I`<div class="y-axis">${h}</div>`:q,p=d?I`<div class="x-axis">${function(t,e){const{scales:i,range:n}=t,o=xi(Mi(e.hass));return t.times.map(r=>{const a=i.x(r)/Mn;return I`<span class="axis-label ${a<.05?"start":a>.95?"end":""}" style="left:${Hn(a)}"
       >${Oi(r,t.unit,n.end-n.start,e.hass,o)}</span
     >`})}(t,e)}</div>`:q,m=c?I`<span class="axis-sizer" aria-hidden="true"
         >${t.value.ticks.map(i=>We(i,t.value.decimals,e.hass)).reduce((t,e)=>e.length>t.length?e:t,"")}</span
@@ -342,7 +342,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
   </g>`}(t))} ${l?q:I`${u}${p}`} ${r}
     </div>
     ${l?p:q}
-  </div>`}const Rn=r`
+  </div>`}const Dn=r`
   .plot-wrap {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -436,9 +436,9 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
     border-radius: 2px;
     background: color-mix(in srgb, var(--card-background-color, #fff) 70%, transparent);
   }
-`,Bn=["above","over","hidden"];function In(t,e,i){return I`<div class="frame ${t.compact?"compact":""}">
+`,Rn=["above","over","hidden"];function Bn(t,e,i){return I`<div class="frame ${t.compact?"compact":""}">
     ${"above"===t.header?e:q}${i}
-  </div>`}function Vn(t){return t===q?q:I`<div class="header-over" @pointerdown=${t=>t.stopPropagation()}>${t}</div>`}const Wn=r`
+  </div>`}function In(t){return t===q?q:I`<div class="header-over" @pointerdown=${t=>t.stopPropagation()}>${t}</div>`}const Vn=r`
   .header-over {
     position: absolute;
     top: 2px;
@@ -491,13 +491,13 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
   .frame.compact .axes-outside .x-axis .axis-label {
     top: 3px;
   }
-`;function qn(t,e){if(0===t.length)return-1;let i=0,n=t.length-1;for(;i<n;){const o=i+n>>1;t[o].t<e?i=o+1:n=o}return i>0&&e-t[i-1].t<=t[i].t-e?i-1:i}const Zn=new WeakMap;function Yn(t,e,i){const n=function(t){let e=Zn.get(t);return e||(e={},Zn.set(t,e)),e}(t.host),o=e=>{e!==n.t&&(n.t=e,t.requestUpdate())},r=()=>{void 0!==n.timer&&clearTimeout(n.timer),n.timer=void 0};return{move(t){r();const n=t.currentTarget.getBoundingClientRect(),a=n.width>0?Math.min(1,Math.max(0,(t.clientX-n.left)/n.width)):0;o(function(t,e){let i;for(const n of t){const t=qn(n,e);if(t<0)continue;const o=n[t].t;(void 0===i||Math.abs(o-e)<Math.abs(i-e))&&(i=o)}return i}(i,e.start+a*(e.end-e.start)))},leave(t){r(),"touch"===t.pointerType||"pen"===t.pointerType?n.timer=setTimeout(()=>{n.timer=void 0,o(void 0)},3e3):o(void 0)}}}const Gn=t=>Math.round(1e4*t)/100+"%";function Xn(t,e,i,n,o){if(void 0===n)return q;const r=i.x(n)/Mn;if(!(r>=0&&r<=1))return q;const a=function(t,e){const i=t*e;return i+190<=e?"right":i>=190?"left":t>.5?"pin-left":"pin-right"}(r,o),s=e.map(t=>{const e=qn(t.points,n);return{s:t,p:e<0?void 0:t.points[e]}});return I`<div class="hover-layer" aria-hidden="true">
-    <div class="crosshair" style="left:${Gn(r)}"></div>
+`;function Wn(t,e){if(0===t.length)return-1;let i=0,n=t.length-1;for(;i<n;){const o=i+n>>1;t[o].t<e?i=o+1:n=o}return i>0&&e-t[i-1].t<=t[i].t-e?i-1:i}const qn=new WeakMap;function Zn(t,e,i){const n=function(t){let e=qn.get(t);return e||(e={},qn.set(t,e)),e}(t.host),o=e=>{e!==n.t&&(n.t=e,t.requestUpdate())},r=()=>{void 0!==n.timer&&clearTimeout(n.timer),n.timer=void 0};return{move(t){r();const n=t.currentTarget.getBoundingClientRect(),a=n.width>0?Math.min(1,Math.max(0,(t.clientX-n.left)/n.width)):0;o(function(t,e){let i;for(const n of t){const t=Wn(n,e);if(t<0)continue;const o=n[t].t;(void 0===i||Math.abs(o-e)<Math.abs(i-e))&&(i=o)}return i}(i,e.start+a*(e.end-e.start)))},leave(t){r(),"touch"===t.pointerType||"pen"===t.pointerType?n.timer=setTimeout(()=>{n.timer=void 0,o(void 0)},3e3):o(void 0)}}}const Yn=t=>Math.round(1e4*t)/100+"%";function Gn(t,e,i,n,o){if(void 0===n)return q;const r=i.x(n)/Mn;if(!(r>=0&&r<=1))return q;const a=function(t,e){const i=t*e;return i+190<=e?"right":i>=190?"left":t>.5?"pin-left":"pin-right"}(r,o),s=e.map(t=>{const e=Wn(t.points,n);return{s:t,p:e<0?void 0:t.points[e]}});return I`<div class="hover-layer" aria-hidden="true">
+    <div class="crosshair" style="left:${Yn(r)}"></div>
     ${s.map(({s:t,p:e})=>{if(!e||null===e.v)return q;const n=i.y(e.v)/Cn;return n>=0&&n<=1?I`<span
         class="hover-dot"
-        style="left:${Gn(i.x(e.t)/Mn)};top:${Gn(n)};background:${t.color}"
+        style="left:${Yn(i.x(e.t)/Mn)};top:${Yn(n)};background:${t.color}"
       ></span>`:q})}
-    <div class="tooltip ${a}" style=${a.startsWith("pin")?"":`left:${Gn(r)}`}>
+    <div class="tooltip ${a}" style=${a.startsWith("pin")?"":`left:${Yn(r)}`}>
       <div class="tooltip-time">${function(t,e){return Ei(e?.locale?.language??"en",Mi(e),{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit",hour12:Ci(e)}).format(t)}(n,t.hass)}</div>
       ${s.map(({s:e,p:i})=>I`<div class="tooltip-row">
             <span class="swatch" style="background:${e.color}"></span>
@@ -505,7 +505,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
             <span class="tooltip-value">${function(t,e,i){return t&&null!==t.v?qe(We(t.v,e.entity.decimals,i.hass),e.entity.unit):"—"}(i,e,t)}</span>
           </div>`)}
     </div>
-  </div>`}const Jn=r`
+  </div>`}const Xn=r`
   .plot-area.hoverable {
     /* A finger dragging sideways scrubs the chart; up and down still scrolls the page. */
     touch-action: pan-y;
@@ -585,7 +585,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
-`;function Kn(t,e,i){return{select:{mode:"dropdown",options:i.map(i=>({value:i,label:ie(t,`editor_${e}_${i}`)}))}}}te("en",{editor_period_calendar:"Period",editor_period_calendar_rolling:"The last…",editor_period_calendar_day:"Today",editor_period_calendar_week:"This week",editor_period_calendar_month:"This month",editor_period_calendar_year:"This year",editor_period_offset:"Periods back (0 is the current one)",editor_period_until:"Draw up to",editor_period_until_now:"Now",editor_period_until_end:"The end of the period",editor_period_navigate:"Show previous and next buttons",editor_group_by:"Group readings by",editor_group_by_none:"Don't group",editor_group_by_hour:"Hour",editor_group_by_day:"Day",editor_group_by_week:"Week",editor_group_by_month:"Month",editor_aggregate:"Combine with",editor_aggregate_mean:"Average",editor_aggregate_sum:"Sum",editor_aggregate_min:"Lowest",editor_aggregate_max:"Highest",editor_aggregate_first:"First",editor_aggregate_last:"Last",editor_aggregate_change:"Change (meters that count up)"});function Qn(t){const e=t?.period;return`${e?.calendar?"calendar":"rolling"}${t?.group_by?"|grouped":""}`}function to(t,e){const[i,n]=Qn(e).split("|"),o="calendar"===i;return[{type:"grid",name:"",schema:[{name:"period_calendar",selector:Kn(t,"period_calendar",["rolling",...Wi])},...o?[{name:"period_until",selector:Kn(t,"period_until",qi)}]:[{name:"period_last",selector:{number:{min:1,mode:"box"}}},{name:"period_unit",selector:Kn(t,"period_unit",Vi)}],{name:"period_offset",selector:{number:{min:0,mode:"box"}}}]},{name:"period_navigate",selector:{boolean:{}}},{name:"source",selector:Kn(t,"source",En)},{type:"grid",name:"",schema:[{name:"group_by",selector:Kn(t,"group_by",["none",...hn])},...n?[{name:"aggregate",selector:Kn(t,"aggregate",un)}]:[]]}]}te("en",{editor_x_axis:"Time labels",editor_y_axis:"Value labels",editor_axis_labels:"Axis labels",editor_axis_labels_outside:"Beside the chart",editor_axis_labels_inside:"Over the chart",editor_grid_horizontal:"Lines across",editor_grid_vertical:"Lines down",editor_y_min:"Lowest value shown",editor_y_max:"Highest value shown",editor_tooltip:"Show values on hover or touch",editor_line_width:"Line width (px)",editor_dots:"Dot at each reading",editor_on_top:"Draw above the other lines",editor_compact:"Compact",editor_header:"Names and values",editor_header_above:"Above the chart",editor_header_over:"Over the chart",editor_header_hidden:"Hidden"});function eo(t){return[{type:"grid",name:"",schema:[{name:"header",selector:Kn(t,"header",Bn)},{name:"compact",selector:{boolean:{}}}]}]}const io=[{name:"x_axis",path:["x_axis"],default:si},{name:"y_axis",path:["y_axis"],default:li},{name:"axis_labels",path:["axis_labels"],default:ci},{name:"grid_horizontal",path:["gridlines","horizontal"],default:di},{name:"grid_vertical",path:["gridlines","vertical"],default:hi},{name:"y_min",path:["y_min"]},{name:"y_max",path:["y_max"]},{name:"tooltip",path:["tooltip"],default:!0}];const no=new Map;const oo=[{name:"period_calendar",path:["period","calendar"],default:"rolling"},{name:"period_last",path:["period","last"],default:24},{name:"period_unit",path:["period","unit"],default:"hour"},{name:"period_offset",path:["period","offset"],default:0},{name:"period_until",path:["period","until"],default:"now"},{name:"period_navigate",path:["period","navigate"],default:!1},{name:"source",path:["source"],default:"history"},{name:"group_by",path:["group_by"],default:"none"},{name:"aggregate",path:["aggregate"],default:"mean"},{name:"curve",path:["curve"],default:"smooth"},{name:"color_by",path:["color_by"],default:"series"},{name:"labels",path:["labels"],default:!1},{name:"line_width",path:["line_width"],default:2.5},{name:"dots",path:["dots"],default:!1},...io,{name:"header",path:["header"],default:"above"},{name:"compact",path:["compact"],default:!1}];const ro=["series","bands"];function ao(t,e,i,n,o){const r=se(t.entity.config,o),a=oi(t.points,500),s=function(t){const e=[];let i=[];for(const n of t)null===n.v?(i.length&&e.push(i),i=[]):i.push(n);return i.length&&e.push(i),e}(a).map(i=>An(i.map(t=>[e.x(t.t),e.y(t.v)]),t.curve)).join(""),l=r.dots?a.filter(t=>null!==t.v&&t.t!==n.start&&t.t!==n.end):[],c=l.length>0&&l.length<=200?V`<path
+`;function Jn(t,e,i){return{select:{mode:"dropdown",options:i.map(i=>({value:i,label:ie(t,`editor_${e}_${i}`)}))}}}te("en",{editor_period_calendar:"Period",editor_period_calendar_rolling:"The last…",editor_period_calendar_day:"Today",editor_period_calendar_week:"This week",editor_period_calendar_month:"This month",editor_period_calendar_year:"This year",editor_period_offset:"Periods back (0 is the current one)",editor_period_until:"Draw up to",editor_period_until_now:"Now",editor_period_until_end:"The end of the period",editor_period_navigate:"Show previous and next buttons",editor_group_by:"Group readings by",editor_group_by_none:"Don't group",editor_group_by_hour:"Hour",editor_group_by_day:"Day",editor_group_by_week:"Week",editor_group_by_month:"Month",editor_aggregate:"Combine with",editor_aggregate_mean:"Average",editor_aggregate_sum:"Sum",editor_aggregate_min:"Lowest",editor_aggregate_max:"Highest",editor_aggregate_first:"First",editor_aggregate_last:"Last",editor_aggregate_change:"Change (meters that count up)"});function Kn(t){const e=t?.period;return`${e?.calendar?"calendar":"rolling"}${t?.group_by?"|grouped":""}`}function Qn(t,e){const[i,n]=Kn(e).split("|"),o="calendar"===i;return[{type:"grid",name:"",schema:[{name:"period_calendar",selector:Jn(t,"period_calendar",["rolling",...Wi])},...o?[{name:"period_until",selector:Jn(t,"period_until",qi)}]:[{name:"period_last",selector:{number:{min:1,mode:"box"}}},{name:"period_unit",selector:Jn(t,"period_unit",Vi)}],{name:"period_offset",selector:{number:{min:0,mode:"box"}}}]},{name:"period_navigate",selector:{boolean:{}}},{name:"source",selector:Jn(t,"source",En)},{type:"grid",name:"",schema:[{name:"group_by",selector:Jn(t,"group_by",["none",...hn])},...n?[{name:"aggregate",selector:Jn(t,"aggregate",un)}]:[]]}]}te("en",{editor_x_axis:"Time labels",editor_y_axis:"Value labels",editor_axis_labels:"Axis labels",editor_axis_labels_outside:"Beside the chart",editor_axis_labels_inside:"Over the chart",editor_grid_horizontal:"Lines across",editor_grid_vertical:"Lines down",editor_y_min:"Lowest value shown",editor_y_max:"Highest value shown",editor_tooltip:"Show values on hover or touch",editor_line_width:"Line width (px)",editor_dots:"Dot at each reading",editor_on_top:"Draw above the other lines",editor_compact:"Compact",editor_header:"Names and values",editor_header_above:"Above the chart",editor_header_over:"Over the chart",editor_header_hidden:"Hidden"});function to(t){return[{type:"grid",name:"",schema:[{name:"header",selector:Jn(t,"header",Rn)},{name:"compact",selector:{boolean:{}}}]}]}const eo=[{name:"x_axis",path:["x_axis"],default:si},{name:"y_axis",path:["y_axis"],default:li},{name:"axis_labels",path:["axis_labels"],default:ci},{name:"grid_horizontal",path:["gridlines","horizontal"],default:di},{name:"grid_vertical",path:["gridlines","vertical"],default:hi},{name:"y_min",path:["y_min"]},{name:"y_max",path:["y_max"]},{name:"tooltip",path:["tooltip"],default:!0}];const io=new Map;const no=[{name:"period_calendar",path:["period","calendar"],default:"rolling"},{name:"period_last",path:["period","last"],default:24},{name:"period_unit",path:["period","unit"],default:"hour"},{name:"period_offset",path:["period","offset"],default:0},{name:"period_until",path:["period","until"],default:"now"},{name:"period_navigate",path:["period","navigate"],default:!1},{name:"source",path:["source"],default:"history"},{name:"group_by",path:["group_by"],default:"none"},{name:"aggregate",path:["aggregate"],default:"mean"},{name:"curve",path:["curve"],default:"smooth"},{name:"color_by",path:["color_by"],default:"series"},{name:"labels",path:["labels"],default:!1},{name:"line_width",path:["line_width"],default:2.5},{name:"dots",path:["dots"],default:!1},...eo,{name:"header",path:["header"],default:"above"},{name:"compact",path:["compact"],default:!1}];const oo=["series","bands"];function ro(t,e,i,n,o){const r=se(t.entity.config,o),a=oi(t.points,500),s=function(t){const e=[];let i=[];for(const n of t)null===n.v?(i.length&&e.push(i),i=[]):i.push(n);return i.length&&e.push(i),e}(a).map(i=>An(i.map(t=>[e.x(t.t),e.y(t.v)]),t.curve)).join(""),l=r.dots?a.filter(t=>null!==t.v&&t.t!==n.start&&t.t!==n.end):[],c=l.length>0&&l.length<=200?V`<path
           class="dots"
           d=${h=l.map(t=>[e.x(t.t),e.y(t.v)]),h.map(([t,e])=>`M${Math.round(100*t)/100},${Math.round(100*e)/100}h0`).join("")}
           fill="none"
@@ -600,17 +600,17 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       style="stroke-width:${r.width}px"
     ></path>
     ${c}
-  </g>`}function so(t,e,i){return I`<div class="point-labels">
+  </g>`}function ao(t,e,i){return I`<div class="point-labels">
     ${t.series.flatMap(n=>{const o=n.points.filter(e=>null!==e.v&&(void 0!==t.group||e.t!==t.range.start&&e.t!==t.range.end));return o.length>40?[]:o.map(t=>I`<span
             class="point-label"
             style="left:${e.x(t.t)/Mn*100}%;top:${e.y(t.v)/Cn*100}%"
             >${We(t.v,n.entity.decimals,i.hass)}</span
           >`)})}
-  </div>`}te("en",{editor_style_line:"Line",chart_loading:"Loading history…",chart_error:"Couldn't load history: {error}",chart_no_data:"No readings in this period.",chart_aria:"{style} chart of {names}"});const lo={layout:"chart",group:"history",height:240,styles:r`
+  </div>`}te("en",{editor_style_line:"Line",chart_loading:"Loading history…",chart_error:"Couldn't load history: {error}",chart_no_data:"No readings in this period.",chart_aria:"{style} chart of {names}"});const so={layout:"chart",group:"history",height:240,styles:r`
     ${Pn}
-    ${Rn}
-    ${Jn}
-    ${Wn}
+    ${Dn}
+    ${Xn}
+    ${Vn}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -625,14 +625,14 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
     <path d="M4 30 C14 28 16 14 26 16 S40 26 46 18 S56 8 60 10" fill="none"
       stroke="var(--primary-color, #03a9f4)" stroke-width="3" stroke-linecap="round" />
     <path d="M4 34 C16 33 22 26 32 28 S50 30 60 24" fill="none" stroke="var(--warning-color, #f59e0b)"
-      stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 3" />`,validate(t){if(function(t){if(Ji(t.period),pn(t),void 0!==t.source&&!En.includes(t.source))throw new Error(`"source" must be one of: ${En.join(", ")}`);const e=[t.curve,...(t.entities??[]).map(t=>"object"==typeof t?t.curve:void 0)];for(const i of e)if(void 0!==i&&!xn.includes(i))throw new Error(`"curve" must be one of: ${xn.join(", ")}`)}(t),function(t){const e=t;for(const i of["x_axis","y_axis"])if(void 0!==e[i]&&"boolean"!=typeof e[i])throw new Error(`"${i}" must be true or false`);if(void 0!==e.axis_labels&&!ai.includes(e.axis_labels))throw new Error(`"axis_labels" must be one of: ${ai.join(", ")}`);if(void 0!==e.gridlines){const t=e.gridlines;if("object"!=typeof t||null===t||Array.isArray(t))throw new Error('"gridlines" must have "horizontal" and "vertical" (true or false)');for(const e of["horizontal","vertical"])if(void 0!==t[e]&&"boolean"!=typeof t[e])throw new Error(`"gridlines.${e}" must be true or false`)}for(const i of["y_min","y_max"])if(void 0!==e[i]&&!ui(e[i]))throw new Error(`"${i}" must be a number`);if(ui(e.y_min)&&ui(e.y_max)&&e.y_min>=e.y_max)throw new Error('"y_min" must be below "y_max"')}(t),function(t){const e=t.tooltip;if(void 0!==e&&"boolean"!=typeof e)throw new Error('"tooltip" must be true or false')}(t),function(t){le(t.line_width,'"line_width"'),ce(t.dots,'"dots"');for(const e of t.entities??[])"object"==typeof e&&(le(e.line_width,`"line_width" of ${e.entity}`),ce(e.dots,`"dots" of ${e.entity}`),ce(e.on_top,`"on_top" of ${e.entity}`))}(t),function(t){if(void 0!==t.compact&&"boolean"!=typeof t.compact)throw new Error('"compact" must be true or false');if(void 0!==t.header&&!Bn.includes(t.header))throw new Error(`"header" must be one of: ${Bn.join(", ")}`)}(t),void 0!==t.color_by&&!ro.includes(t.color_by))throw new Error(`"color_by" must be one of: ${ro.join(", ")}`)},editor:function(t){const e=function(t,e,i){const n=`${t}|${ee(e)}`;let o=no.get(n);return o||(o=i(),no.set(n,o)),o}(`line|${Qn(t.config)}`,t.hass,()=>{return[...to(t.hass,t.config),{type:"grid",name:"",schema:[{name:"curve",selector:Kn(t.hass,"curve",xn)},{name:"color_by",selector:Kn(t.hass,"color_by",["series","bands"])}]},{type:"grid",name:"",schema:[{name:"line_width",selector:ye},{name:"dots",selector:{boolean:{}}}]},{name:"labels",selector:{boolean:{}}},...(e=t.hass,[{type:"grid",name:"",schema:[{name:"x_axis",selector:{boolean:{}}},{name:"y_axis",selector:{boolean:{}}},{name:"grid_horizontal",selector:{boolean:{}}},{name:"grid_vertical",selector:{boolean:{}}}]},{name:"axis_labels",selector:Kn(e,"axis_labels",ai)},{type:"grid",name:"",schema:[{name:"y_min",selector:{number:{mode:"box",step:"any"}}},{name:"y_max",selector:{number:{mode:"box",step:"any"}}}]},{name:"tooltip",selector:{boolean:{}}}]),...eo(t.hass)];var e});return function(t,e,i,n){return I`<ha-form
+      stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 3" />`,validate(t){if(function(t){if(Ji(t.period),pn(t),void 0!==t.source&&!En.includes(t.source))throw new Error(`"source" must be one of: ${En.join(", ")}`);const e=[t.curve,...(t.entities??[]).map(t=>"object"==typeof t?t.curve:void 0)];for(const i of e)if(void 0!==i&&!xn.includes(i))throw new Error(`"curve" must be one of: ${xn.join(", ")}`)}(t),function(t){const e=t;for(const i of["x_axis","y_axis"])if(void 0!==e[i]&&"boolean"!=typeof e[i])throw new Error(`"${i}" must be true or false`);if(void 0!==e.axis_labels&&!ai.includes(e.axis_labels))throw new Error(`"axis_labels" must be one of: ${ai.join(", ")}`);if(void 0!==e.gridlines){const t=e.gridlines;if("object"!=typeof t||null===t||Array.isArray(t))throw new Error('"gridlines" must have "horizontal" and "vertical" (true or false)');for(const e of["horizontal","vertical"])if(void 0!==t[e]&&"boolean"!=typeof t[e])throw new Error(`"gridlines.${e}" must be true or false`)}for(const i of["y_min","y_max"])if(void 0!==e[i]&&!ui(e[i]))throw new Error(`"${i}" must be a number`);if(ui(e.y_min)&&ui(e.y_max)&&e.y_min>=e.y_max)throw new Error('"y_min" must be below "y_max"')}(t),function(t){const e=t.tooltip;if(void 0!==e&&"boolean"!=typeof e)throw new Error('"tooltip" must be true or false')}(t),function(t){le(t.line_width,'"line_width"'),ce(t.dots,'"dots"');for(const e of t.entities??[])"object"==typeof e&&(le(e.line_width,`"line_width" of ${e.entity}`),ce(e.dots,`"dots" of ${e.entity}`),ce(e.on_top,`"on_top" of ${e.entity}`))}(t),function(t){if(void 0!==t.compact&&"boolean"!=typeof t.compact)throw new Error('"compact" must be true or false');if(void 0!==t.header&&!Rn.includes(t.header))throw new Error(`"header" must be one of: ${Rn.join(", ")}`)}(t),void 0!==t.color_by&&!oo.includes(t.color_by))throw new Error(`"color_by" must be one of: ${oo.join(", ")}`)},editor:function(t){const e=function(t,e,i){const n=`${t}|${ee(e)}`;let o=io.get(n);return o||(o=i(),io.set(n,o)),o}(`line|${Kn(t.config)}`,t.hass,()=>{return[...Qn(t.hass,t.config),{type:"grid",name:"",schema:[{name:"curve",selector:Jn(t.hass,"curve",xn)},{name:"color_by",selector:Jn(t.hass,"color_by",["series","bands"])}]},{type:"grid",name:"",schema:[{name:"line_width",selector:ye},{name:"dots",selector:{boolean:{}}}]},{name:"labels",selector:{boolean:{}}},...(e=t.hass,[{type:"grid",name:"",schema:[{name:"x_axis",selector:{boolean:{}}},{name:"y_axis",selector:{boolean:{}}},{name:"grid_horizontal",selector:{boolean:{}}},{name:"grid_vertical",selector:{boolean:{}}}]},{name:"axis_labels",selector:Jn(e,"axis_labels",ai)},{type:"grid",name:"",schema:[{name:"y_min",selector:{number:{mode:"box",step:"any"}}},{name:"y_max",selector:{number:{mode:"box",step:"any"}}}]},{name:"tooltip",selector:{boolean:{}}}]),...to(t.hass)];var e});return function(t,e,i,n){return I`<ha-form
     data-section=${e}
     .hass=${t.hass}
     .data=${ze(t.config,n)}
     .schema=${i}
     .computeLabel=${e=>ie(t.hass,`editor_${e.name}`)}
     @value-changed=${e=>{e.stopPropagation();const i=je(t.config,n,e.detail?.value??{});i!==t.config&&t.commit(i)}}
-  ></ha-form>`}(t,"chart",e,oo)},entityFields:(t,e)=>({schema:Ce(t),fields:be(!0===e.dots)}),disconnect(t){Un(t),function(t){zn.get(t)?.observer?.disconnect(),zn.delete(t)}(t),function(t){const e=Zn.get(t);void 0!==e?.timer&&clearTimeout(e.timer),Zn.delete(t)}(t)},render(t){const e=On(t),i=function(t,e,i=Date.now()){const{period:n}=t;if(!n.navigate)return q;const o=en(e.host,n),r=t=>i=>{i.stopPropagation(),nn(e.host,n,t),e.requestUpdate()},a=Ln(n,t.range,t.back,t.zone,e.hass);let s="";if(0!==o){const o=Qi(n,i,t.zone);s=Ln(n,o,o.back,t.zone,e.hass)}const l=t=>I`<svg viewBox="0 0 24 24" aria-hidden="true"><path d=${t}></path></svg>`;return I`<div class="period-nav">
+  ></ha-form>`}(t,"chart",e,no)},entityFields:(t,e)=>({schema:Ce(t),fields:be(!0===e.dots)}),disconnect(t){Un(t),function(t){zn.get(t)?.observer?.disconnect(),zn.delete(t)}(t),function(t){const e=qn.get(t);void 0!==e?.timer&&clearTimeout(e.timer),qn.delete(t)}(t)},render(t){const e=On(t),i=function(t,e,i=Date.now()){const{period:n}=t;if(!n.navigate)return q;const o=en(e.host,n),r=t=>i=>{i.stopPropagation(),nn(e.host,n,t),e.requestUpdate()},a=Ln(n,t.range,t.back,t.zone,e.hass);let s="";if(0!==o){const o=Qi(n,i,t.zone);s=Ln(n,o,o.back,t.zone,e.hass)}const l=t=>I`<svg viewBox="0 0 24 24" aria-hidden="true"><path d=${t}></path></svg>`;return I`<div class="period-nav">
     <button class="period-step period-prev" aria-label=${ie(e.hass,"period_previous")} @click=${r(o+1)}>
       ${l("M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z")}
     </button>
@@ -660,11 +660,11 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         </div>`)}
   </div>`:q}(e,t),o=i===q&&n===q?q:I`${i}${n}`,r=function(t,e){return"loading"===t.status?I`<div class="chart-message">${ie(e.hass,"chart_loading")}</div>`:"error"===t.status?I`<div class="chart-message error">
       ${ie(e.hass,"chart_error",{error:t.error??""})}
-    </div>`:t.series.every(t=>t.points.every(t=>null===t.v))?I`<div class="chart-message">${ie(e.hass,"chart_no_data")}</div>`:void 0}(e,t),a={compact:!0===(s=t.raw).compact,header:s.header??"above"};var s;if(r)return In("over"===a.header?{...a,header:"above"}:a,o,r);const l=function(t,e,i){const n=pi(t.raw),o=gi(i,n,4),r=Math.max(2,Math.min(8,Math.round(jn(t)/70))),{unit:a,ticks:s}=Ai(e,r,xi(Mi(t.hass)));return{options:n,value:o,times:s,unit:a,range:e,scales:{x:ri([e.start,e.end],[0,Mn]),y:ri(o.domain,[Cn,0]),domain:o.domain}}}(t,e.range,function(t){let e=1/0,i=-1/0;for(const n of t)for(const t of n)for(const n of[t.v,t.min,t.max])"number"==typeof n&&(n<e&&(e=n),n>i&&(i=n));return e===1/0?void 0:[e,i]}(e.series.map(t=>t.points))),{scales:c}=l,d=function(t){return!1!==t.tooltip}(t.raw),h="bands"===t.raw.color_by,u=h?V`${e.series.map(t=>function(t,e,i){const[n,o]=i.domain,r=t=>Math.min(1,Math.max(0,(t-n)/(o-n))),a=[];return e.forEach((t,i)=>{const n=Number.isFinite(t.from)?r(t.from):0,o=i+1<e.length?r(e[i+1].from):1,s=Et(t.color);a.push(V`<stop offset=${n} stop-color=${s}></stop><stop offset=${o} stop-color=${s}></stop>`)}),V`<linearGradient id=${t} gradientUnits="userSpaceOnUse" x1="0" x2="0" y1=${Cn} y2="0">
+    </div>`:t.series.every(t=>t.points.every(t=>null===t.v))?I`<div class="chart-message">${ie(e.hass,"chart_no_data")}</div>`:void 0}(e,t),a={compact:!0===(s=t.raw).compact,header:s.header??"above"};var s;if(r)return Bn("over"===a.header?{...a,header:"above"}:a,o,r);const l=function(t,e,i){const n=pi(t.raw),o=gi(i,n,4),r=Math.max(2,Math.min(8,Math.floor(jn(t)/70))),{unit:a,ticks:s}=Ai(e,r,xi(Mi(t.hass)));return{options:n,value:o,times:s,unit:a,range:e,scales:{x:ri([e.start,e.end],[0,Mn]),y:ri(o.domain,[Cn,0]),domain:o.domain}}}(t,e.range,function(t){let e=1/0,i=-1/0;for(const n of t)for(const t of n)for(const n of[t.v,t.min,t.max])"number"==typeof n&&(n<e&&(e=n),n>i&&(i=n));return e===1/0?void 0:[e,i]}(e.series.map(t=>t.points))),{scales:c}=l,d=function(t){return!1!==t.tooltip}(t.raw),h="bands"===t.raw.color_by,u=h?V`${e.series.map(t=>function(t,e,i){const[n,o]=i.domain,r=t=>Math.min(1,Math.max(0,(t-n)/(o-n))),a=[];return e.forEach((t,i)=>{const n=Number.isFinite(t.from)?r(t.from):0,o=i+1<e.length?r(e[i+1].from):1,s=Et(t.color);a.push(V`<stop offset=${n} stop-color=${s}></stop><stop offset=${o} stop-color=${s}></stop>`)}),V`<linearGradient id=${t} gradientUnits="userSpaceOnUse" x1="0" x2="0" y1=${Cn} y2="0">
     ${a}
-  </linearGradient>`}(`cd-bands-${t.index}`,t.entity.bands,c))}`:q,p=(m=e.series,f=e=>se(e.entity.config,t.raw).onTop,[...m.filter(t=>!f(t)),...m.filter(f)]);var m,f;const g=V`${p.map(i=>ao(i,c,h?`url(#cd-bands-${i.index})`:i.color,e.range,t.raw))}`,_=ie(t.hass,"chart_aria",{style:ie(t.hass,"editor_style_line"),names:e.series.map(t=>t.entity.name).join(", ")});return In(a,o,Dn({axes:l,ctx:t,content:g,label:_,defs:u,overlay:I`${"over"===a.header?Vn(o):q}
-        ${!0===t.raw.labels?so(e,c,t):q}
-        ${d?Xn(t,e.series,c,(y=t.host,Zn.get(y)?.t),Hn(t)):q}`,hover:d?Yn(t,e.range,e.series.map(t=>t.points)):void 0}));var y}},co=t=>(Math.abs(t)<.005?0:t).toFixed(2);function ho(t,e,i,n){const o=n*Math.PI/180;return[t+i*Math.sin(o),e-i*Math.cos(o)]}function uo(t,e,i,n,o){const r=String(Number(i.toFixed(2))),a=o-n,[s,l]=ho(t,e,i,n);if(a>=359.99){const[o,a]=ho(t,e,i,n+180);return`M${co(s)} ${co(l)} A${r} ${r} 0 1 1 ${co(o)} ${co(a)} A${r} ${r} 0 1 1 ${co(s)} ${co(l)}`}const[c,d]=ho(t,e,i,o),h=a>180?1:0;return`M${co(s)} ${co(l)} A${r} ${r} 0 ${h} 1 ${co(c)} ${co(d)}`}function po(t,e){const i=t/2;return[-i+e[0]*t,-i+e[1]*t]}function mo(t){let e=0;for(const i of t)e+=i.codePointAt(0)>=11904?1/.58:1;return e}function fo(t,e=76,i=12,n=8,o=11){const r=t.trim();let a=[r];if(mo(r)>o){let t=mo(r);for(let e=r.indexOf(" ");e>0;e=r.indexOf(" ",e+1)){const i=Math.max(mo(r.slice(0,e)),mo(r.slice(e+1)));i<t&&(t=i,a=[r.slice(0,e),r.slice(e+1)])}}const s=Math.max(...a.map(mo));return{lines:a,size:Math.max(n,Math.min(i,Math.floor(e/(.58*Math.max(1,s)))))}}const go=65,_o=66,yo=t=>String(Math.round(1e3*t)/1e3+0);function vo(t,e,i,n,o,r=11){const{lines:a,size:s}=fo(t,e,i,n,r),l=o-1.2*(a.length-1)*s;return V`<text class="na" text-anchor="middle" style="font-size: ${s}px">${a.map((t,e)=>V`<tspan x=${go} y=${yo(l+1.2*e*s)}>${t}</tspan>`)}</text>`}const bo={layout:"tiles",group:"gauges",height:140,minColumnWidth:134,styles:r`
+  </linearGradient>`}(`cd-bands-${t.index}`,t.entity.bands,c))}`:q,p=(m=e.series,f=e=>se(e.entity.config,t.raw).onTop,[...m.filter(t=>!f(t)),...m.filter(f)]);var m,f;const g=V`${p.map(i=>ro(i,c,h?`url(#cd-bands-${i.index})`:i.color,e.range,t.raw))}`,_=ie(t.hass,"chart_aria",{style:ie(t.hass,"editor_style_line"),names:e.series.map(t=>t.entity.name).join(", ")});return Bn(a,o,Fn({axes:l,ctx:t,content:g,label:_,defs:u,overlay:I`${"over"===a.header?In(o):q}
+        ${!0===t.raw.labels?ao(e,c,t):q}
+        ${d?Gn(t,e.series,c,(y=t.host,qn.get(y)?.t),jn(t)):q}`,hover:d?Zn(t,e.range,e.series.map(t=>t.points)):void 0}));var y}},lo=t=>(Math.abs(t)<.005?0:t).toFixed(2);function co(t,e,i,n){const o=n*Math.PI/180;return[t+i*Math.sin(o),e-i*Math.cos(o)]}function ho(t,e,i,n,o){const r=String(Number(i.toFixed(2))),a=o-n,[s,l]=co(t,e,i,n);if(a>=359.99){const[o,a]=co(t,e,i,n+180);return`M${lo(s)} ${lo(l)} A${r} ${r} 0 1 1 ${lo(o)} ${lo(a)} A${r} ${r} 0 1 1 ${lo(s)} ${lo(l)}`}const[c,d]=co(t,e,i,o),h=a>180?1:0;return`M${lo(s)} ${lo(l)} A${r} ${r} 0 ${h} 1 ${lo(c)} ${lo(d)}`}function uo(t,e){const i=t/2;return[-i+e[0]*t,-i+e[1]*t]}function po(t){let e=0;for(const i of t)e+=i.codePointAt(0)>=11904?1/.58:1;return e}function mo(t,e=76,i=12,n=8,o=11){const r=t.trim();let a=[r];if(po(r)>o){let t=po(r);for(let e=r.indexOf(" ");e>0;e=r.indexOf(" ",e+1)){const i=Math.max(po(r.slice(0,e)),po(r.slice(e+1)));i<t&&(t=i,a=[r.slice(0,e),r.slice(e+1)])}}const s=Math.max(...a.map(po));return{lines:a,size:Math.max(n,Math.min(i,Math.floor(e/(.58*Math.max(1,s)))))}}const fo=65,go=66,_o=t=>String(Math.round(1e3*t)/1e3+0);function yo(t,e,i,n,o,r=11){const{lines:a,size:s}=mo(t,e,i,n,r),l=o-1.2*(a.length-1)*s;return V`<text class="na" text-anchor="middle" style="font-size: ${s}px">${a.map((t,e)=>V`<tspan x=${fo} y=${_o(l+1.2*e*s)}>${t}</tspan>`)}</text>`}const vo={layout:"tiles",group:"gauges",height:140,minColumnWidth:134,styles:r`
     /* A definite width that shrinks with a narrow tile (the svg inside is sized in %). */
     .needle-gauge {
       display: flex;
@@ -740,13 +740,13 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-  `,render(t,{show:e,hass:i}){const n=function(t,e,i){const n=i-e,o=[];return n>0?(t.forEach((r,a)=>{const s=0===a?e:Math.max(r.from,e),l=Math.min(a+1<t.length?t[a+1].from:1/0,i);l>s&&o.push({from:(s-e)/n,to:(l-e)/n,color:r.color})}),o):o}(t.bands,t.min,t.max),o=n.map((t,e)=>{const i=180*t.from-90+(e>0?1:0),o=180*t.to-90-(e<n.length-1?1:0);return o>i?V`<path class="seg" d=${uo(go,_o,50,i,o)} stroke=${Et(t.color)}></path>`:q}),r=Array.from({length:11},(t,e)=>{const[i,n]=ho(go,_o,36,18*e-90),[o,r]=ho(go,_o,40,18*e-90);return V`<line class="tickmark" x1=${i.toFixed(2)} y1=${n.toFixed(2)} x2=${o.toFixed(2)} y2=${r.toFixed(2)}></line>`});let a=q;if(e.target&&null!==t.targetPosition&&t.available){const e=180*t.targetPosition-90,[i,n]=ho(go,_o,57,e),[o,r]=ho(go,_o,64,e-3),[s,l]=ho(go,_o,64,e+3);a=V`<polygon class="target-mark" points="${i.toFixed(2)},${n.toFixed(2)} ${o.toFixed(2)},${r.toFixed(2)} ${s.toFixed(2)},${l.toFixed(2)}"></polygon>`}const s=!e.value;return I`<div class="needle-gauge">
+  `,render(t,{show:e,hass:i}){const n=function(t,e,i){const n=i-e,o=[];return n>0?(t.forEach((r,a)=>{const s=0===a?e:Math.max(r.from,e),l=Math.min(a+1<t.length?t[a+1].from:1/0,i);l>s&&o.push({from:(s-e)/n,to:(l-e)/n,color:r.color})}),o):o}(t.bands,t.min,t.max),o=n.map((t,e)=>{const i=180*t.from-90+(e>0?1:0),o=180*t.to-90-(e<n.length-1?1:0);return o>i?V`<path class="seg" d=${ho(fo,go,50,i,o)} stroke=${Et(t.color)}></path>`:q}),r=Array.from({length:11},(t,e)=>{const[i,n]=co(fo,go,36,18*e-90),[o,r]=co(fo,go,40,18*e-90);return V`<line class="tickmark" x1=${i.toFixed(2)} y1=${n.toFixed(2)} x2=${o.toFixed(2)} y2=${r.toFixed(2)}></line>`});let a=q;if(e.target&&null!==t.targetPosition&&t.available){const e=180*t.targetPosition-90,[i,n]=co(fo,go,57,e),[o,r]=co(fo,go,64,e-3),[s,l]=co(fo,go,64,e+3);a=V`<polygon class="target-mark" points="${i.toFixed(2)},${n.toFixed(2)} ${o.toFixed(2)},${r.toFixed(2)} ${s.toFixed(2)},${l.toFixed(2)}"></polygon>`}const s=!e.value;return I`<div class="needle-gauge">
       <svg class=${s?"compact":""} viewBox="0 0 130 ${s?82:104}" aria-hidden="true">
         ${o} ${r} ${a}
-        ${t.available?V`<g class="needle" style="transform: rotate(${yo(180*t.position-90)}deg)"><path d=${c=go,d=_o,h=42,u=3,`M${co(c)} ${co(d-h)} L${co(c+u)} ${co(d)} L${co(c-u)} ${co(d)} Z`}></path></g>`:q}
-        <circle class="hub" cx=${go} cy=${_o} r="6"></circle>
-        <circle class="hub-dot" cx=${go} cy=${_o} r="2.5"></circle>
-        ${t.available?e.value?V`<text class="value" x=${go} y="94" text-anchor="middle">${t.display}</text>`:q:s?(l=t.display,vo(l,58,11,7,55)):function(t){return vo(t,126,12,8,94,18)}(t.display)}
+        ${t.available?V`<g class="needle" style="transform: rotate(${_o(180*t.position-90)}deg)"><path d=${c=fo,d=go,h=42,u=3,`M${lo(c)} ${lo(d-h)} L${lo(c+u)} ${lo(d)} L${lo(c-u)} ${lo(d)} Z`}></path></g>`:q}
+        <circle class="hub" cx=${fo} cy=${go} r="6"></circle>
+        <circle class="hub-dot" cx=${fo} cy=${go} r="2.5"></circle>
+        ${t.available?e.value?V`<text class="value" x=${fo} y="94" text-anchor="middle">${t.display}</text>`:q:s?(l=t.display,yo(l,58,11,7,55)):function(t){return yo(t,126,12,8,94,18)}(t.display)}
       </svg>
       ${e.name||e.icon?I`<div class="name">
               ${e.icon?I`<ha-state-icon
@@ -757,7 +757,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
                     ></ha-state-icon>`:q}
               ${e.name?I`<span class="name-text">${t.name}</span>`:q}
             </div>`:q}
-    </div>`;var l,c,d,h,u}};let $o=0;const xo=new WeakMap;const wo=60,ko=60,Ao=t=>String(Math.round(1e3*t)/1e3+0);function Mo(t){const[e,i]=po(t,[0,1]),n=uo(wo,ko,46,e,i),o=t<360;return{layout:"tiles",group:"gauges",height:o?135:155,minColumnWidth:128,styles:r`
+    </div>`;var l,c,d,h,u}};let bo=0;const $o=new WeakMap;const xo=60,wo=60,ko=t=>String(Math.round(1e3*t)/1e3+0);function Ao(t){const[e,i]=uo(t,[0,1]),n=ho(xo,wo,46,e,i),o=t<360;return{layout:"tiles",group:"gauges",height:o?135:155,minColumnWidth:128,styles:r`
       /* A definite width: the dial is a size container and can't size the tile itself. */
       .radial {
         display: flex;
@@ -857,7 +857,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-    `,render(e,{show:i,hass:r}){const a=function(t){let e=xo.get(t);return e||(e="cd-g-"+ ++$o,xo.set(t,e)),e}(e.config),s=e.span[1]-e.span[0]<=0,l=`stroke-dasharray: ${Ao(100*(e.span[1]-e.span[0]))} 100; stroke-dashoffset: ${Ao(100*-e.span[0])}`,c=(d=e.band.color,Object.prototype.hasOwnProperty.call(St,d)?St[d].fallback:d);var d;const h=function(t){return!t.includes("var(")&&("undefined"==typeof CSS||"function"!=typeof CSS.supports||CSS.supports("color",t))}(c)?`url(#${a}) ${c}`:`url(#${a})`,u=i.icon?6:0,p=(m=e.valueText,Math.min(22,Math.floor(124/Math.max(1,m.length))));var m;let f=q;if(i.target&&null!==e.targetPosition&&e.available){const i=po(t,[e.targetPosition,e.targetPosition])[0],[n,o]=ho(wo,ko,39.5,i),[r,a]=ho(wo,ko,52.5,i);f=V`<line class="tick" x1=${n.toFixed(2)} y1=${o.toFixed(2)} x2=${r.toFixed(2)} y2=${a.toFixed(2)}></line>`}return I`<div class="radial ${o?"cropped":""}">
+    `,render(e,{show:i,hass:r}){const a=function(t){let e=$o.get(t);return e||(e="cd-g-"+ ++bo,$o.set(t,e)),e}(e.config),s=e.span[1]-e.span[0]<=0,l=`stroke-dasharray: ${ko(100*(e.span[1]-e.span[0]))} 100; stroke-dashoffset: ${ko(100*-e.span[0])}`,c=(d=e.band.color,Object.prototype.hasOwnProperty.call(St,d)?St[d].fallback:d);var d;const h=function(t){return!t.includes("var(")&&("undefined"==typeof CSS||"function"!=typeof CSS.supports||CSS.supports("color",t))}(c)?`url(#${a}) ${c}`:`url(#${a})`,u=i.icon?6:0,p=(m=e.valueText,Math.min(22,Math.floor(124/Math.max(1,m.length))));var m;let f=q;if(i.target&&null!==e.targetPosition&&e.available){const i=uo(t,[e.targetPosition,e.targetPosition])[0],[n,o]=co(xo,wo,39.5,i),[r,a]=co(xo,wo,52.5,i);f=V`<line class="tick" x1=${n.toFixed(2)} y1=${o.toFixed(2)} x2=${r.toFixed(2)} y2=${a.toFixed(2)}></line>`}return I`<div class="radial ${o?"cropped":""}">
         <div class="dial">
           <svg viewBox="0 0 120 ${o?100:120}" aria-hidden="true">
             <defs>
@@ -866,7 +866,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
                 <stop class="stop-end" offset="1"></stop>
               </linearGradient>
             </defs>
-            <circle class="disc" cx=${wo} cy=${ko} r="34"></circle>
+            <circle class="disc" cx=${xo} cy=${wo} r="34"></circle>
             <path class="track" d=${n}></path>
             ${e.available?V`<path
                   class="value-arc ${s?"empty":""}"
@@ -878,12 +878,12 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
             ${f}
             ${e.available?V`${i.value?V`<text
                         class="value"
-                        x=${wo}
+                        x=${xo}
                         y=${64+u}
                         text-anchor="middle"
                         style=${p<22?`font-size: ${p}px`:q}
                       >${e.valueText}</text>
-                      <text class="unit" x=${wo} y=${80+u} text-anchor="middle">${e.unit}</text>`:q}`:function(t){const{lines:e,size:i}=fo(t),n=64-1.2*(e.length-1)*i/2;return V`<text class="na" text-anchor="middle" style="font-size: ${i}px">${e.map((t,e)=>V`<tspan x=${wo} y=${Ao(n+1.2*e*i)}>${t}</tspan>`)}</text>`}(e.display)}
+                      <text class="unit" x=${xo} y=${80+u} text-anchor="middle">${e.unit}</text>`:q}`:function(t){const{lines:e,size:i}=mo(t),n=64-1.2*(e.length-1)*i/2;return V`<text class="na" text-anchor="middle" style="font-size: ${i}px">${e.map((t,e)=>V`<tspan x=${xo} y=${ko(n+1.2*e*i)}>${t}</tspan>`)}</text>`}(e.display)}
           </svg>
           ${i.icon&&e.available?I`<ha-state-icon
                   class="icon ${i.value?"":"centre"}"
@@ -893,7 +893,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
                 ></ha-state-icon>`:q}
         </div>
         ${i.name?I`<span class="name">${e.name}</span>`:q}
-      </div>`}}}const Co=Mo(360),So=Mo(270);function Eo(t){const[e,i]=t;return Array.from({length:10},(t,n)=>{const o=(n+.5)/10;return o>e&&o<=i})}const Oo={layout:"rows",group:"bars",height:50,minColumnWidth:180,styles:r`
+      </div>`}}}const Mo=Ao(360),Co=Ao(270);function So(t){const[e,i]=t;return Array.from({length:10},(t,n)=>{const o=(n+.5)/10;return o>e&&o<=i})}const Eo={layout:"rows",group:"bars",height:50,minColumnWidth:180,styles:r`
     /* Each row is measured on its own, so a narrow column (columns: 2 or 3) switches layout
        even when the card as a whole is wide. A container can't restyle itself, hence .seg. */
     .style-segmented .entity {
@@ -1009,7 +1009,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         padding-bottom: 0;
       }
     }
-  `,render(t,{show:e,hass:i}){const n=t.available?Eo(t.span):Eo([0,0]),o=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1,r=!t.available;return I`<div class="seg">
+  `,render(t,{show:e,hass:i}){const n=t.available?So(t.span):So([0,0]),o=e.target&&t.available&&null!==t.targetPosition?Math.min(9,Math.max(0,Math.floor(10*t.targetPosition))):-1,r=!t.available;return I`<div class="seg">
       ${e.icon?I`<ha-state-icon
               class="icon"
               .hass=${i}
@@ -1026,7 +1026,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         </div>
       </div>
       ${e.value?I`<span class="value">${t.available?t.display:""}</span>`:q}
-    </div>`}},To={layout:"tiles",group:"bars",height:230,tilesPerRow:4,minColumnWidth:80,styles:r`
+    </div>`}},Oo={layout:"tiles",group:"bars",height:230,tilesPerRow:4,minColumnWidth:80,styles:r`
     .style-tank .entity {
       display: flex;
       flex-direction: column;
@@ -1101,7 +1101,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         ${e.target&&null!==t.targetPosition&&t.available?I`<div class="target"></div>`:q}
       </div>
       ${e.name?I`<span class="name">${t.name}</span>`:q}
-    `},Lo={layout:"rows",group:"bars",height:44,minColumnWidth:140,styles:r`
+    `},To={layout:"rows",group:"bars",height:44,minColumnWidth:140,styles:r`
     .style-thin .entity {
       display: flex;
       align-items: center;
@@ -1184,13 +1184,13 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
           ${e.target&&null!==t.targetPosition&&t.available?I`<div class="target"></div>`:q}
         </div>
       </div>
-    `}},No=["bars","gauges","history","totals","compare","distribution"];function Uo(t){return"chart"===t.layout}const Po={bar:ni,thin:Lo,segmented:Oo,tank:To,ring:Co,needle:bo,arc:So,line:lo},zo="important",jo=" !"+zo,Ho=mt(class extends ft{constructor(t){if(super(t),t.type!==dt||"style"!==t.name||t.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce((e,i)=>{const n=t[i];return null==n?e:e+`${i=i.includes("-")?i:i.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${n};`},"")}update(t,[e]){const{style:i}=t.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(e)),this.render(e);for(const n of this.ft)null==e[n]&&(this.ft.delete(n),n.includes("-")?i.removeProperty(n):i[n]=null);for(const n in e){const t=e[n];if(null!=t){this.ft.add(n);const e="string"==typeof t&&t.endsWith(jo);n.includes("-")||e?i.setProperty(n,e?t.slice(0,-11):t,e?zo:""):i[n]=t}}return W}}),Fo=Object.keys(Nt),Do=Object.keys(St),Ro="custom",Bo={text:{}},Io={entity:{domain:["sensor","input_number","number"]}};
+    `}},Lo=["bars","gauges","history","totals","compare","distribution"];function No(t){return"chart"===t.layout}const Uo={bar:ni,thin:To,segmented:Eo,tank:Oo,ring:Mo,needle:vo,arc:Co,line:so},Po="important",zo=" !"+Po,jo=mt(class extends ft{constructor(t){if(super(t),t.type!==dt||"style"!==t.name||t.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce((e,i)=>{const n=t[i];return null==n?e:e+`${i=i.includes("-")?i:i.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${n};`},"")}update(t,[e]){const{style:i}=t.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(e)),this.render(e);for(const n of this.ft)null==e[n]&&(this.ft.delete(n),n.includes("-")?i.removeProperty(n):i[n]=null);for(const n in e){const t=e[n];if(null!=t){this.ft.add(n);const e="string"==typeof t&&t.endsWith(zo);n.includes("-")||e?i.setProperty(n,e?t.slice(0,-11):t,e?Po:""):i[n]=t}}return W}}),Ho=Object.keys(Nt),Fo=Object.keys(St),Do="custom",Ro={text:{}},Bo={entity:{domain:["sensor","input_number","number"]}};
 /**
  * @license
  * Copyright 2018 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function Vo(t){return"string"==typeof t&&""!==t.trim()&&!Number.isFinite(Number(t))}const Wo={icon:{}};function qo(t){return void 0===t?"none":Fo.find(e=>Nt[e]&&Pe(Nt[e],t))??"custom"}function Zo(t){return Do.includes(t)}class Yo extends lt{constructor(){super(),this._customOpen=new Set,this._entityOpen=new Set}willUpdate(t){t.has("bands")&&(this._customOpen.size&&(this._customOpen=new Set),this._entityOpen.size&&(this._entityOpen=new Set))}_entityValue(t){const e=this.hass?.states[t]?.state,i=void 0===e||""===e.trim()?NaN:Number(e);return Number.isFinite(i)?i:void 0}_t(t){return ie(this.hass,t)}_getSelectors(){const t=`${ee(this.hass)}|${this.unit??""}`;if(this._selectors?.key===t)return this._selectors;const e=Fo.map(t=>({value:t,label:this._t(`editor_preset_${t}`)})),i=t=>({select:{mode:"dropdown",options:t}});return this._selectors={key:t,preset:i(e),presetCustom:i([...e,{value:Ro,label:this._t("editor_preset_custom")}]),color:i([...Do,Ro].map(t=>({value:t,label:this._t(`editor_color_${t}`)}))),from:{number:{mode:"box",step:"any",...this.unit?{unit_of_measurement:this.unit}:{}}}},this._selectors}_emit(t){this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t&&t.length?t:void 0}}))}_presetChanged(t){t.stopPropagation();const e=t.detail?.value;if(!e||e===Ro||!Fo.includes(e))return;if(e===qo(this.bands))return;const i=Nt[e];this._emit(i?structuredClone(i):void 0)}_updateBand(t,e,i){const n=[...this.bands??[]],o={...n[t]};null==i||""===i?delete o[e]:o[e]=i,n[t]=o,this._emit(n)}_fromChanged(t,e){e.stopPropagation();const i=Number(e.detail?.value);""!==e.detail?.value&&null!=e.detail?.value&&Number.isFinite(i)&&this._updateBand(t,"from",i)}_fromEntityChanged(t,e){e.stopPropagation();const i=e.detail?.value;"string"==typeof i&&""!==i&&this._updateBand(t,"from",i)}_toggleFromMode(t){const e=this.bands?.[t]?.from,i=new Set(this._entityOpen);Vo(e)?this._updateBand(t,"from",this._entityValue(e)??0):i.delete(t)||i.add(t),this._entityOpen=i}_colorChanged(t,e){e.stopPropagation();const i=e.detail?.value,n=this.bands?.[t]?.color??"primary";if(!i)return;const o=new Set(this._customOpen);i!==Ro?(o.delete(t),this._customOpen=o,i!==n&&this._updateBand(t,"color",i)):Zo(n)&&(this._customOpen=o.add(t))}_customColorChanged(t,e){e.stopPropagation();const i="string"==typeof e.detail?.value?e.detail.value.trim():"";if(!i)return;const n=new Set(this._customOpen);n.delete(t),this._customOpen=n,this._updateBand(t,"color",i)}_iconChanged(t,e){e.stopPropagation(),this._updateBand(t,"icon",e.detail?.value)}_labelChanged(t,e){e.stopPropagation(),this._updateBand(t,"label",e.detail?.value)}_removeBand(t){const e=[...this.bands??[]];e.splice(t,1),this._emit(e)}_addBand(){const t=[...this.bands??[]],e=t[t.length-1]?.from,i="number"==typeof e?e:Vo(e)?this._entityValue(e)??NaN:"string"==typeof e&&""!==e.trim()?Number(e):NaN;t.push({from:Number.isFinite(i)?i+10:0,color:"primary"}),this._emit(t)}_renderBand(t,e,i){const n=!Zo(t.color)||this._customOpen.has(e),o=Vo(t.from)?t.from:void 0,r=void 0!==o||this._entityOpen.has(e);return I`<div class="band">
-      <span class="swatch" style=${Ho({"--swatch":Et(t.color)})}></span>
+ */function Io(t){return"string"==typeof t&&""!==t.trim()&&!Number.isFinite(Number(t))}const Vo={icon:{}};function Wo(t){return void 0===t?"none":Ho.find(e=>Nt[e]&&Pe(Nt[e],t))??"custom"}function qo(t){return Fo.includes(t)}class Zo extends lt{constructor(){super(),this._customOpen=new Set,this._entityOpen=new Set}willUpdate(t){t.has("bands")&&(this._customOpen.size&&(this._customOpen=new Set),this._entityOpen.size&&(this._entityOpen=new Set))}_entityValue(t){const e=this.hass?.states[t]?.state,i=void 0===e||""===e.trim()?NaN:Number(e);return Number.isFinite(i)?i:void 0}_t(t){return ie(this.hass,t)}_getSelectors(){const t=`${ee(this.hass)}|${this.unit??""}`;if(this._selectors?.key===t)return this._selectors;const e=Ho.map(t=>({value:t,label:this._t(`editor_preset_${t}`)})),i=t=>({select:{mode:"dropdown",options:t}});return this._selectors={key:t,preset:i(e),presetCustom:i([...e,{value:Do,label:this._t("editor_preset_custom")}]),color:i([...Fo,Do].map(t=>({value:t,label:this._t(`editor_color_${t}`)}))),from:{number:{mode:"box",step:"any",...this.unit?{unit_of_measurement:this.unit}:{}}}},this._selectors}_emit(t){this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t&&t.length?t:void 0}}))}_presetChanged(t){t.stopPropagation();const e=t.detail?.value;if(!e||e===Do||!Ho.includes(e))return;if(e===Wo(this.bands))return;const i=Nt[e];this._emit(i?structuredClone(i):void 0)}_updateBand(t,e,i){const n=[...this.bands??[]],o={...n[t]};null==i||""===i?delete o[e]:o[e]=i,n[t]=o,this._emit(n)}_fromChanged(t,e){e.stopPropagation();const i=Number(e.detail?.value);""!==e.detail?.value&&null!=e.detail?.value&&Number.isFinite(i)&&this._updateBand(t,"from",i)}_fromEntityChanged(t,e){e.stopPropagation();const i=e.detail?.value;"string"==typeof i&&""!==i&&this._updateBand(t,"from",i)}_toggleFromMode(t){const e=this.bands?.[t]?.from,i=new Set(this._entityOpen);Io(e)?this._updateBand(t,"from",this._entityValue(e)??0):i.delete(t)||i.add(t),this._entityOpen=i}_colorChanged(t,e){e.stopPropagation();const i=e.detail?.value,n=this.bands?.[t]?.color??"primary";if(!i)return;const o=new Set(this._customOpen);i!==Do?(o.delete(t),this._customOpen=o,i!==n&&this._updateBand(t,"color",i)):qo(n)&&(this._customOpen=o.add(t))}_customColorChanged(t,e){e.stopPropagation();const i="string"==typeof e.detail?.value?e.detail.value.trim():"";if(!i)return;const n=new Set(this._customOpen);n.delete(t),this._customOpen=n,this._updateBand(t,"color",i)}_iconChanged(t,e){e.stopPropagation(),this._updateBand(t,"icon",e.detail?.value)}_labelChanged(t,e){e.stopPropagation(),this._updateBand(t,"label",e.detail?.value)}_removeBand(t){const e=[...this.bands??[]];e.splice(t,1),this._emit(e)}_addBand(){const t=[...this.bands??[]],e=t[t.length-1]?.from,i="number"==typeof e?e:Io(e)?this._entityValue(e)??NaN:"string"==typeof e&&""!==e.trim()?Number(e):NaN;t.push({from:Number.isFinite(i)?i+10:0,color:"primary"}),this._emit(t)}_renderBand(t,e,i){const n=!qo(t.color)||this._customOpen.has(e),o=Io(t.from)?t.from:void 0,r=void 0!==o||this._entityOpen.has(e);return I`<div class="band">
+      <span class="swatch" style=${jo({"--swatch":Et(t.color)})}></span>
       <ha-selector
         .required=${!1}
         data-role="from"
@@ -1207,7 +1207,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         .hass=${this.hass}
         .label=${this._t("editor_band_color")}
         .selector=${i.color}
-        .value=${n?Ro:t.color}
+        .value=${n?Do:t.color}
         @value-changed=${t=>this._colorChanged(e,t)}
       ></ha-selector>
       <ha-selector
@@ -1215,7 +1215,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         data-role="label"
         .hass=${this.hass}
         .label=${this._t("editor_band_label")}
-        .selector=${Bo}
+        .selector=${Ro}
         .value=${t.label??""}
         @value-changed=${t=>this._labelChanged(e,t)}
       ></ha-selector>
@@ -1224,7 +1224,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         data-role="icon"
         .hass=${this.hass}
         .label=${this._t("editor_band_icon")}
-        .selector=${Wo}
+        .selector=${Vo}
         .value=${t.icon??""}
         @value-changed=${t=>this._iconChanged(e,t)}
       ></ha-selector>
@@ -1247,7 +1247,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
               data-role="from-entity"
               .hass=${this.hass}
               .label=${this._t("editor_band_from_entity_label")}
-              .selector=${Io}
+              .selector=${Bo}
               .value=${o??""}
               @value-changed=${t=>this._fromEntityChanged(e,t)}
             ></ha-selector>`:q}
@@ -1257,21 +1257,21 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
               data-role="custom-color"
               .hass=${this.hass}
               .label=${this._t("editor_band_custom_color")}
-              .selector=${Bo}
-              .value=${Zo(t.color)?Et(t.color):t.color}
+              .selector=${Ro}
+              .value=${qo(t.color)?Et(t.color):t.color}
               @value-changed=${t=>this._customColorChanged(e,t)}
             ></ha-selector>`:q}
-    </div>`}render(){const t=this._getSelectors(),e=qo(this.bands);return I`<ha-selector
+    </div>`}render(){const t=this._getSelectors(),e=Wo(this.bands);return I`<ha-selector
         .required=${!0}
         data-role="preset"
         .hass=${this.hass}
         .label=${this._t("editor_preset")}
-        .selector=${e===Ro?t.presetCustom:t.preset}
+        .selector=${e===Do?t.presetCustom:t.preset}
         .value=${e}
         @value-changed=${this._presetChanged}
       ></ha-selector>
       ${(this.bands??[]).map((e,i)=>this._renderBand(e,i,t))}
-      <button type="button" class="add-band" @click=${this._addBand}>${this._t("editor_add_band")}</button>`}}Yo.properties={hass:{attribute:!1},bands:{attribute:!1},unit:{attribute:!1},_customOpen:{state:!0},_entityOpen:{state:!0}},Yo.styles=r`
+      <button type="button" class="add-band" @click=${this._addBand}>${this._t("editor_add_band")}</button>`}}Zo.properties={hass:{attribute:!1},bands:{attribute:!1},unit:{attribute:!1},_customOpen:{state:!0},_entityOpen:{state:!0}},Zo.styles=r`
     :host {
       display: block;
     }
@@ -1338,7 +1338,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       outline: 2px solid var(--primary-color, #03a9f4);
       outline-offset: 2px;
     }
-  `,customElements.get("cd-bands-editor")||customElements.define("cd-bands-editor",Yo);const Go={number:{mode:"box",step:"any"}},Xo={entity:{domain:["sensor","input_number","number"]}};function Jo(t){return null==t||""===t?"default":"number"==typeof t||""!==t.trim()&&Number.isFinite(Number(t))?"number":"entity"}class Ko extends lt{willUpdate(t){t.has("value")&&"default"!==Jo(this.value)&&(this._mode=void 0)}_modeSelectorFor(){const t=(t,e)=>ie(this.hass,t,e),e=[{value:"default",label:t("editor_limit_default",{value:this.defaultLabel??""})},{value:"number",label:t("editor_limit_number")},{value:"entity",label:t("editor_limit_entity")}],i=e.map(t=>t.label).join("|");return this._modeSelector?.key!==i&&(this._modeSelector={key:i,selector:{select:{mode:"dropdown",options:e}}}),this._modeSelector.selector}get _currentMode(){return this._mode??Jo(this.value)}_emit(t){this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t}}))}_modeChanged(t){t.stopPropagation();const e=t.detail?.value;e&&e!==this._currentMode&&(this._mode=e,void 0!==this.value&&this._emit(void 0))}_numberChanged(t){t.stopPropagation();const e=t.detail?.value,i="number"==typeof e?e:""===e||null==e?NaN:Number(e);this._mode="number",this._emit(Number.isFinite(i)?i:void 0)}_entityChanged(t){t.stopPropagation();const e=t.detail?.value;this._mode="entity",this._emit("string"==typeof e&&""!==e?e:void 0)}render(){const t=t=>ie(this.hass,t),e=this._currentMode;return I`<ha-selector
+  `,customElements.get("cd-bands-editor")||customElements.define("cd-bands-editor",Zo);const Yo={number:{mode:"box",step:"any"}},Go={entity:{domain:["sensor","input_number","number"]}};function Xo(t){return null==t||""===t?"default":"number"==typeof t||""!==t.trim()&&Number.isFinite(Number(t))?"number":"entity"}class Jo extends lt{willUpdate(t){t.has("value")&&"default"!==Xo(this.value)&&(this._mode=void 0)}_modeSelectorFor(){const t=(t,e)=>ie(this.hass,t,e),e=[{value:"default",label:t("editor_limit_default",{value:this.defaultLabel??""})},{value:"number",label:t("editor_limit_number")},{value:"entity",label:t("editor_limit_entity")}],i=e.map(t=>t.label).join("|");return this._modeSelector?.key!==i&&(this._modeSelector={key:i,selector:{select:{mode:"dropdown",options:e}}}),this._modeSelector.selector}get _currentMode(){return this._mode??Xo(this.value)}_emit(t){this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t}}))}_modeChanged(t){t.stopPropagation();const e=t.detail?.value;e&&e!==this._currentMode&&(this._mode=e,void 0!==this.value&&this._emit(void 0))}_numberChanged(t){t.stopPropagation();const e=t.detail?.value,i="number"==typeof e?e:""===e||null==e?NaN:Number(e);this._mode="number",this._emit(Number.isFinite(i)?i:void 0)}_entityChanged(t){t.stopPropagation();const e=t.detail?.value;this._mode="entity",this._emit("string"==typeof e&&""!==e?e:void 0)}render(){const t=t=>ie(this.hass,t),e=this._currentMode;return I`<ha-selector
         .required=${!0}
         data-role="mode"
         .hass=${this.hass}
@@ -1352,7 +1352,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
               data-role="number"
               .hass=${this.hass}
               .label=${t("editor_limit_number")}
-              .selector=${Go}
+              .selector=${Yo}
               .value=${void 0===this.value?void 0:Number(this.value)}
               @value-changed=${this._numberChanged}
             ></ha-selector>`:"entity"===e?I`<ha-selector
@@ -1360,17 +1360,17 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
                 data-role="entity"
                 .hass=${this.hass}
                 .label=${t("editor_limit_entity")}
-                .selector=${Xo}
+                .selector=${Go}
                 .value=${this.value}
                 @value-changed=${this._entityChanged}
-              ></ha-selector>`:q}`}}Ko.properties={hass:{attribute:!1},label:{attribute:!1},value:{attribute:!1},defaultLabel:{attribute:!1},_mode:{state:!0}},Ko.styles=r`
+              ></ha-selector>`:q}`}}Jo.properties={hass:{attribute:!1},label:{attribute:!1},value:{attribute:!1},defaultLabel:{attribute:!1},_mode:{state:!0}},Jo.styles=r`
     :host {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
       align-items: start;
     }
-  `,customElements.get("cd-limit-field")||customElements.define("cd-limit-field",Ko);const Qo=["min","max","target"];function tr(t,e,i){const n=e&&!i?t?.states[e]?.attributes?.unit_of_measurement:void 0;return"string"==typeof n&&n?n:void 0}class er extends lt{constructor(){super(),this._computeLabel=t=>this._t(`editor_${t.name}`),this._expanded=new Set}_t(t,e){return ie(this.hass,t,e)}get _asConfig(){return{type:"",entities:this.entities??[]}}_emit(t){t.entities!==this.entities&&this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t.entities??[]}}))}_set(t,e,i){this._emit(function(t,e,i,n){if("entity"===i&&(ne(n)||"string"!=typeof n))return t;const o=[...t.entities??[]],r=o[e];if(void 0===r)return t;const a="string"==typeof r?{entity:r}:{...r};ne(n)?delete a[i]:a[i]=n;const s=Object.keys(a);return o[e]=1===s.length&&"entity"===s[0]&&"string"==typeof a.entity?a.entity:a,{...t,entities:o}}(this._asConfig,t,e,i))}_move(t,e){const i=new Set;for(const n of this._expanded)i.add(n===t?e:n===e?t:n);this._expanded=i,this._emit(function(t,e,i){const n=[...t.entities??[]];if(e<0||e>=n.length||e===i)return t;const[o]=n.splice(e,1);return n.splice(Math.max(0,Math.min(i,n.length)),0,o),{...t,entities:n}}(this._asConfig,t,e))}_remove(t){const e=new Set;for(const i of this._expanded)i!==t&&e.add(i>t?i-1:i);this._expanded=e,this._emit(function(t,e){const i=[...t.entities??[]];return e<0||e>=i.length?t:(i.splice(e,1),{...t,entities:i})}(this._asConfig,t))}_toggle(t){const e=new Set(this._expanded);e.delete(t)||e.add(t),this._expanded=e}_add(t){t.stopPropagation();const e=t.detail?.value;"string"==typeof e&&""!==e&&(t.target.value="",this._emit(function(t,e){return{...t,entities:[...t.entities??[],e]}}(this._asConfig,e)))}_formChanged(t,e,i){i.stopPropagation();const n=this.entities?.[t];if(void 0===n)return;const o="string"==typeof n?{entity:n}:n,r=je(o,e,i.detail?.value??{});if(r===o)return;const a=[...this.entities??[]],s=Object.keys(r);a[t]=1===s.length&&"entity"===s[0]?r.entity:r,this._emit({type:"",entities:a})}_rowLabel(t){const e=this.hass?.states[t];return e?{text:e.attributes.friendly_name||t,missing:!1}:this.hass?{text:this._t("editor_not_found",{entity:t}),missing:!0}:{text:t,missing:!1}}_form(t,e,i,n,o){return I`<ha-form
+  `,customElements.get("cd-limit-field")||customElements.define("cd-limit-field",Jo);const Ko=["min","max","target"];function Qo(t,e,i){const n=e&&!i?t?.states[e]?.attributes?.unit_of_measurement:void 0;return"string"==typeof n&&n?n:void 0}class tr extends lt{constructor(){super(),this._computeLabel=t=>this._t(`editor_${t.name}`),this._expanded=new Set}_t(t,e){return ie(this.hass,t,e)}get _asConfig(){return{type:"",entities:this.entities??[]}}_emit(t){t.entities!==this.entities&&this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t.entities??[]}}))}_set(t,e,i){this._emit(function(t,e,i,n){if("entity"===i&&(ne(n)||"string"!=typeof n))return t;const o=[...t.entities??[]],r=o[e];if(void 0===r)return t;const a="string"==typeof r?{entity:r}:{...r};ne(n)?delete a[i]:a[i]=n;const s=Object.keys(a);return o[e]=1===s.length&&"entity"===s[0]&&"string"==typeof a.entity?a.entity:a,{...t,entities:o}}(this._asConfig,t,e,i))}_move(t,e){const i=new Set;for(const n of this._expanded)i.add(n===t?e:n===e?t:n);this._expanded=i,this._emit(function(t,e,i){const n=[...t.entities??[]];if(e<0||e>=n.length||e===i)return t;const[o]=n.splice(e,1);return n.splice(Math.max(0,Math.min(i,n.length)),0,o),{...t,entities:n}}(this._asConfig,t,e))}_remove(t){const e=new Set;for(const i of this._expanded)i!==t&&e.add(i>t?i-1:i);this._expanded=e,this._emit(function(t,e){const i=[...t.entities??[]];return e<0||e>=i.length?t:(i.splice(e,1),{...t,entities:i})}(this._asConfig,t))}_toggle(t){const e=new Set(this._expanded);e.delete(t)||e.add(t),this._expanded=e}_add(t){t.stopPropagation();const e=t.detail?.value;"string"==typeof e&&""!==e&&(t.target.value="",this._emit(function(t,e){return{...t,entities:[...t.entities??[],e]}}(this._asConfig,e)))}_formChanged(t,e,i){i.stopPropagation();const n=this.entities?.[t];if(void 0===n)return;const o="string"==typeof n?{entity:n}:n,r=je(o,e,i.detail?.value??{});if(r===o)return;const a=[...this.entities??[]],s=Object.keys(r);a[t]=1===s.length&&"entity"===s[0]?r.entity:r,this._emit({type:"",entities:a})}_rowLabel(t){const e=this.hass?.states[t];return e?{text:e.attributes.friendly_name||t,missing:!1}:this.hass?{text:this._t("editor_not_found",{entity:t}),missing:!0}:{text:t,missing:!1}}_form(t,e,i,n,o){return I`<ha-form
       data-section=${t}
       .hass=${this.hass}
       .data=${ze(i,o)}
@@ -1387,7 +1387,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         .value=${t.icon??""}
         @value-changed=${i(t=>this._set(e,"icon",t))}
       ></ha-icon-picker>
-      ${Qo.map(n=>I`<cd-limit-field
+      ${Ko.map(n=>I`<cd-limit-field
             data-limit=${n}
             .hass=${this.hass}
             .label=${this._t(`editor_${n}`)}
@@ -1398,7 +1398,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       <cd-bands-editor
         .hass=${this.hass}
         .bands=${t.severity}
-        .unit=${t.unit??this.unit??tr(this.hass,t.entity,t.attribute)}
+        .unit=${t.unit??this.unit??Qo(this.hass,t.entity,t.attribute)}
         @value-changed=${i(t=>this._set(e,"severity",t))}
       ></cd-bands-editor>
       ${this._form("entity-actions",e,t,we,$e)}
@@ -1448,7 +1448,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         .value=${""}
         allow-custom-entity
         @value-changed=${this._add}
-      ></ha-entity-picker>`}}er.properties={hass:{attribute:!1},entities:{attribute:!1},unit:{attribute:!1},chartFields:{attribute:!1},_expanded:{state:!0}},er.styles=r`
+      ></ha-entity-picker>`}}tr.properties={hass:{attribute:!1},entities:{attribute:!1},unit:{attribute:!1},chartFields:{attribute:!1},_expanded:{state:!0}},tr.styles=r`
     :host {
       display: block;
     }
@@ -1500,7 +1500,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       display: block;
       margin-top: 8px;
     }
-  `,customElements.get("cd-entities-editor")||customElements.define("cd-entities-editor",er);class ir extends lt{constructor(){super(...arguments),this._label=t=>ie(this.hass,t),this._computeLabel=t=>ie(this.hass,`editor_${t.name}`),this._computeRuleLabel=t=>ie(this.hass,`editor_rule_${t.name.slice(t.name.indexOf("_")+1)}`)}setConfig(t){this._config=t}connectedCallback(){super.connectedCallback(),async function(){if(!customElements.get("ha-entity-picker")&&"function"==typeof window.loadCardHelpers)try{const t=await window.loadCardHelpers(),e=await t.createCardElement({type:"entities",entities:[]}),i=e?.constructor;await(i?.getConfigElement?.())}catch{}}()}_commit(t){this._config=t,function(t,e){t.dispatchEvent(new CustomEvent("config-changed",{bubbles:!0,composed:!0,detail:{config:e}}))}(this,t)}_formChanged(t,e){if(e.stopPropagation(),!this._config)return;const i=e.detail?.value??{};this._commit(je(this._config,t,i))}_form(t,e,i){return I`<ha-form
+  `,customElements.get("cd-entities-editor")||customElements.define("cd-entities-editor",tr);class er extends lt{constructor(){super(...arguments),this._label=t=>ie(this.hass,t),this._computeLabel=t=>ie(this.hass,`editor_${t.name}`),this._computeRuleLabel=t=>ie(this.hass,`editor_rule_${t.name.slice(t.name.indexOf("_")+1)}`)}setConfig(t){this._config=t}connectedCallback(){super.connectedCallback(),async function(){if(!customElements.get("ha-entity-picker")&&"function"==typeof window.loadCardHelpers)try{const t=await window.loadCardHelpers(),e=await t.createCardElement({type:"entities",entities:[]}),i=e?.constructor;await(i?.getConfigElement?.())}catch{}}()}_commit(t){this._config=t,function(t,e){t.dispatchEvent(new CustomEvent("config-changed",{bubbles:!0,composed:!0,detail:{config:e}}))}(this,t)}_formChanged(t,e){if(e.stopPropagation(),!this._config)return;const i=e.detail?.value??{};this._commit(je(this._config,t,i))}_form(t,e,i){return I`<ha-form
       data-section=${t}
       .hass=${this.hass}
       .data=${ze(this._config,i)}
@@ -1509,7 +1509,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       @value-changed=${t=>this._formChanged(i,t)}
     ></ha-form>`}_panel(t,e){return I`<ha-expansion-panel .header=${this._label(`editor_section_${t}`)} outlined>
       <div class="panel section-${t}">${e}</div>
-    </ha-expansion-panel>`}_subChanged(t,e){e.stopPropagation(),this._config&&this._commit(ae(this._config,t,e.detail?.value))}_chartFields(){const t=Po[this._config?.style??"bar"];return t&&Uo(t)&&this._config?t.entityFields?.(this.hass,this._config):void 0}renderEntities(){return I`<cd-entities-editor
+    </ha-expansion-panel>`}_subChanged(t,e){e.stopPropagation(),this._config&&this._commit(ae(this._config,t,e.detail?.value))}_chartFields(){const t=Uo[this._config?.style??"bar"];return t&&No(t)&&this._config?t.entityFields?.(this.hass,this._config):void 0}renderEntities(){return I`<cd-entities-editor
         .hass=${this.hass}
         .entities=${this._config?.entities??[]}
         .unit=${this._config?.unit}
@@ -1537,9 +1537,9 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
         .bands=${this._config?.severity}
         .unit=${this._config?.unit??this._firstEntityUnit()}
         @value-changed=${t=>this._subChanged(["severity"],t)}
-      ></cd-bands-editor>`}_firstEntityUnit(){const t=this._config?.entities?.[0];return"string"==typeof t?tr(this.hass,t):t?.unit??tr(this.hass,t?.entity,t?.attribute)}_selectStyle(t){this._config&&this._commit(ae(this._config,["style"],"bar"===t?void 0:t))}renderStyle(){const t=this._config?.style??"bar";return I`${No.map(e=>{const i=Bt.filter(t=>Po[t].group===e);return i.length?I`<div class="style-group">${this._label(`editor_group_${e}`)}</div>
+      ></cd-bands-editor>`}_firstEntityUnit(){const t=this._config?.entities?.[0];return"string"==typeof t?Qo(this.hass,t):t?.unit??Qo(this.hass,t?.entity,t?.attribute)}_selectStyle(t){this._config&&this._commit(ae(this._config,["style"],"bar"===t?void 0:t))}renderStyle(){const t=this._config?.style??"bar";return I`${Lo.map(e=>{const i=Bt.filter(t=>Uo[t].group===e);return i.length?I`<div class="style-group">${this._label(`editor_group_${e}`)}</div>
         <div class="styles" data-group=${e}>
-          ${i.map(e=>{const i=Po[e],n=Uo(i)?I`<svg class="thumbnail" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">
+          ${i.map(e=>{const i=Uo[e],n=No(i)?I`<svg class="thumbnail" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">
                   ${i.thumbnail()}
                 </svg>`:Ve(e);return I`<button
               type="button"
@@ -1550,7 +1550,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
             >
               ${n}<span>${this._label(`editor_style_${e}`)}</span>
             </button>`})}
-        </div>`:q})}`}renderChart(){const t=Po[this._config?.style??"bar"];return t&&Uo(t)&&t.editor&&this._config?this._panel("chart",t.editor({hass:this.hass,config:this._config,commit:t=>this._commit(t)})):q}renderDisplay(){return I`${this._toggles(he)}
+        </div>`:q})}`}renderChart(){const t=Uo[this._config?.style??"bar"];return t&&No(t)&&t.editor&&this._config?this._panel("chart",t.editor({hass:this.hass,config:this._config,commit:t=>this._commit(t)})):q}renderDisplay(){return I`${this._toggles(he)}
     ${this._form("display",function(t){const e=ee(t);return Ne?.language!==e&&(Ne={language:e,schema:Se(t)}),Ne.schema}(this.hass),pe)}`}_toggles(t){const e=ze(this._config,t);return I`<div class="toggles">
       ${t.map(({name:i})=>{const n=this._label(`editor_${i}`),o=!0===e[i];return I`<div class="toggle">
           <span @click=${()=>this._toggle(t,i,!o)}>${n}</span
@@ -1565,7 +1565,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       ${this._panel("entities",this.renderEntities())} ${this._panel("style",this.renderStyle())}
       ${this.renderChart()} ${this._panel("limits",this.renderLimits())}
       ${this._panel("colours",this.renderColours())} ${this._panel("display",this.renderDisplay())}
-      ${this._panel("actions",this.renderActions())}`:q}}ir.properties={hass:{attribute:!1},_config:{state:!0}},ir.styles=r`
+      ${this._panel("actions",this.renderActions())}`:q}}er.properties={hass:{attribute:!1},_config:{state:!0}},er.styles=r`
     :host {
       display: block;
     }
@@ -1645,7 +1645,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       outline-offset: -1px;
       border-color: transparent;
     }
-  `,customElements.get("chartdeck-card-editor")||customElements.define("chartdeck-card-editor",ir);const nr=r`
+  `,customElements.get("chartdeck-card-editor")||customElements.define("chartdeck-card-editor",er);const ir=r`
   :host {
     display: block;
     --cd-duration: 900ms;
@@ -1748,7 +1748,7 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
     border-radius: 50%;
     flex: none;
   }
-`;console.info("%c CHARTDECK %c 1.2.0 ","color:#fff;background:#3b8bff;font-weight:700","color:#3b8bff");const or={rows:16,tiles:8};function rr(t){const e=or[t.layout];return Math.max(1,Math.floor((368+e)/((t.minColumnWidth??0)+e)))}class ar extends lt{constructor(){super(...arguments),this._watched=new Set,this._matched=[],this._items=[],this._detachers=new Map,this._readyScheduled=!1,this._readyAt=-1/0}static getStubConfig(t){const e=Object.values(t?.states??{}).filter(t=>t.entity_id.startsWith("sensor.")&&""!==t.state.trim()&&Number.isFinite(Number(t.state))),i=t=>"battery"===t.attributes?.device_class;return e.sort((t,e)=>i(t)!==i(e)?i(t)?-1:1:t.entity_id<e.entity_id?-1:t.entity_id>e.entity_id?1:0),{type:"custom:chartdeck-card",style:"bar",entities:e.slice(0,3).map(t=>t.entity_id)}}static getConfigElement(){return document.createElement("chartdeck-card-editor")}setConfig(t){const e=function(t){if(!t||"object"!=typeof t)throw new Error("Invalid configuration");const e=t.style??"bar";if(!Bt.includes(e))throw new Error(`Unknown style "${String(e)}". Use one of: ${Bt.join(", ")}`);const i=t.sort??"none";if(!Vt.includes(i))throw new Error(`Unknown sort "${String(i)}". Use one of: ${Vt.join(", ")}`);if(void 0!==t.entities&&!Array.isArray(t.entities))throw new Error('"entities" must be a list');const n=(t.entities??[]).map((e,i)=>Jt(e,t,i)),o={name:!0,value:!0,icon:!0,target:!0,legend:!1,...t.show},r=Zt(t.columns,"columns",1),a=Zt(t.limit,"limit",1),s=Pt(t.include,"include"),l=Pt(t.exclude,"exclude");s&&Jt("sensor.chartdeck_check",t,0);const c={style:e,entities:n,hideUnavailable:!0===t.hide_unavailable,cardOptions:t,show:o,sort:i,animate:!1!==t.animate,colorIcon:!0===t.color_icon,legendBands:Yt(t.severity)??It};return void 0!==t.title&&(c.title=t.title),void 0!==r&&(c.columns=r),void 0!==a&&(c.limit=a),s&&(c.include=s),l&&(c.exclude=l),c}(t),i=Po[e.style];if(Uo(i)&&i.validate?.(t),this._watched=function(t){const e=new Set;for(const i of t.entities){e.add(i.entity);for(const t of[i.min,i.max,i.target,...i.severity.map(t=>t.from)])"string"==typeof t&&""!==t&&e.add(t)}for(const i of t.legendBands)"string"==typeof i.from&&e.add(i.from);return e}(e),Uo(i))for(const n of i.watch?.(t)??[])this._watched.add(n);this._config&&this._config.style!==e.style&&this._disconnectStyle(),this._config=e}get _styleName(){return this._config?.style??"bar"}get _style(){return Po[this._styleName]}_legend(t){const e=this._config;if(!e?.show.legend||0===this._count())return[];const i=t?.decimals??1;return function(t,e,i){const n=i?` ${i}`:"",o=[];return t.forEach((i,r)=>{const a=t[r+1],s=Et(i.color);i.label?o.push({color:s,text:i.label}):Number.isFinite(i.from)?a?o.push({color:s,text:`${e(i.from)}–${e(a.from)}${n}`}):o.push({color:s,text:`${e(i.from)}${n}+`}):a&&o.push({color:s,text:`< ${e(a.from)}${n}`})}),o}(ti(e.legendBands,this.hass),t=>We(t,i,this.hass),t?.unit??"")}_count(){return this.hasUpdated&&this.hass?this._items.length:this._config?.entities.length??0}_contentHeight(){const t=this._config;if(!t)return 0;const e=this._style,i=16+(t.title?73:0)+(this._legend().length>0?32:0);if(Uo(e))return i+e.height;const n=this._count(),o=void 0!==t.columns?Math.min(t.columns,rr(e)):"rows"===e.layout?1:Math.min(n,e.tilesPerRow??3,rr(e));return i+(0===n?0:Math.ceil(n/Math.max(1,o)))*e.height}getCardSize(){return Math.max(1,Math.ceil(this._contentHeight()/50))}getGridOptions(){const t=this._count();if(Uo(this._style))return{columns:12,rows:"auto",min_columns:6,min_rows:2};const e="rows"===this._style.layout;return{columns:e||t<=1?6:12,rows:"auto",min_columns:e?6:3,min_rows:1}}shouldUpdate(t){if(0===t.size)return!0;if([...t.keys()].some(t=>"hass"!==t))return!0;if(!t.has("hass"))return!1;const e=t.get("hass"),i=this.hass;if(!e||!i)return!0;for(const n of this._watched)if(e.states[n]!==i.states[n])return!0;if(this._config?.include){const t=ii(this._config,i);if(t.length!==this._matched.length||t.some((t,e)=>t!==this._matched[e]))return!0;for(const n of t)if(e.states[n]!==i.states[n])return!0}return e.themes?.darkMode!==i.themes?.darkMode||e.themes?.theme!==i.themes?.theme||e.locale!==i.locale}willUpdate(){const t=!1===this._config?.animate||"function"==typeof window.matchMedia&&!!window.matchMedia("(prefers-reduced-motion: reduce)")?.matches;this.toggleAttribute("static",t),(t||this.preview)&&this.setAttribute("ready","")}_scheduleReady(){if(this._readyScheduled||this.hasAttribute("ready")||0===this._items.length)return;this._readyScheduled=!0;const t=()=>{this.shadowRoot?.querySelector(".entity")?.getBoundingClientRect(),this.setAttribute("ready",""),this._readyAt=performance.now()};"function"==typeof requestAnimationFrame?requestAnimationFrame(t):setTimeout(t,16)}updated(){this._scheduleReady(),this._syncActions()}connectedCallback(){if(super.connectedCallback(),!this.hasUpdated)return;const t=this._config?Po[this._config.style]:void 0;t&&Uo(t)&&this.requestUpdate(),this._syncActions(),this.hasAttribute("ready")&&!this.hasAttribute("static")&&performance.now()-this._readyAt<1e3&&(this.removeAttribute("ready"),this._readyScheduled=!1,this._scheduleReady())}_disconnectStyle(){const t=this._config?Po[this._config.style]:void 0;t&&Uo(t)&&t.disconnect?.(this)}disconnectedCallback(){super.disconnectedCallback(),this._disconnectStyle();for(const t of this._detachers.values())t();this._detachers.clear()}_syncActions(){const t=this.shadowRoot;if(!t)return;const e=new Set(t.querySelectorAll(".entity"));for(const[i,n]of this._detachers)e.has(i)||(n(),this._detachers.delete(i));for(const i of e)this._detachers.has(i)||this._detachers.set(i,Ct(i,()=>this._items[Number(i.dataset.index)].config))}_renderEntity(t,e,i,n){const o=this._config,r=(a=t.config,Mt(a.tap_action)||Mt(a.hold_action)||Mt(a.double_tap_action));var a;const s=function(t){const e=Et(t);return{start:e,end:`color-mix(in srgb, ${e} 80%, #fff)`}}(t.band.color),l=`--start:${t.span[0]};--end:${t.span[1]};--pos:${t.position};--target:${t.targetPosition??0};--c-start:${s.start};--c-end:${s.end}`;return I`<div
+`;console.info("%c CHARTDECK %c 1.2.0 ","color:#fff;background:#3b8bff;font-weight:700","color:#3b8bff");const nr={rows:16,tiles:8};function or(t){const e=nr[t.layout];return Math.max(1,Math.floor((368+e)/((t.minColumnWidth??0)+e)))}class rr extends lt{constructor(){super(...arguments),this._watched=new Set,this._matched=[],this._items=[],this._detachers=new Map,this._readyScheduled=!1,this._readyAt=-1/0}static getStubConfig(t){const e=Object.values(t?.states??{}).filter(t=>t.entity_id.startsWith("sensor.")&&""!==t.state.trim()&&Number.isFinite(Number(t.state))),i=t=>"battery"===t.attributes?.device_class;return e.sort((t,e)=>i(t)!==i(e)?i(t)?-1:1:t.entity_id<e.entity_id?-1:t.entity_id>e.entity_id?1:0),{type:"custom:chartdeck-card",style:"bar",entities:e.slice(0,3).map(t=>t.entity_id)}}static getConfigElement(){return document.createElement("chartdeck-card-editor")}setConfig(t){const e=function(t){if(!t||"object"!=typeof t)throw new Error("Invalid configuration");const e=t.style??"bar";if(!Bt.includes(e))throw new Error(`Unknown style "${String(e)}". Use one of: ${Bt.join(", ")}`);const i=t.sort??"none";if(!Vt.includes(i))throw new Error(`Unknown sort "${String(i)}". Use one of: ${Vt.join(", ")}`);if(void 0!==t.entities&&!Array.isArray(t.entities))throw new Error('"entities" must be a list');const n=(t.entities??[]).map((e,i)=>Jt(e,t,i)),o={name:!0,value:!0,icon:!0,target:!0,legend:!1,...t.show},r=Zt(t.columns,"columns",1),a=Zt(t.limit,"limit",1),s=Pt(t.include,"include"),l=Pt(t.exclude,"exclude");s&&Jt("sensor.chartdeck_check",t,0);const c={style:e,entities:n,hideUnavailable:!0===t.hide_unavailable,cardOptions:t,show:o,sort:i,animate:!1!==t.animate,colorIcon:!0===t.color_icon,legendBands:Yt(t.severity)??It};return void 0!==t.title&&(c.title=t.title),void 0!==r&&(c.columns=r),void 0!==a&&(c.limit=a),s&&(c.include=s),l&&(c.exclude=l),c}(t),i=Uo[e.style];if(No(i)&&i.validate?.(t),this._watched=function(t){const e=new Set;for(const i of t.entities){e.add(i.entity);for(const t of[i.min,i.max,i.target,...i.severity.map(t=>t.from)])"string"==typeof t&&""!==t&&e.add(t)}for(const i of t.legendBands)"string"==typeof i.from&&e.add(i.from);return e}(e),No(i))for(const n of i.watch?.(t)??[])this._watched.add(n);this._config&&this._config.style!==e.style&&this._disconnectStyle(),this._config=e}get _styleName(){return this._config?.style??"bar"}get _style(){return Uo[this._styleName]}_legend(t){const e=this._config;if(!e?.show.legend||0===this._count())return[];const i=t?.decimals??1;return function(t,e,i){const n=i?` ${i}`:"",o=[];return t.forEach((i,r)=>{const a=t[r+1],s=Et(i.color);i.label?o.push({color:s,text:i.label}):Number.isFinite(i.from)?a?o.push({color:s,text:`${e(i.from)}–${e(a.from)}${n}`}):o.push({color:s,text:`${e(i.from)}${n}+`}):a&&o.push({color:s,text:`< ${e(a.from)}${n}`})}),o}(ti(e.legendBands,this.hass),t=>We(t,i,this.hass),t?.unit??"")}_count(){return this.hasUpdated&&this.hass?this._items.length:this._config?.entities.length??0}_contentHeight(){const t=this._config;if(!t)return 0;const e=this._style,i=16+(t.title?73:0)+(this._legend().length>0?32:0);if(No(e))return i+e.height;const n=this._count(),o=void 0!==t.columns?Math.min(t.columns,or(e)):"rows"===e.layout?1:Math.min(n,e.tilesPerRow??3,or(e));return i+(0===n?0:Math.ceil(n/Math.max(1,o)))*e.height}getCardSize(){return Math.max(1,Math.ceil(this._contentHeight()/50))}getGridOptions(){const t=this._count();if(No(this._style))return{columns:12,rows:"auto",min_columns:6,min_rows:2};const e="rows"===this._style.layout;return{columns:e||t<=1?6:12,rows:"auto",min_columns:e?6:3,min_rows:1}}shouldUpdate(t){if(0===t.size)return!0;if([...t.keys()].some(t=>"hass"!==t))return!0;if(!t.has("hass"))return!1;const e=t.get("hass"),i=this.hass;if(!e||!i)return!0;for(const n of this._watched)if(e.states[n]!==i.states[n])return!0;if(this._config?.include){const t=ii(this._config,i);if(t.length!==this._matched.length||t.some((t,e)=>t!==this._matched[e]))return!0;for(const n of t)if(e.states[n]!==i.states[n])return!0}return e.themes?.darkMode!==i.themes?.darkMode||e.themes?.theme!==i.themes?.theme||e.locale!==i.locale}willUpdate(){const t=!1===this._config?.animate||"function"==typeof window.matchMedia&&!!window.matchMedia("(prefers-reduced-motion: reduce)")?.matches;this.toggleAttribute("static",t),(t||this.preview)&&this.setAttribute("ready","")}_scheduleReady(){if(this._readyScheduled||this.hasAttribute("ready")||0===this._items.length)return;this._readyScheduled=!0;const t=()=>{this.shadowRoot?.querySelector(".entity")?.getBoundingClientRect(),this.setAttribute("ready",""),this._readyAt=performance.now()};"function"==typeof requestAnimationFrame?requestAnimationFrame(t):setTimeout(t,16)}updated(){this._scheduleReady(),this._syncActions()}connectedCallback(){if(super.connectedCallback(),!this.hasUpdated)return;const t=this._config?Uo[this._config.style]:void 0;t&&No(t)&&this.requestUpdate(),this._syncActions(),this.hasAttribute("ready")&&!this.hasAttribute("static")&&performance.now()-this._readyAt<1e3&&(this.removeAttribute("ready"),this._readyScheduled=!1,this._scheduleReady())}_disconnectStyle(){const t=this._config?Uo[this._config.style]:void 0;t&&No(t)&&t.disconnect?.(this)}disconnectedCallback(){super.disconnectedCallback(),this._disconnectStyle();for(const t of this._detachers.values())t();this._detachers.clear()}_syncActions(){const t=this.shadowRoot;if(!t)return;const e=new Set(t.querySelectorAll(".entity"));for(const[i,n]of this._detachers)e.has(i)||(n(),this._detachers.delete(i));for(const i of e)this._detachers.has(i)||this._detachers.set(i,Ct(i,()=>this._items[Number(i.dataset.index)].config))}_renderEntity(t,e,i,n){const o=this._config,r=(a=t.config,Mt(a.tap_action)||Mt(a.hold_action)||Mt(a.double_tap_action));var a;const s=function(t){const e=Et(t);return{start:e,end:`color-mix(in srgb, ${e} 80%, #fff)`}}(t.band.color),l=`--start:${t.span[0]};--end:${t.span[1]};--pos:${t.position};--target:${t.targetPosition??0};--c-start:${s.start};--c-end:${s.end}`;return I`<div
       class="entity ${r?"interactive":""} ${t.available?"":"unavailable"} ${o.colorIcon&&t.available?"icon-band":""}"
       data-index=${e}
       role="meter"
@@ -1760,9 +1760,9 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
       style=${l}
     >
       ${i.render(t,{show:o.show,hass:n})}
-    </div>`}render(){const t=this._config;if(!t)return q;const e=this.hass,i=this._style;let n,o,r;const a=e?function(t,e){const i=ii(t,e).map((e,i)=>Jt(e,t.cardOptions,i)),n=[...t.entities,...i].map(t=>ei(t,e));return t.hideUnavailable?n.filter(t=>t.available):n}(t,e):[];if(this._matched=e?ii(t,e):[],0!==t.entities.length||t.include)if(e)if(0===a.length)this._items=[],n=I`<div class="hint">${ie(e,t.include?"no_matches":"none_available")}</div>`;else{o=a[0];const s=new Map,l=new Set;a.forEach((t,e)=>{s.set(t,l.has(t.entityId)?`${t.entityId}#${e}`:t.entityId),l.add(t.entityId)}),this._items=function(t,e){if("none"===e)return[...t];const i="ascending"===e?1:-1;return t.map((t,e)=>({item:t,index:e})).sort((t,e)=>{if(t.item.available!==e.item.available)return t.item.available?-1:1;if(t.item.available){const n=(t.item.position-e.item.position)*i;if(0!==n)return n}return t.index-e.index}).map(t=>t.item)}(a,t.sort).slice(0,t.limit);const c=this._items.filter(t=>t.available).map(t=>t.display.length);if(r=c.length?Math.max(...c):void 0,Uo(i))n=I`<div class="chart">
+    </div>`}render(){const t=this._config;if(!t)return q;const e=this.hass,i=this._style;let n,o,r;const a=e?function(t,e){const i=ii(t,e).map((e,i)=>Jt(e,t.cardOptions,i)),n=[...t.entities,...i].map(t=>ei(t,e));return t.hideUnavailable?n.filter(t=>t.available):n}(t,e):[];if(this._matched=e?ii(t,e):[],0!==t.entities.length||t.include)if(e)if(0===a.length)this._items=[],n=I`<div class="hint">${ie(e,t.include?"no_matches":"none_available")}</div>`;else{o=a[0];const s=new Map,l=new Set;a.forEach((t,e)=>{s.set(t,l.has(t.entityId)?`${t.entityId}#${e}`:t.entityId),l.add(t.entityId)}),this._items=function(t,e){if("none"===e)return[...t];const i="ascending"===e?1:-1;return t.map((t,e)=>({item:t,index:e})).sort((t,e)=>{if(t.item.available!==e.item.available)return t.item.available?-1:1;if(t.item.available){const n=(t.item.position-e.item.position)*i;if(0!==n)return n}return t.index-e.index}).map(t=>t.item)}(a,t.sort).slice(0,t.limit);const c=this._items.filter(t=>t.available).map(t=>t.display.length);if(r=c.length?Math.max(...c):void 0,No(i))n=I`<div class="chart">
           ${i.render({items:this._items,config:t,raw:t.cardOptions,hass:e,requestUpdate:()=>this.requestUpdate(),host:this})}
-        </div>`;else{const o="tiles"===i.layout,r=function(t,e){if(void 0===e)return"rows"===t.layout?"grid-template-columns: repeat(1, minmax(0, 1fr))":"";const i=(e-1)*or[t.layout];return`grid-template-columns: repeat(auto-fill, minmax(max(min(${t.minColumnWidth??0}px, 100%), calc((100% - ${i}px) / ${e} - 0.5px)), 1fr))`}(i,t.columns);n=I`<div
+        </div>`;else{const o="tiles"===i.layout,r=function(t,e){if(void 0===e)return"rows"===t.layout?"grid-template-columns: repeat(1, minmax(0, 1fr))":"";const i=(e-1)*nr[t.layout];return`grid-template-columns: repeat(auto-fill, minmax(max(min(${t.minColumnWidth??0}px, 100%), calc((100% - ${i}px) / ${e} - 0.5px)), 1fr))`}(i,t.columns);n=I`<div
           class="entities layout-${i.layout} ${o&&void 0!==t.columns?"has-columns":""}"
           style=${r}
         >
@@ -1779,4 +1779,4 @@ const Kt=mt(class extends ft{constructor(t){if(super(t),t.type!==ut&&t.type!==dt
                     ><span class="dot" style="background:${t.color}"></span>${t.text}</span
                   >`)}
             </div>`:q}
-    </ha-card>`}}ar.properties={hass:{attribute:!1},preview:{type:Boolean},_config:{state:!0}},ar.styles=[nr,...Object.values(Po).map(t=>t.styles)],customElements.get("chartdeck-card")||customElements.define("chartdeck-card",ar);const sr=window.customCards??=[];sr.some(t=>"chartdeck-card"===t.type)||sr.push({type:"chartdeck-card",name:"Chartdeck",description:"Bars, gauges and charts, set up entirely from the visual editor.",preview:!0,documentationURL:"https://tempus2016.github.io/chartdeck/"});export{ar as ChartdeckCard};
+    </ha-card>`}}rr.properties={hass:{attribute:!1},preview:{type:Boolean},_config:{state:!0}},rr.styles=[ir,...Object.values(Uo).map(t=>t.styles)],customElements.get("chartdeck-card")||customElements.define("chartdeck-card",rr);const ar=window.customCards??=[];ar.some(t=>"chartdeck-card"===t.type)||ar.push({type:"chartdeck-card",name:"Chartdeck",description:"Bars, gauges and charts, set up entirely from the visual editor.",preview:!0,documentationURL:"https://tempus2016.github.io/chartdeck/"});export{rr as ChartdeckCard};

@@ -175,3 +175,20 @@ describe('axis options', () => {
     expect(check({ y_min: 0, y_max: 5, gridlines: { horizontal: false } })).not.toThrow();
   });
 });
+
+describe('time labels across the plot', () => {
+  it('count from the plot width, leaving room for the value labels', async () => {
+    const { plotAxes } = await import('../src/chart/grid');
+    const range = { start: Date.UTC(2026, 9, 29, 0), end: Date.UTC(2026, 9, 29, 24) };
+    const at = (width: number, raw: Record<string, unknown> = {}) => {
+      const host = Object.assign(document.createElement('div'), {});
+      Object.defineProperty(host, 'clientWidth', { value: width });
+      const ctx = { host, raw, requestUpdate: () => {}, hass: undefined } as never;
+      return plotAxes(ctx, range, [0, 10]).times.filter((t) => t >= range.start && t <= range.end).length;
+    };
+    // 320 px card: 320 - 32 padding - 40 value labels = 248 px of plot, room for 3 labels at 70 px.
+    expect(at(320)).toBeLessThanOrEqual(4);
+    expect(at(320, { y_axis: false })).toBeGreaterThanOrEqual(at(320));
+    expect(at(1000)).toBeGreaterThan(at(320));
+  });
+});
