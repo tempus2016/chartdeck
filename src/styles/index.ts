@@ -1,4 +1,5 @@
 import type { CSSResult, SVGTemplateResult, TemplateResult } from 'lit';
+import type { FieldBinding } from '../editor/schemas';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant, NormalizedConfig, ShowOptions, StyleName } from '../types';
 import { bar } from './bar';
@@ -73,10 +74,21 @@ export interface ChartStyleModule {
   validate?(raw: CardConfig): void;
   /** The editor's Chart section for this style. */
   editor?(ctx: ChartEditorContext): TemplateResult;
+  /**
+   * Options this style reads from each entity (a series colour, a group…), shown in that entity's
+   * options in the editor. `config` is the card's, for fields whose default follows a card option.
+   */
+  entityFields?(hass: HomeAssistant | undefined, config: CardConfig): EntityFields;
   /** Entity ids, other than the card's own, whose changes should redraw it. */
   watch?(raw: CardConfig): string[];
   /** Called when the card leaves the page: stop subscriptions and timers. */
   disconnect?(host: HTMLElement): void;
+}
+
+/** A chart style's per-entity form: an ha-form schema and where each field lives on the entity. */
+export interface EntityFields {
+  schema: unknown[];
+  fields: FieldBinding[];
 }
 
 export type StyleModule = ValueStyleModule | ChartStyleModule;

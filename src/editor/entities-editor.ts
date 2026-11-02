@@ -1,6 +1,7 @@
 import { LitElement, css, html, nothing } from 'lit';
 import { live } from 'lit/directives/live.js';
 import { localize } from '../localize';
+import type { EntityFields } from '../styles/index';
 import type { CardConfig, EntityConfig, HomeAssistant, Limit } from '../types';
 import { addEntity, entityId, moveEntity, removeEntity, setEntityOption } from './edit';
 import {
@@ -10,8 +11,6 @@ import {
   applyFormData,
   entityActionsSchema,
   entityAttributeSchema,
-  entitySeriesFields,
-  entitySeriesSchema,
   entityTextSchema,
   formData,
 } from './schemas';
@@ -46,8 +45,7 @@ export class CdEntitiesEditor extends LitElement {
     hass: { attribute: false },
     entities: { attribute: false },
     unit: { attribute: false },
-    chart: { attribute: false },
-    dots: { attribute: false },
+    chartFields: { attribute: false },
     _expanded: { state: true },
   };
 
@@ -109,10 +107,8 @@ export class CdEntitiesEditor extends LitElement {
   declare entities?: Item[];
   /** The card-wide unit, which entities without their own inherit. */
   declare unit?: string;
-  /** The card is a chart: show each entity's series options. */
-  declare chart?: boolean;
-  /** The card's dots setting, which entities without their own follow. */
-  declare dots?: boolean;
+  /** The chart style's own per-entity options, when the card is a chart that has any. */
+  declare chartFields?: EntityFields;
   /** Indexes of rows whose overrides are open. */
   declare _expanded: Set<number>;
 
@@ -209,7 +205,11 @@ export class CdEntitiesEditor extends LitElement {
     return html`<div class="overrides">
       ${this._form('entity-attribute', index, own, entityAttributeSchema(own.entity), ENTITY_ATTRIBUTE_FIELDS)}
       ${this._form('entity-text', index, own, entityTextSchema(), ENTITY_TEXT_FIELDS)}
-      ${this.chart ? this._form('entity-series', index, own, entitySeriesSchema(this.hass), entitySeriesFields(this.dots === true)) : nothing}
+      ${
+        this.chartFields
+          ? this._form('entity-chart', index, own, this.chartFields.schema, this.chartFields.fields)
+          : nothing
+      }
       <ha-icon-picker
         .hass=${this.hass}
         .label=${this._t('editor_icon')}

@@ -292,6 +292,7 @@ describe('line chart editor', () => {
     );
     expect(events.at(-1)).toEqual({ ...raw, gridlines: { vertical: true }, axis_labels: 'inside', y_min: 0 });
     const list = ed.shadowRoot!.querySelector('cd-entities-editor') as Stub;
-    expect(list.chart).toBe(true);
+    const fields = (list.chartFields as { fields: { name: string }[] }).fields.map((f) => f.name);
+    expect(fields).toEqual(['series_color', 'curve', 'line_width', 'dash', 'on_top', 'dots']);
   });
 });

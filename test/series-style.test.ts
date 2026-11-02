@@ -193,10 +193,13 @@ describe('series style in the editor', () => {
     } as CardConfig;
     const { ed, events } = await editor(raw);
     const list = ed.shadowRoot!.querySelector('cd-entities-editor') as Stub & { updateComplete: Promise<boolean> };
-    expect(list.dots).toBe(true);
+    const dots = (list.chartFields as { fields: { name: string; default?: unknown }[] }).fields.find(
+      (f) => f.name === 'dots',
+    );
+    expect(dots?.default).toBe(true);
     (list.shadowRoot!.querySelector('.expand') as HTMLElement).click();
     await list.updateComplete;
-    const form = list.shadowRoot!.querySelector('ha-form[data-section="entity-series"]') as Stub;
+    const form = list.shadowRoot!.querySelector('ha-form[data-section="entity-chart"]') as Stub;
     expect(form.data).toEqual({ dash: false, on_top: false, dots: true });
     const names = JSON.stringify(form.schema);
     for (const n of ['line_width', 'dots', 'on_top']) expect(names).toContain(`"${n}"`);
