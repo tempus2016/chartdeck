@@ -22,7 +22,7 @@
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
 
-> **1.2 brings the first history chart, a line chart with axes, hover readout and a compact layout.** See the
+> **1.3 adds area, column and combined charts, calendar periods with previous and next buttons, and grouping by hour, day, week or month.** See the
 > [roadmap board][roadmap] for what is coming and in what order.
 
 ![The seven Chartdeck styles in a light theme: classic bar, thin bar, segmented, tank, ring, needle and arc](images/preview-v1.png)
@@ -53,7 +53,9 @@ This page is the summary. What changed in each version is on the [releases page]
 | Half circle with needle | Power, speed | 1.0 |
 | Three-quarter arc | Temperature, humidity, CO₂ | 1.0 |
 | Line chart | How a sensor changed over hours, days or months | 1.2 |
-| Area and column charts | Filled history, totals per hour or day | [Planned][roadmap] |
+| Area chart | Solar, power use, import and export either side of zero | 1.3 |
+| Column chart | Energy per day, rain per hour | 1.3 |
+| Combined chart | Columns, lines and areas on one time axis, with a second axis | 1.3 |
 | Pie, donut, pictograph, tally | Sharing out a total, counting | [Planned][roadmap] |
 | Histogram, scatter, heatmap and more | Patterns over weeks | [Planned][roadmap] |
 
