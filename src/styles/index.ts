@@ -4,14 +4,19 @@ import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant, NormalizedConfig, ShowOptions, StyleName } from '../types';
 import { area } from './area';
 import { bar } from './bar';
+import { box } from './box-plot';
+import { bubble } from './bubble';
 import { columnChart } from './column';
 import { combined } from './combined';
+import { heatmap } from './heatmap';
+import { histogram } from './histogram';
 import { line } from './line';
 import { needle } from './needle';
 import { pictograph } from './pictograph';
 import { pie } from './pie';
 import { arc, ring } from './radial';
 import { rings } from './rings';
+import { scatter } from './scatter';
 import { segmented } from './segmented';
 import { tank } from './tank';
 import { thin } from './thin';
@@ -120,4 +125,9 @@ export const STYLES: Record<StyleName, StyleModule> = {
   rings,
   pictograph,
   waffle,
+  histogram,
+  scatter,
+  bubble,
+  heatmap,
+  box,
 };

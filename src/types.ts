@@ -14,7 +14,12 @@ export type StyleName =
   | 'pie'
   | 'rings'
   | 'pictograph'
-  | 'waffle';
+  | 'waffle'
+  | 'histogram'
+  | 'scatter'
+  | 'bubble'
+  | 'heatmap'
+  | 'box';
 export const STYLE_NAMES: StyleName[] = [
   'bar',
   'thin',
@@ -31,6 +36,11 @@ export const STYLE_NAMES: StyleName[] = [
   'rings',
   'pictograph',
   'waffle',
+  'histogram',
+  'scatter',
+  'bubble',
+  'heatmap',
+  'box',
 ];
 export type SortMode = 'none' | 'ascending' | 'descending';
 /** A number, or a string naming an entity whose state supplies the number. */
