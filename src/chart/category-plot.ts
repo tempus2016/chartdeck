@@ -79,7 +79,7 @@ const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.is
 registerStrings('en', {
   editor_orientation: 'Direction',
   editor_orientation_horizontal: 'Across',
-  editor_orientation_vertical: 'Up',
+  editor_orientation_vertical: 'Upright',
   editor_value_axis: 'Value labels',
   editor_value_grid: 'Lines at each value label',
   editor_value_min: 'Lowest value shown',

@@ -74,7 +74,7 @@ registerStrings('en', {
   editor_shape_violin: 'Violin',
   editor_shape_raincloud: 'Raincloud (half violin, box and readings)',
   editor_box: 'Box with the median and middle half',
-  editor_readings: 'Every reading as a dot',
+  editor_readings: 'Show each reading as a dot',
   editor_bandwidth: 'Smoothing (in the entity’s unit, empty for automatic)',
   editor_split_by: 'One shape per',
   editor_split_by_none: 'Entity',

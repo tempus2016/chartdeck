@@ -2,7 +2,7 @@ import { css, html, nothing, svg } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { baseColor, onFillText } from '../bands';
 import { extentOf, withZero } from '../chart/compare';
-import { cachedSchema, chartForm, choice } from '../chart/compare-form';
+import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { localize, registerStrings } from '../localize';

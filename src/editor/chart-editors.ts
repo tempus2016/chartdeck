@@ -339,13 +339,15 @@ export function chartForm(
   section: string,
   schema: unknown[],
   fields: FieldBinding[],
+  /** Label keys for fields whose name means something else on another chart (`editor_<name>` otherwise). */
+  labels: Record<string, string> = {},
 ): TemplateResult {
   return html`<ha-form
     data-section=${section}
     .hass=${ctx.hass}
     .data=${formData(ctx.config, fields)}
     .schema=${schema}
-    .computeLabel=${(s: { name: string }) => localize(ctx.hass, `editor_${s.name}`)}
+    .computeLabel=${(s: { name: string }) => localize(ctx.hass, labels[s.name] ?? `editor_${s.name}`)}
     @value-changed=${(ev: CustomEvent) => {
       ev.stopPropagation();
       const next = applyFormData(ctx.config, fields, (ev.detail?.value ?? {}) as Record<string, unknown>);

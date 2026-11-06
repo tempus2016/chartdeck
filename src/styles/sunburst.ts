@@ -7,7 +7,7 @@ import type { Span, TreeNode } from '../chart/hierarchy';
 import { drillBar, drillStyles, drillTarget, drillView, validateDrill } from '../chart/drill';
 import { sectorPath } from '../chart/polar';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
-import { GROUP_FIELDS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
+import { GROUP_FIELDS, HIERARCHY_LABELS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { localize, registerStrings } from '../localize';
@@ -148,7 +148,8 @@ export function sunburstEditor(ctx: ChartEditorContext): TemplateResult {
     groupBySchema(ctx.hass),
     { name: 'drill_down', selector: { boolean: {} } },
   ]);
-  return html`${chartForm(withGroupList(ctx), 'chart', schema, SUNBURST_FIELDS)} ${entityGroupsForm(ctx)}`;
+  return html`${chartForm(withGroupList(ctx), 'chart', schema, SUNBURST_FIELDS, HIERARCHY_LABELS)}
+  ${entityGroupsForm(ctx)}`;
 }
 
 export function icicleEditor(ctx: ChartEditorContext): TemplateResult {
@@ -157,7 +158,7 @@ export function icicleEditor(ctx: ChartEditorContext): TemplateResult {
     groupBySchema(ctx.hass),
     { name: 'drill_down', selector: { boolean: {} } },
   ]);
-  return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS)} ${entityGroupsForm(ctx)}`;
+  return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS, HIERARCHY_LABELS)} ${entityGroupsForm(ctx)}`;
 }
 
 function validate(raw: CardConfig, shapes: boolean): void {

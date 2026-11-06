@@ -72,13 +72,13 @@ registerStrings('en', {
   box_mean: 'Average',
   box_count: 'Readings',
   box_outliers: 'Outliers',
-  editor_orientation: 'Boxes',
+  editor_orientation: 'Direction',
   editor_orientation_vertical: 'Upright',
-  editor_orientation_horizontal: 'On their side',
+  editor_orientation_horizontal: 'Across',
   editor_whiskers: 'Whiskers reach',
   editor_whiskers_tukey: '1.5 × box height (outliers as dots)',
   editor_whiskers_range: 'The lowest and highest',
-  editor_readings: 'Show each reading',
+  editor_readings: 'Show each reading as a dot',
   editor_box_color: 'Box colour',
 });
 

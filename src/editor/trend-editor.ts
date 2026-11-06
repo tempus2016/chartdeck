@@ -36,7 +36,7 @@ registerStrings('en', {
   editor_color_transition_hard: 'Change at each band',
   editor_extrema: 'Show lowest and highest',
   editor_average: 'Show average',
-  editor_legend: 'Legend (two or more entities)',
+  editor_trend_legend: 'Legend (two or more entities)',
   editor_trend_y_min: 'Lowest value (~ for soft)',
   editor_trend_y_max: 'Highest value (~ for soft)',
   editor_min_range: 'Smallest range shown',
@@ -62,7 +62,7 @@ registerStrings('en', {
   editor_color_name: 'Colour the name',
   editor_color_value: 'Colour the value',
   editor_trend_color_icon: 'Colour the icon',
-  editor_group: 'No background (inside another card)',
+  editor_trend_group: 'No background (inside another card)',
   editor_icon_image: 'Image instead of the icon (URL)',
   editor_trend_tooltip: 'Show the value under the pointer',
   editor_y_axis_side: 'Axis',
@@ -180,7 +180,10 @@ export function trendEditor(ctx: ChartEditorContext): TemplateResult {
     config: { ...ctx.config, ...stringBounds(ctx.config) },
     commit: (config: CardConfig) => ctx.commit(numericBounds(config)),
   };
-  return chartForm(form, 'chart', schema, TREND_FIELDS);
+  return chartForm(form, 'chart', schema, TREND_FIELDS, {
+    legend: 'editor_trend_legend',
+    group: 'editor_trend_group',
+  });
 }
 
 /** Numbers shown in the bound text fields as text. */

@@ -1,7 +1,8 @@
 import { baseColor } from '../bands';
+import { SERIES_COLORS } from './frame';
 
-/** Series colours in order, for entities and groups without their own `color`. */
-export const SERIES_COLORS = ['primary', 'amber', 'green', 'purple', 'red', '#14b8a6', '#ec4899', 'grey'];
+/** Series colours in order, for entities and groups without their own `color` (shared with the history charts). */
+export { SERIES_COLORS };
 
 /** The n-th series colour (wrapping round), or `own` when set, ready for CSS. */
 export function seriesColor(index: number, own?: unknown): string {

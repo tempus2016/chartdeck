@@ -10,9 +10,9 @@ import type { FieldBinding } from './schemas';
 registerStrings('en', {
   editor_days: 'Days (more than 1 shows the average day)',
   editor_center: 'In the middle',
-  editor_center_total: 'Time on',
-  editor_center_now: 'The time now',
-  editor_center_none: 'Nothing',
+  editor_day_clock_center_total: 'Time on',
+  editor_day_clock_center_now: 'The time now',
+  editor_day_clock_center_none: 'Nothing',
   editor_bucket: 'One bar for every',
   editor_bucket_15: '15 minutes',
   editor_bucket_30: '30 minutes',
@@ -43,7 +43,7 @@ function schema(hass?: HomeAssistant) {
       ],
     },
     { name: 'period_navigate', selector: { boolean: {} } },
-    { name: 'center', selector: choice(hass, 'center', ['total', 'now', 'none']) },
+    { name: 'center', selector: choice(hass, 'day_clock_center', ['total', 'now', 'none']) },
     {
       type: 'grid',
       name: '',

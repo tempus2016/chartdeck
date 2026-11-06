@@ -6,7 +6,7 @@ import { entityOptionsForm } from './entity-options';
 import type { FieldBinding } from './schemas';
 
 registerStrings('en', {
-  editor_group_by: 'Group by',
+  editor_hierarchy_group_by: 'Group by',
   editor_group_by_floor: 'Floor',
   editor_group_by_area: 'Area',
   editor_group_by_device: 'Device',
@@ -47,3 +47,6 @@ export function withGroupList(ctx: ChartEditorContext): ChartEditorContext {
 export function entityGroupsForm(ctx: ChartEditorContext) {
   return entityOptionsForm(ctx, 'entity_groups', 'group', { text: {} });
 }
+
+/** Label keys for chartForm: here `group_by` groups by place, not by time as on the history charts. */
+export const HIERARCHY_LABELS = { group_by: 'editor_hierarchy_group_by' };

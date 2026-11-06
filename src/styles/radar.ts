@@ -5,7 +5,7 @@ import { groupPath, parseGroupBy, splitGroup, validateGroups } from '../chart/hi
 import { axisAngle, labelAnchor, polar, polygonPoints } from '../chart/polar';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { entityOptionsForm } from '../editor/entity-options';
-import { GROUP_FIELDS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
+import { GROUP_FIELDS, HIERARCHY_LABELS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
 import type { FieldBinding } from '../editor/schemas';
 import { localize, registerStrings } from '../localize';
 import type { ResolvedEntity } from '../resolve';
@@ -192,7 +192,7 @@ export function radarEditor(ctx: ChartEditorContext): TemplateResult {
     { name: 'radar_fill', selector: { boolean: {} } },
     groupBySchema(ctx.hass),
   ]);
-  return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS)} ${entityGroupsForm(ctx)}
+  return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS, HIERARCHY_LABELS)} ${entityGroupsForm(ctx)}
   ${entityOptionsForm(ctx, 'radar_axis', 'axis', { text: {} })}`;
 }
 

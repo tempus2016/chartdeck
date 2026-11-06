@@ -8,7 +8,7 @@ import { drillBar, drillStyles, drillTarget, drillView, validateDrill } from '..
 import { inset, squarify } from '../chart/treemap-layout';
 import type { Rect } from '../chart/treemap-layout';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
-import { GROUP_FIELDS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
+import { GROUP_FIELDS, HIERARCHY_LABELS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { localize, registerStrings } from '../localize';
@@ -215,7 +215,7 @@ export function treemapEditor(ctx: ChartEditorContext): TemplateResult {
     groupBySchema(ctx.hass),
     { name: 'drill_down', selector: { boolean: {} } },
   ]);
-  return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS)} ${entityGroupsForm(ctx)}`;
+  return html`${chartForm(withGroupList(ctx), 'chart', schema, FIELDS, HIERARCHY_LABELS)} ${entityGroupsForm(ctx)}`;
 }
 
 /** The tree the card's entities make, with groups from `group_by` and their own `group`. */

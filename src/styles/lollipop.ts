@@ -1,5 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
-import { cachedSchema, chartForm, choice } from '../chart/compare-form';
+import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { entityMark, markStyles } from '../chart/marks';
 import { localize, registerStrings } from '../localize';
 import type { ResolvedEntity } from '../resolve';
