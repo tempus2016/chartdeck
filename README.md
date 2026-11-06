@@ -22,7 +22,7 @@
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
 
-> **1.4 adds the parts-of-a-total charts: pie and donut, rings, pictograph and waffle.** See the
+> **1.5 adds the distribution charts: histogram, scatter, bubble, heatmap and box plot.** See the
 > [roadmap board][roadmap] for what is coming and in what order.
 
 ![The seven Chartdeck styles in a light theme: classic bar, thin bar, segmented, tank, ring, needle and arc](images/preview-v1.png)
@@ -60,7 +60,12 @@ This page is the summary. What changed in each version is on the [releases page]
 | Rings | Several batteries or goals in one dial | 1.4 |
 | Pictograph | Counting: chores done, glasses of water, people at home | 1.4 |
 | Waffle | One share out of 100, or a split of one total | 1.4 |
-| Histogram, scatter, heatmap and more | Patterns over weeks | [Planned][roadmap] |
+| Histogram | How long a room spent in each temperature range | 1.5 |
+| Scatter | One sensor against another, such as heating against outside temperature | 1.5 |
+| Bubble | A scatter sized by a third sensor: temperature, humidity and CO₂ | 1.5 |
+| Heatmap | Power by hour and weekday, or a year of days as a calendar | 1.5 |
+| Box plot | How readings spread, per entity or per day, week or month | 1.5 |
+| Sparklines, range areas, timelines and more | More from your history | [Planned][roadmap] |
 
 ## Installation
 
