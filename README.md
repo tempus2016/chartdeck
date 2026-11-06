@@ -22,8 +22,8 @@
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
 
-> **1.5 adds the distribution charts: histogram, scatter, bubble, heatmap and box plot.** See the
-> [roadmap board][roadmap] for what is coming and in what order.
+> **2.0 adds the rest of the roadmap: parts of a total, distributions, comparisons, flows, hierarchies, and zoom, annotations and more on the line chart.** Ideas for what comes next are on the
+> [roadmap board][roadmap].
 
 ![The seven Chartdeck styles in a light theme: classic bar, thin bar, segmented, tank, ring, needle and arc](images/preview-v1.png)
 
@@ -56,16 +56,36 @@ This page is the summary. What changed in each version is on the [releases page]
 | Area chart | Solar, power use, import and export either side of zero | 1.3 |
 | Column chart | Energy per day, rain per hour | 1.3 |
 | Combined chart | Columns, lines and areas on one time axis, with a second axis | 1.3 |
-| Pie and donut | How a total splits into parts, such as where today's energy came from | 1.4 |
-| Rings | Several batteries or goals in one dial | 1.4 |
-| Pictograph | Counting: chores done, glasses of water, people at home | 1.4 |
-| Waffle | One share out of 100, or a split of one total | 1.4 |
-| Histogram | How long a room spent in each temperature range | 1.5 |
-| Scatter | One sensor against another, such as heating against outside temperature | 1.5 |
-| Bubble | A scatter sized by a third sensor: temperature, humidity and CO₂ | 1.5 |
-| Heatmap | Power by hour and weekday, or a year of days as a calendar | 1.5 |
-| Box plot | How readings spread, per entity or per day, week or month | 1.5 |
-| Sparklines, range areas, timelines and more | More from your history | [Planned][roadmap] |
+| Pie and donut | How a total splits into parts, such as where today's energy came from | 2.0 |
+| Rings | Several batteries or goals in one dial | 2.0 |
+| Pictograph | Counting: chores done, glasses of water, people at home | 2.0 |
+| Waffle | One share out of 100, or a split of one total | 2.0 |
+| Histogram | How long a room spent in each temperature range | 2.0 |
+| Scatter | One sensor against another, such as heating against outside temperature | 2.0 |
+| Bubble | A scatter sized by a third sensor: temperature, humidity and CO₂ | 2.0 |
+| Heatmap | Power by hour and weekday, or a year of days as a calendar | 2.0 |
+| Box plot | How readings spread, per entity or per day, week or month | 2.0 |
+| Funnel | Solar produced, used in the house, exported | 2.0 |
+| Waterfall | How a total is built up or worn down, step by step | 2.0 |
+| Treemap | Power use by floor and room | 2.0 |
+| Sunburst and icicle | A hierarchy as rings or bars, tap to drill in | 2.0 |
+| Radar | Comparing profiles of several values | 2.0 |
+| Polar area | Values as slice lengths around a circle | 2.0 |
+| Grouped and stacked bars | Several values side by side, stacked or as 100 % | 2.0 |
+| Bullet and lollipop | A value against its target; many values with little ink | 2.0 |
+| Slope and dumbbell | Each entity then and now, or its lowest and highest | 2.0 |
+| Range area | Each period's lowest to highest, shaded | 2.0 |
+| Sparklines | A tiny trend beside each entity's name and value | 2.0 |
+| Streamgraph | How several entities share a total over time | 2.0 |
+| Candlestick | Open, high, low and close per period | 2.0 |
+| Violin, raincloud and beeswarm | How readings are spread, or every reading as a dot | 2.0 |
+| State timeline | When each entity was on, off, home or heating | 2.0 |
+| Climate | A thermostat's temperature against its set point | 2.0 |
+| Sankey | How power flows between sources and loads | 2.0 |
+| Wind rose | Where the wind comes from, and how hard | 2.0 |
+| 24-hour clock | When each entity was on, around the clock | 2.0 |
+| Trend card | A compact tile: the value over its recent history | 2.0 |
+| Line chart extras | Zoom and pan, annotations, value labels, synced charts, small multiples, highest/lowest/average marks, log scale | 2.0 |
 
 ## Installation
 
