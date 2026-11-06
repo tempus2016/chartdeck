@@ -163,7 +163,8 @@ describe('loading states as words', () => {
     ]);
     expect(out.get('sensor.t')).toEqual([{ t: 1000, v: 21.5 }]);
     expect(key({ entity: 'switch.a', text: true })).toBe('switch.a|text');
-    expect(parseHistory([{ s: 'on', lu: 1 }])).toEqual([{ t: 1000, v: null }]);
+    // A number series reads on/off as 1/0 (see toReading), a text series keeps the words.
+    expect(parseHistory([{ s: 'on', lu: 1 }])).toEqual([{ t: 1000, v: 1 }]);
   });
 
   it('appends live states as words', async () => {

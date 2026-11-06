@@ -74,6 +74,7 @@ describe('wind direction parsing', () => {
           { s: 'calm', lu: 2 },
         ],
         undefined,
+        false,
         parseBearing,
       ),
     ).toEqual([

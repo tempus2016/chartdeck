@@ -89,7 +89,8 @@ export function plotAxes(
   gaps = VALUE_GAPS,
 ): PlotAxes {
   const options = axisOptions(ctx.raw);
-  const log = options.scale === 'log';
+  // Only the line chart draws on a log scale: columns and stacked areas stand on zero.
+  const log = options.scale === 'log' && ctx.raw.style === 'line';
   const value = log ? logAxis(data, options, gaps) : valueAxis(data, options, gaps);
   // Count labels across the plot itself, not the card: the value labels take part of the width.
   const count = Math.max(2, Math.min(8, Math.floor((width ?? plotWidth(ctx)) / TIME_LABEL_PX)));

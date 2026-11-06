@@ -182,7 +182,6 @@ export const AXES_FIELDS: FieldBinding[] = [
   { name: 'grid_vertical', path: ['gridlines', 'vertical'], default: DEFAULT_AXES.vertical },
   { name: 'y_min', path: ['y_min'] },
   { name: 'y_max', path: ['y_max'] },
-  { name: 'y_scale', path: ['y_scale'], default: DEFAULT_AXES.scale },
   { name: 'tooltip', path: ['tooltip'], default: true },
 ];
 
@@ -199,7 +198,6 @@ export function axesSchema(hass?: HomeAssistant) {
       ],
     },
     { name: 'axis_labels', selector: choice(hass, 'axis_labels', AXIS_LABELS) },
-    { name: 'y_scale', selector: choice(hass, 'y_scale', Y_SCALES) },
     {
       type: 'grid',
       name: '',
@@ -364,6 +362,7 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  { name: 'y_scale', path: ['y_scale'], default: DEFAULT_AXES.scale },
   ...ZOOM_FIELDS,
   ...ANNOTATION_FIELDS,
   ...EXTREMES_FIELDS,
@@ -396,6 +395,8 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       },
       ...labelSchema(ctx.hass, ctx.config),
       ...axesSchema(ctx.hass),
+      // Only the line chart draws on a log scale: columns and stacked areas stand on zero.
+      { name: 'y_scale', selector: choice(ctx.hass, 'y_scale', Y_SCALES) },
       ...ZOOM_SCHEMA,
       ...ANNOTATION_SCHEMA,
       ...extremesSchema(ctx.hass),
