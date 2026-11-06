@@ -106,6 +106,26 @@ export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
   ];
 }
 
+/** History fields for charts that only read a rolling span (how far back, and from where). */
+export const ROLLING_HISTORY_FIELDS: FieldBinding[] = HISTORY_FIELDS.filter((f) =>
+  ['period_last', 'period_unit', 'source'].includes(f.name),
+);
+
+/** `historySchema` for those charts: no calendar spans, offset, buttons or grouping. */
+export function rollingHistorySchema(hass?: HomeAssistant) {
+  return [
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'period_last', selector: { number: { min: 1, mode: 'box' } } },
+        { name: 'period_unit', selector: choice(hass, 'period_unit', PERIOD_UNITS) },
+      ],
+    },
+    { name: 'source', selector: choice(hass, 'source', SOURCES) },
+  ];
+}
+
 registerStrings('en', {
   editor_x_axis: 'Time labels',
   editor_y_axis: 'Value labels',

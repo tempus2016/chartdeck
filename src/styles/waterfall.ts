@@ -3,7 +3,7 @@ import type { TemplateResult } from 'lit';
 import { baseColor } from '../bands';
 import { disconnectHistory, frameMessage, frameStyles, historyFrame, validateHistoryOptions } from '../chart/frame';
 import type { HistoryFrame } from '../chart/frame';
-import { HISTORY_FIELDS, cachedSchema, chartForm, choice, historySchema } from '../editor/chart-editors';
+import { ROLLING_HISTORY_FIELDS, cachedSchema, chartForm, choice, rollingHistorySchema } from '../editor/chart-editors';
 import { entityOptionsForm } from '../editor/entity-options';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
@@ -215,7 +215,7 @@ function drawing(ctx: ChartContext, bars: Placed[]): TemplateResult {
 }
 
 const FIELDS: FieldBinding[] = [
-  ...HISTORY_FIELDS,
+  ...ROLLING_HISTORY_FIELDS,
   { name: 'steps', path: ['steps'], default: 'change' },
   { name: 'orientation', path: ['orientation'], default: 'vertical' },
   { name: 'start_from_first', path: ['start_from_first'], default: false },
@@ -224,7 +224,7 @@ const FIELDS: FieldBinding[] = [
 
 export function waterfallEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema('waterfall', ctx.hass, () => [
-    ...historySchema(ctx.hass),
+    ...rollingHistorySchema(ctx.hass),
     {
       type: 'grid',
       name: '',

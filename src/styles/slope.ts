@@ -13,7 +13,7 @@ import {
 } from '../chart/frame';
 import type { HistoryFrame } from '../chart/frame';
 import { padDomain } from '../chart/scale';
-import { HISTORY_FIELDS, cachedSchema, chartForm, choice, historySchema } from '../editor/chart-editors';
+import { ROLLING_HISTORY_FIELDS, cachedSchema, chartForm, choice, rollingHistorySchema } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber } from '../format';
 import { parsePeriod, rollingRange } from '../history/period';
@@ -178,7 +178,7 @@ function legend(rows: Row[]): TemplateResult | typeof nothing {
 }
 
 const FIELDS: FieldBinding[] = [
-  ...HISTORY_FIELDS,
+  ...ROLLING_HISTORY_FIELDS,
   { name: 'measure', path: ['measure'], default: 'value' },
   { name: 'color_by', path: ['color_by'], default: 'direction' },
   { name: 'increase', path: ['increase'], default: 'bad' },
@@ -364,7 +364,7 @@ export const slope: ChartStyleModule = {
   },
   editor(ctx) {
     const schema = cachedSchema('slope', ctx.hass, () => [
-      ...historySchema(ctx.hass),
+      ...rollingHistorySchema(ctx.hass),
       { name: 'measure', selector: choice(ctx.hass, 'measure', MEASURES) },
       {
         type: 'grid',
@@ -377,10 +377,10 @@ export const slope: ChartStyleModule = {
     ]);
     return chartForm(ctx, 'chart', schema, FIELDS);
   },
-  entityFields: {
-    schema: (hass) => cachedSchema('slope-entity', hass, () => [{ name: 'group', selector: { text: {} } }]),
+  entityFields: (hass) => ({
+    schema: cachedSchema('slope-entity', hass, () => [{ name: 'group', selector: { text: {} } }]),
     fields: ENTITY_FIELDS,
-  },
+  }),
   disconnect: disconnectHistory,
   render(ctx) {
     const now = Date.now();

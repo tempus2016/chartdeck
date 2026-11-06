@@ -4,7 +4,7 @@ import { baseColor } from '../bands';
 import { extentOf, lowHigh, niceTicks, readingAt } from '../chart/compare';
 import type { TimedValue } from '../chart/compare';
 import { disconnectHistory, frameMessage, frameStyles, historyFrame, validateHistoryOptions } from '../chart/frame';
-import { HISTORY_FIELDS, cachedSchema, chartForm, choice, historySchema } from '../editor/chart-editors';
+import { ROLLING_HISTORY_FIELDS, cachedSchema, chartForm, choice, rollingHistorySchema } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { parsePeriod } from '../history/period';
@@ -267,7 +267,7 @@ function renderRow(
 }
 
 const FIELDS: FieldBinding[] = [
-  ...HISTORY_FIELDS,
+  ...ROLLING_HISTORY_FIELDS,
   { name: 'ends', path: ['ends'], default: DEFAULTS.ends },
   { name: 'show_now', path: ['show_now'], default: DEFAULTS.showNow },
   { name: 'orientation', path: ['orientation'], default: DEFAULTS.orientation },
@@ -285,7 +285,7 @@ export function dumbbellEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     // A target needs no history.
-    ...(ends === 'target' ? [] : historySchema(ctx.hass)),
+    ...(ends === 'target' ? [] : rollingHistorySchema(ctx.hass)),
     ...(ends === 'range' ? [{ name: 'show_now', selector: { boolean: {} } }] : []),
   ]);
   return chartForm(ctx, 'chart', schema, FIELDS);
