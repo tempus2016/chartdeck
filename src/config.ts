@@ -123,9 +123,9 @@ export function mergeEntity(raw: string | EntityConfig, card: EntityOptions, ind
   if (target !== undefined) merged.target = target;
   if (decimals !== undefined) merged.decimals = decimals;
   if (!own.attribute) delete merged.attribute;
-  // Gauge options are the card's alone: every gauge on a card is drawn the same way.
-  const gauge = parseGaugeOptions(card as CardConfig);
-  if (DEFAULT_ANGLES[(card as CardConfig).style ?? 'bar']) merged.gauge = gauge;
+  // Gauge options are the card's alone: every gauge on a card is drawn the same way. Only the
+  // gauge styles read them: other styles (rings, pie…) give center and the angles their own meaning.
+  if (DEFAULT_ANGLES[(card as CardConfig).style ?? 'bar']) merged.gauge = parseGaugeOptions(card as CardConfig);
   return merged;
 }
 

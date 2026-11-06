@@ -193,3 +193,17 @@ describe('rings editor', () => {
     expect((changed.mock.calls[0][0] as CustomEvent).detail.config.end_angle).toBe(360);
   });
 });
+
+describe('rings and pie keep their own center option', () => {
+  it('is not checked against the gauge centre modes', async () => {
+    const { normalizeConfig } = await import('../src/config');
+    for (const style of ['rings', 'pie'] as const) {
+      expect(() =>
+        normalizeConfig({ type: 'x', style, center: 'total', entities: ['sensor.a'] } as never),
+      ).not.toThrow();
+    }
+    expect(() =>
+      normalizeConfig({ type: 'x', style: 'ring', center: 'total', entities: ['sensor.a'] } as never),
+    ).toThrow(/center/);
+  });
+});
