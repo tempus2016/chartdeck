@@ -22,7 +22,7 @@
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
 
-> **1.3 adds area, column and combined charts, calendar periods with previous and next buttons, and grouping by hour, day, week or month.** See the
+> **1.4 adds the parts-of-a-total charts: pie and donut, rings, pictograph and waffle.** See the
 > [roadmap board][roadmap] for what is coming and in what order.
 
 ![The seven Chartdeck styles in a light theme: classic bar, thin bar, segmented, tank, ring, needle and arc](images/preview-v1.png)
@@ -56,7 +56,10 @@ This page is the summary. What changed in each version is on the [releases page]
 | Area chart | Solar, power use, import and export either side of zero | 1.3 |
 | Column chart | Energy per day, rain per hour | 1.3 |
 | Combined chart | Columns, lines and areas on one time axis, with a second axis | 1.3 |
-| Pie, donut, pictograph, tally | Sharing out a total, counting | [Planned][roadmap] |
+| Pie and donut | How a total splits into parts, such as where today's energy came from | 1.4 |
+| Rings | Several batteries or goals in one dial | 1.4 |
+| Pictograph | Counting: chores done, glasses of water, people at home | 1.4 |
+| Waffle | One share out of 100, or a split of one total | 1.4 |
 | Histogram, scatter, heatmap and more | Patterns over weeks | [Planned][roadmap] |
 
 ## Installation
