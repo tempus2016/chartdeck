@@ -37,10 +37,12 @@ describe('period', () => {
 });
 
 describe('fetch', () => {
-  it('reads numbers and turns everything else into gaps', () => {
+  it('reads numbers and on / off, and turns everything else into gaps', () => {
     expect(toReading('21.5')).toBe(21.5);
     expect(toReading(3)).toBe(3);
     expect(toReading('unavailable')).toBeNull();
+    expect(toReading('on')).toBe(1);
+    expect(toReading('off')).toBe(0);
     expect(toReading('')).toBeNull();
     expect(toReading(Infinity)).toBeNull();
   });

@@ -1,8 +1,11 @@
 import { html } from 'lit';
 import type { TemplateResult } from 'lit';
-import { AXIS_LABELS, DEFAULT_AXES } from '../chart/axes';
+import { AXIS_LABELS, DEFAULT_AXES, Y_SCALES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
+import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
+import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
+import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
 import { AGGREGATES, GROUP_UNITS } from '../history/group';
@@ -10,6 +13,7 @@ import { CALENDAR_SPANS, PERIOD_UNITS, PERIOD_UNTIL } from '../history/period';
 import { languageOf, localize, registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
+import { annotationsEditor } from './annotations-editor';
 import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
 import type { FieldBinding } from './schemas';
 
@@ -106,6 +110,26 @@ export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
   ];
 }
 
+/** History fields for charts that only read a rolling span (how far back, and from where). */
+export const ROLLING_HISTORY_FIELDS: FieldBinding[] = HISTORY_FIELDS.filter((f) =>
+  ['period_last', 'period_unit', 'source'].includes(f.name),
+);
+
+/** `historySchema` for those charts: no calendar spans, offset, buttons or grouping. */
+export function rollingHistorySchema(hass?: HomeAssistant) {
+  return [
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'period_last', selector: { number: { min: 1, mode: 'box' } } },
+        { name: 'period_unit', selector: choice(hass, 'period_unit', PERIOD_UNITS) },
+      ],
+    },
+    { name: 'source', selector: choice(hass, 'source', SOURCES) },
+  ];
+}
+
 registerStrings('en', {
   editor_x_axis: 'Time labels',
   editor_y_axis: 'Value labels',
@@ -116,6 +140,9 @@ registerStrings('en', {
   editor_grid_vertical: 'Lines down',
   editor_y_min: 'Lowest value shown',
   editor_y_max: 'Highest value shown',
+  editor_y_scale: 'Value scale',
+  editor_y_scale_linear: 'Even steps',
+  editor_y_scale_log: 'Logarithmic (powers of ten)',
   editor_tooltip: 'Show values on hover or touch',
   editor_line_width: 'Line width (px)',
   editor_dots: 'Dot at each reading',
@@ -183,6 +210,116 @@ export function axesSchema(hass?: HomeAssistant) {
   ];
 }
 
+/** Zoom gestures and the overview strip, shared by every history chart. */
+export const ZOOM_FIELDS: FieldBinding[] = [
+  { name: 'zoom', path: ['zoom'], default: false },
+  { name: 'overview', path: ['overview'], default: false },
+];
+
+export const ZOOM_SCHEMA = [
+  {
+    type: 'grid',
+    name: '',
+    schema: [
+      { name: 'zoom', selector: { boolean: {} } },
+      { name: 'overview', selector: { boolean: {} } },
+    ],
+  },
+];
+/** Shading the severity bands behind a history chart; the annotation list has its own editor. */
+export const ANNOTATION_FIELDS: FieldBinding[] = [{ name: 'zones', path: ['zones'], default: false }];
+export const ANNOTATION_SCHEMA = [{ name: 'zones', selector: { boolean: {} } }];
+registerStrings('en', {
+  editor_labels_show: 'Which readings',
+  editor_labels_show_all: 'All (as many as fit)',
+  editor_labels_show_last: 'The latest',
+  editor_labels_show_minmax: 'Highest and lowest',
+  editor_labels_show_ends: 'First and latest',
+  editor_labels_position: 'Label position',
+  editor_labels_position_auto: 'Above peaks, below dips',
+  editor_labels_position_above: 'Above',
+  editor_labels_position_below: 'Below',
+  editor_labels_position_center: 'On the point',
+  editor_labels_overlap: 'Let labels overlap',
+});
+
+/** Value labels on a chart's readings: on/off, then which, where, and whether they may overlap. */
+export const LABEL_FIELDS: FieldBinding[] = [
+  { name: 'labels', path: ['labels'], default: false },
+  { name: 'labels_show', path: ['labels_show'], default: 'all' },
+  { name: 'labels_position', path: ['labels_position'], default: 'auto' },
+  { name: 'labels_overlap', path: ['labels_overlap'], default: false },
+];
+
+/** The label fields; the choices show once labels are on (cache under `labelsVariant`). */
+export function labelSchema(hass: HomeAssistant | undefined, config: CardConfig | undefined) {
+  return [
+    { name: 'labels', selector: { boolean: {} } },
+    ...(config?.labels === true
+      ? [
+          {
+            type: 'grid',
+            name: '',
+            schema: [
+              { name: 'labels_show', selector: choice(hass, 'labels_show', LABEL_SHOW) },
+              { name: 'labels_position', selector: choice(hass, 'labels_position', LABEL_POSITIONS) },
+            ],
+          },
+          { name: 'labels_overlap', selector: { boolean: {} } },
+        ]
+      : []),
+  ];
+}
+
+export const labelsVariant = (config: CardConfig | undefined) => (config?.labels === true ? 'labels' : '');
+registerStrings('en', {
+  editor_sync: 'Sync group (charts with the same name share the pointer and period steps)',
+});
+
+/** A group name shared with other charts on the dashboard. */
+export const SYNC_FIELDS: FieldBinding[] = [{ name: 'sync', path: ['sync'] }];
+export const SYNC_SCHEMA = [{ name: 'sync', selector: { text: {} } }];
+
+registerStrings('en', {
+  editor_multiples: 'A small chart for each entity',
+  editor_multiples_scale: 'Value scale',
+  editor_multiples_scale_auto: 'The same when the units match',
+  editor_multiples_scale_shared: 'The same for every chart',
+  editor_multiples_scale_independent: 'Each chart its own',
+  editor_multiples_columns: 'Columns (empty fits the card)',
+});
+
+/** Small multiples: on/off, then how the charts share a scale and how many go across. */
+export const MULTIPLES_FIELDS: FieldBinding[] = [
+  { name: 'multiples', path: ['multiples'], default: false },
+  { name: 'multiples_scale', path: ['multiples_scale'], default: 'auto' },
+  { name: 'multiples_columns', path: ['multiples_columns'] },
+];
+
+export const multiplesVariant = (config: CardConfig | undefined) => (config?.multiples === true ? 'multiples' : '');
+
+/** The small-multiples fields; scale and columns show once it is on (cache under `multiplesVariant`). */
+export function multiplesSchema(hass: HomeAssistant | undefined, config: CardConfig | undefined) {
+  return [
+    { name: 'multiples', selector: { boolean: {} } },
+    ...(config?.multiples === true
+      ? [
+          {
+            type: 'grid',
+            name: '',
+            schema: [
+              { name: 'multiples_scale', selector: choice(hass, 'multiples_scale', MULTIPLES_SCALES) },
+              {
+                name: 'multiples_columns',
+                selector: { number: { min: 1, max: MAX_MULTIPLES_COLUMNS, mode: 'box' } },
+              },
+            ],
+          },
+        ]
+      : []),
+  ];
+}
+
 const cache = new Map<string, unknown[]>();
 
 /** Build a schema once per language (and per style), so ha-form isn't handed a new one each render. */
@@ -202,13 +339,15 @@ export function chartForm(
   section: string,
   schema: unknown[],
   fields: FieldBinding[],
+  /** Label keys for fields whose name means something else on another chart (`editor_<name>` otherwise). */
+  labels: Record<string, string> = {},
 ): TemplateResult {
   return html`<ha-form
     data-section=${section}
     .hass=${ctx.hass}
     .data=${formData(ctx.config, fields)}
     .schema=${schema}
-    .computeLabel=${(s: { name: string }) => localize(ctx.hass, `editor_${s.name}`)}
+    .computeLabel=${(s: { name: string }) => localize(ctx.hass, labels[s.name] ?? `editor_${s.name}`)}
     @value-changed=${(ev: CustomEvent) => {
       ev.stopPropagation();
       const next = applyFormData(ctx.config, fields, (ev.detail?.value ?? {}) as Record<string, unknown>);
@@ -221,35 +360,52 @@ const LINE_FIELDS: FieldBinding[] = [
   ...HISTORY_FIELDS,
   { name: 'curve', path: ['curve'], default: 'smooth' },
   { name: 'color_by', path: ['color_by'], default: 'series' },
-  { name: 'labels', path: ['labels'], default: false },
+  ...LABEL_FIELDS,
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  { name: 'y_scale', path: ['y_scale'], default: DEFAULT_AXES.scale },
+  ...ZOOM_FIELDS,
+  ...ANNOTATION_FIELDS,
+  ...EXTREMES_FIELDS,
+  ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
+  ...MULTIPLES_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema(`line|${historyVariant(ctx.config)}`, ctx.hass, () => [
-    ...historySchema(ctx.hass, ctx.config),
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'curve', selector: choice(ctx.hass, 'curve', CURVES) },
-        { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
-      ],
-    },
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'line_width', selector: LINE_WIDTH_SELECTOR },
-        { name: 'dots', selector: { boolean: {} } },
-      ],
-    },
-    { name: 'labels', selector: { boolean: {} } },
-    ...axesSchema(ctx.hass),
-    ...layoutSchema(ctx.hass),
-  ]);
-  return chartForm(ctx, 'chart', schema, LINE_FIELDS);
+  const schema = cachedSchema(
+    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}`,
+    ctx.hass,
+    () => [
+      ...historySchema(ctx.hass, ctx.config),
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'curve', selector: choice(ctx.hass, 'curve', CURVES) },
+          { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
+        ],
+      },
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'line_width', selector: LINE_WIDTH_SELECTOR },
+          { name: 'dots', selector: { boolean: {} } },
+        ],
+      },
+      ...labelSchema(ctx.hass, ctx.config),
+      ...axesSchema(ctx.hass),
+      // Only the line chart draws on a log scale: columns and stacked areas stand on zero.
+      { name: 'y_scale', selector: choice(ctx.hass, 'y_scale', Y_SCALES) },
+      ...ZOOM_SCHEMA,
+      ...ANNOTATION_SCHEMA,
+      ...extremesSchema(ctx.hass),
+      ...SYNC_SCHEMA,
+      ...layoutSchema(ctx.hass),
+      ...multiplesSchema(ctx.hass, ctx.config),
+    ],
+  );
+  return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${annotationsEditor(ctx)}`;
 }

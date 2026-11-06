@@ -8,6 +8,7 @@ import type { AxisOptions, TimeUnit, ValueAxis } from './axes';
 import type { Hover } from './tooltip';
 import { VIEW_H, VIEW_W, plot } from './frame';
 import { linear } from './scale';
+import { logAxis, logScale, logTickText } from './log-scale';
 
 /** Gaps between value labels on a full-height plot: about one per 40 px. */
 const VALUE_GAPS = 4;
@@ -76,12 +77,23 @@ export interface PlotAxes {
   label?: (t: number) => string;
 }
 
-/** Work out the axes for readings spanning `data` over `range`, sized to the card. */
-export function plotAxes(ctx: ChartContext, range: Range, data: [number, number] | undefined): PlotAxes {
+/**
+ * Work out the axes for readings spanning `data` over `range`, sized to the plot (or to `width`
+ * px, for a chart drawn smaller than the card) and `gaps` value labels.
+ */
+export function plotAxes(
+  ctx: ChartContext,
+  range: Range,
+  data: [number, number] | undefined,
+  width?: number,
+  gaps = VALUE_GAPS,
+): PlotAxes {
   const options = axisOptions(ctx.raw);
-  const value = valueAxis(data, options, VALUE_GAPS);
+  // Only the line chart draws on a log scale: columns and stacked areas stand on zero.
+  const log = options.scale === 'log' && ctx.raw.style === 'line';
+  const value = log ? logAxis(data, options, gaps) : valueAxis(data, options, gaps);
   // Count labels across the plot itself, not the card: the value labels take part of the width.
-  const count = Math.max(2, Math.min(8, Math.floor(plotWidth(ctx) / TIME_LABEL_PX)));
+  const count = Math.max(2, Math.min(8, Math.floor((width ?? plotWidth(ctx)) / TIME_LABEL_PX)));
   const { unit, ticks } = timeTicks(range, count, zoneOffset(timeZoneOf(ctx.hass)));
   return {
     options,
@@ -91,7 +103,7 @@ export function plotAxes(ctx: ChartContext, range: Range, data: [number, number]
     range,
     scales: {
       x: linear([range.start, range.end], [0, VIEW_W]),
-      y: linear(value.domain, [VIEW_H, 0]),
+      y: (log ? logScale : linear)(value.domain, [VIEW_H, 0]),
       domain: value.domain,
     },
   };
@@ -101,6 +113,7 @@ export function plotAxes(ctx: ChartContext, range: Range, data: [number, number]
 function gridLines(axes: PlotAxes): SVGTemplateResult {
   const { options, scales } = axes;
   return svg`<g class="grid">
+    ${options.horizontal ? (axes.value.minor ?? []).map((v) => svg`<line class="minor" x1="0" x2=${VIEW_W} y1=${scales.y(v)} y2=${scales.y(v)}></line>`) : nothing}
     ${options.horizontal ? axes.value.ticks.map((v) => svg`<line x1="0" x2=${VIEW_W} y1=${scales.y(v)} y2=${scales.y(v)}></line>`) : nothing}
     ${options.vertical ? axes.times.map((t) => svg`<line x1=${scales.x(t)} x2=${scales.x(t)} y1="0" y2=${VIEW_H}></line>`) : nothing}
   </g>`;
@@ -108,14 +121,22 @@ function gridLines(axes: PlotAxes): SVGTemplateResult {
 
 const pct = (n: number) => `${Math.round(n * 10000) / 100}%`;
 
+/** The text of the i-th value label: log axes give each tick its own decimals and shorten big ones. */
+function tickText(value: ValueAxis, i: number, ctx: ChartContext): string {
+  const v = value.ticks[i];
+  return value.tickDecimals
+    ? logTickText(v, value.tickDecimals[i], ctx.hass)
+    : formatNumber(v, value.decimals, ctx.hass);
+}
+
 function valueLabels(axes: PlotAxes, ctx: ChartContext, format?: (v: number) => string) {
   const { scales, value } = axes;
-  return value.ticks.map((v) => {
+  return value.ticks.map((v, i) => {
     const top = scales.y(v) / VIEW_H;
     // Inside the plot the top label hangs below its line, so it doesn't leave the chart.
     const end = top < 0.08 ? 'top' : top > 0.92 ? 'bottom' : '';
     return html`<span class="axis-label ${end}" style="top:${pct(top)}"
-      >${format ? format(v) : formatNumber(v, value.decimals, ctx.hass)}</span
+      >${format ? format(v) : tickText(value, i, ctx)}</span
     >`;
   });
 }
@@ -166,6 +187,23 @@ export interface ChartAreaOptions {
   /** Text for each label along the bottom or up the side, when they aren't times and plain values. */
   xLabel?: (v: number) => string;
   yLabel?: (v: number) => string;
+  /** Fuller pointer handling (zoom and pan), wrapping the tooltip's; used instead of `hover`. */
+  gestures?: Gestures;
+  /** Extra classes on the plot area, for a feature's own look (`zoomable`, `zoomed`). */
+  classes?: string;
+  /** Under the plot and its time labels, lined up with the plot (an overview strip). */
+  below?: TemplateResult | typeof nothing;
+}
+
+/** Every pointer handler the plot area can take. */
+export interface Gestures {
+  down(ev: PointerEvent): void;
+  move(ev: PointerEvent): void;
+  up(ev: PointerEvent): void;
+  cancel(ev: PointerEvent): void;
+  leave(ev: PointerEvent): void;
+  wheel(ev: WheelEvent): void;
+  dblclick(ev: MouseEvent): void;
 }
 
 /**
@@ -184,6 +222,9 @@ export function chartArea({
   right,
   xLabel,
   yLabel,
+  gestures,
+  classes = '',
+  below = nothing,
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
@@ -195,7 +236,7 @@ export function chartArea({
   const sizer = y
     ? html`<span class="axis-sizer" aria-hidden="true"
         >${axes.value.ticks
-          .map((v) => (yLabel ? yLabel(v) : formatNumber(v, axes.value.decimals, ctx.hass)))
+          .map((v, i) => (yLabel ? yLabel(v) : tickText(axes.value, i, ctx)))
           .reduce((a, b) => (b.length > a.length ? b : a), '')}</span
       >`
     : nothing;
@@ -210,21 +251,23 @@ export function chartArea({
   const rLabels = r
     ? html`<div class="y-axis right">${outside ? rSizer : nothing}${rightLabels(r, ctx)}</div>`
     : nothing;
-  return html`<div
-    class="plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''}"
-  >
+  const wrap = `plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''} ${below === nothing ? '' : 'has-overview'}`;
+  return html`<div class=${wrap}>
     ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
     <div
-      class="plot-area ${hover ? 'hoverable' : ''}"
-      @pointerdown=${hover?.move}
-      @pointermove=${hover?.move}
-      @pointerleave=${hover?.leave}
-      @pointercancel=${hover?.leave}
+      class="plot-area ${hover ? 'hoverable' : ''} ${classes}"
+      @pointerdown=${gestures?.down ?? hover?.move}
+      @pointermove=${gestures?.move ?? hover?.move}
+      @pointerup=${gestures?.up}
+      @pointerleave=${gestures?.leave ?? hover?.leave}
+      @pointercancel=${gestures?.cancel ?? hover?.leave}
+      @wheel=${gestures?.wheel}
+      @dblclick=${gestures?.dblclick}
     >
       ${plot(content, label, defs, gridLines(axes))} ${outside ? nothing : html`${yLabels}${rLabels}${xLabels}`}
       ${overlay}
     </div>
-    ${outside ? html`${rLabels}${xLabels}` : nothing}
+    ${outside ? html`${rLabels}${xLabels}` : nothing} ${below}
   </div>`;
 }
 
@@ -244,6 +287,9 @@ export const gridStyles = css`
   .plot .grid line {
     stroke: var(--divider-color, rgba(127, 127, 127, 0.25));
     stroke-width: 1;
+  }
+  .plot .grid line.minor {
+    opacity: 0.45;
   }
   .axis-label {
     position: absolute;

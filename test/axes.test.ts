@@ -162,7 +162,16 @@ describe('axis options', () => {
         gridlines: { vertical: true },
         y_min: 0,
       } as CardConfig),
-    ).toEqual({ x: false, y: true, labels: 'inside', horizontal: true, vertical: true, min: 0, max: undefined });
+    ).toEqual({
+      x: false,
+      y: true,
+      labels: 'inside',
+      horizontal: true,
+      vertical: true,
+      min: 0,
+      max: undefined,
+      scale: 'linear',
+    });
   });
 
   it('explains a bad option', () => {

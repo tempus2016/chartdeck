@@ -162,7 +162,8 @@ export class ChartdeckCard extends LitElement {
   getGridOptions(): { columns: number; rows: 'auto'; min_columns: number; min_rows: number } {
     const n = this._count();
     // Charts need the room: a time axis squeezed into a quarter section is unreadable.
-    if (isChart(this._style)) return { columns: 12, rows: 'auto', min_columns: 6, min_rows: 2 };
+    if (isChart(this._style))
+      return { columns: 12, min_columns: 6, min_rows: 2, ...this._style.gridOptions, rows: 'auto' };
     const rows = this._style.layout === 'rows';
     const columns = rows || n <= 1 ? 6 : 12;
     // Row styles need half a section: at 3 columns the icon, cells and value can't fit.

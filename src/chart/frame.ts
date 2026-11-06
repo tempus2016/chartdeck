@@ -100,6 +100,8 @@ export interface FrameOptions {
    * the card's.
    */
   aggregate?: (entity: ResolvedEntity) => Aggregate | undefined;
+  /** Keep each state's words (`Point.s`) instead of reading numbers, for charts of states like "on" or "heat". */
+  text?: boolean;
 }
 
 /** Load (or reuse) the card's history and pair it with its entities. */
@@ -111,7 +113,11 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   const group = parseGrouping(ctx.raw);
   // Grouped, the chart starts where its first group does: the last 7 days by day from midnight.
   const range: Range = { start: group ? startOf(group.unit, span.start, zone) : span.start, end: span.end };
-  const requests = ctx.items.map((e) => ({ entity: e.entityId, attribute: e.config.attribute }));
+  const requests = ctx.items.map((e) => ({
+    entity: e.entityId,
+    attribute: e.config.attribute,
+    ...(options.text ? { text: true } : {}),
+  }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const statistics =
     group && source === 'statistics'

@@ -21,6 +21,29 @@ import { segmented } from './segmented';
 import { tank } from './tank';
 import { thin } from './thin';
 import { waffle } from './waffle';
+import { funnel } from './funnel';
+import { radar } from './radar';
+import { polarArea } from './polar-area';
+import { treemap } from './treemap';
+import { icicle, sunburst } from './sunburst';
+import { groupedBars } from './grouped-bars';
+import { bullet } from './bullet';
+import { lollipop } from './lollipop';
+import { waterfall } from './waterfall';
+import { slope } from './slope';
+import { dumbbell } from './dumbbell';
+import { rangeArea } from './range-area';
+import { sparklineStyle } from './sparkline';
+import { streamgraph } from './streamgraph';
+import { candlestick } from './candlestick';
+import { violin } from './violin';
+import { beeswarm } from './beeswarm';
+import { sankey } from './sankey';
+import { timeline } from './timeline';
+import { climate } from './climate';
+import { windRoseStyle } from './wind-rose';
+import { day_clock } from './day-clock';
+import { trend } from './trend';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -80,6 +103,8 @@ export interface ChartStyleModule {
   render(ctx: ChartContext): TemplateResult;
   /** Estimated height in px, for masonry sizing. */
   height: number;
+  /** Sections grid size, when not the full-width default (a small tile-like chart). */
+  gridOptions?: { columns: number; min_columns: number; min_rows: number };
   /** A 64 × 40 picture for the style picker, in theme colours. */
   thumbnail(): SVGTemplateResult;
   /** Throw a readable Error for an invalid option this style reads. */
@@ -130,4 +155,28 @@ export const STYLES: Record<StyleName, StyleModule> = {
   bubble,
   heatmap,
   box,
+  funnel,
+  radar,
+  polar_area: polarArea,
+  treemap,
+  sunburst,
+  icicle,
+  grouped_bars: groupedBars,
+  bullet,
+  lollipop,
+  waterfall,
+  slope,
+  dumbbell,
+  range_area: rangeArea,
+  sparkline: sparklineStyle,
+  streamgraph,
+  candlestick,
+  violin,
+  beeswarm,
+  sankey,
+  timeline,
+  climate,
+  wind_rose: windRoseStyle,
+  day_clock,
+  trend,
 };

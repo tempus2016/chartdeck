@@ -1,3 +1,4 @@
+import type { GaugeOptions } from './gauge';
 import type { Rule } from './fill';
 export type StyleName =
   | 'bar'
@@ -19,7 +20,31 @@ export type StyleName =
   | 'scatter'
   | 'bubble'
   | 'heatmap'
-  | 'box';
+  | 'box'
+  | 'funnel'
+  | 'radar'
+  | 'polar_area'
+  | 'treemap'
+  | 'sunburst'
+  | 'icicle'
+  | 'grouped_bars'
+  | 'bullet'
+  | 'lollipop'
+  | 'waterfall'
+  | 'slope'
+  | 'dumbbell'
+  | 'range_area'
+  | 'sparkline'
+  | 'streamgraph'
+  | 'candlestick'
+  | 'violin'
+  | 'beeswarm'
+  | 'sankey'
+  | 'timeline'
+  | 'climate'
+  | 'wind_rose'
+  | 'day_clock'
+  | 'trend';
 export const STYLE_NAMES: StyleName[] = [
   'bar',
   'thin',
@@ -41,6 +66,30 @@ export const STYLE_NAMES: StyleName[] = [
   'bubble',
   'heatmap',
   'box',
+  'funnel',
+  'radar',
+  'polar_area',
+  'treemap',
+  'sunburst',
+  'icicle',
+  'grouped_bars',
+  'bullet',
+  'lollipop',
+  'waterfall',
+  'slope',
+  'dumbbell',
+  'range_area',
+  'sparkline',
+  'streamgraph',
+  'candlestick',
+  'violin',
+  'beeswarm',
+  'sankey',
+  'timeline',
+  'climate',
+  'wind_rose',
+  'day_clock',
+  'trend',
 ];
 export type SortMode = 'none' | 'ascending' | 'descending';
 /** A number, or a string naming an entity whose state supplies the number. */
@@ -128,6 +177,8 @@ export interface MergedEntity extends EntityOptions {
   tap_action: ActionConfig;
   hold_action: ActionConfig;
   double_tap_action: ActionConfig;
+  /** Ring, arc and needle: angles, centre text and tick labels (the card's). */
+  gauge?: GaugeOptions;
 }
 export interface NormalizedConfig {
   title?: string;

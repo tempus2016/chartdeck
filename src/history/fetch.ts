@@ -1,9 +1,15 @@
 import type { HomeAssistant } from '../types';
+import { parseBearing } from './bearing';
 import type { Point, Range, SeriesRequest } from './types';
 
-/** A state string or attribute value as a number, or null for a gap. */
+/**
+ * A state string or attribute value as a number, or null for a gap. On and off (binary sensors,
+ * switches, lights) read as 1 and 0, so their changes are readings too.
+ */
 export function toReading(raw: unknown): number | null {
   if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  if (raw === 'on') return 1;
+  if (raw === 'off') return 0;
   if (typeof raw !== 'string' || raw.trim() === '') return null;
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;
@@ -18,14 +24,44 @@ interface CompressedState {
   lc?: number;
 }
 
-/** One entity's history (Home Assistant's compressed format) as points, oldest first. */
-export function parseHistory(rows: CompressedState[] | undefined, attribute?: string): Point[] {
+/** How a series' states become numbers: plain readings, or wind bearings that may be compass points. */
+export function readerFor(s: SeriesRequest): (raw: unknown) => number | null {
+  return s.bearing ? parseBearing : toReading;
+}
+
+/** A state or attribute as a text point's words: numbers as written, anything else (absent, null) as none. */
+export function toText(raw: unknown): string | undefined {
+  if (typeof raw === 'string') return raw;
+  return typeof raw === 'number' || typeof raw === 'boolean' ? String(raw) : undefined;
+}
+
+/** One reading as a point: a number (read with `read`), or for a text series its words (with `v` null). */
+export function toPoint(
+  t: number,
+  raw: unknown,
+  text = false,
+  read: (raw: unknown) => number | null = toReading,
+): Point {
+  return text ? { t, v: null, s: toText(raw) } : { t, v: read(raw) };
+}
+
+/**
+ * One entity's history (Home Assistant's compressed format) as points, oldest first. `text` keeps
+ * the words instead of a number, for states like "heating" or "idle"; `read` turns a state into a
+ * number otherwise.
+ */
+export function parseHistory(
+  rows: CompressedState[] | undefined,
+  attribute?: string,
+  text = false,
+  read: (raw: unknown) => number | null = toReading,
+): Point[] {
   const points: Point[] = [];
   for (const row of rows ?? []) {
     const time = row.lu ?? row.lc;
     if (time === undefined) continue;
     const raw = attribute ? row.a?.[attribute] : row.s;
-    points.push({ t: Math.round(time * 1000), v: toReading(raw) });
+    points.push(toPoint(Math.round(time * 1000), raw, text, read));
   }
   return points;
 }
@@ -111,7 +147,9 @@ export async function loadHistory(
           no_attributes: true,
         })
         .then((result) => {
-          for (const id of plain) out.set(key({ entity: id }), parseHistory(result?.[id]));
+          for (const s of series.filter((x) => !x.attribute)) {
+            out.set(key(s), parseHistory(result?.[s.entity], undefined, s.text, readerFor(s)));
+          }
         }),
     );
   }
@@ -121,7 +159,7 @@ export async function loadHistory(
         .callWS<Record<string, CompressedState[]>>({ ...base, entity_ids: withAttributes, no_attributes: false })
         .then((result) => {
           for (const s of series.filter((x) => x.attribute)) {
-            out.set(key(s), parseHistory(result?.[s.entity], s.attribute));
+            out.set(key(s), parseHistory(result?.[s.entity], s.attribute, s.text, readerFor(s)));
           }
         }),
     );
@@ -154,5 +192,7 @@ export async function loadStatistics(
 
 /** The map key for a series: its entity, plus the attribute when there is one. */
 export function key(s: SeriesRequest): string {
-  return s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  const base = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  if (s.text) return `${base}|text`;
+  return s.bearing ? `${base}#bearing` : base;
 }

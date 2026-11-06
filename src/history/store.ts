@@ -1,5 +1,5 @@
 import type { HomeAssistant } from '../types';
-import { defaultStatisticsQuery, key, loadHistory, loadStatistics, toReading } from './fetch';
+import { defaultStatisticsQuery, key, loadHistory, loadStatistics, readerFor, toPoint } from './fetch';
 import type { StatisticsQuery } from './fetch';
 import type { Point, Range, SeriesRequest, Source } from './types';
 
@@ -148,7 +148,7 @@ export class HistoryStore {
       const points = this.data.get(k) ?? [];
       const last = points[points.length - 1];
       if (last && t <= last.t) continue;
-      points.push({ t, v: toReading(s.attribute ? state.attributes?.[s.attribute] : state.state) });
+      points.push(toPoint(t, s.attribute ? state.attributes?.[s.attribute] : state.state, s.text, readerFor(s)));
       this.data.set(k, points);
     }
   }

@@ -1,5 +1,6 @@
 import { css, html, nothing, svg } from 'lit';
-import { solidColor } from '../bands';
+import { baseColor, solidColor } from '../bands';
+import { centerContent, customAngles, gaugeAngles, angleAt, arcBox, union } from '../gauge';
 import { arcPath, polar, sweepAngles } from '../geometry';
 import { iconOverride } from '../resolve';
 import { fitStatusText } from '../status-text';
@@ -51,14 +52,14 @@ function statusText(text: string) {
 
 /** Ring (360) and three-quarter arc (270) gauges share one drawing. */
 export function radialStyle(sweep: 360 | 270): ValueStyleModule {
-  const [a0, a1] = sweepAngles(sweep, [0, 1]);
-  const trackD = arcPath(CX, CY, R, a0, a1);
+  const defaults = sweepAngles(sweep, [0, 1]);
+  const defaultTrack = arcPath(CX, CY, R, defaults[0], defaults[1]);
   // The arc's open bottom is empty: crop the drawing just below its round end caps (~98).
-  const cropped = sweep < 360;
+  const defaultCropped = sweep < 360;
   return {
     layout: 'tiles',
     group: 'gauges',
-    height: cropped ? 135 : 155,
+    height: defaultCropped ? 135 : 155,
     minColumnWidth: 128,
     styles: css`
       /* A definite width: the dial is a size container and can't size the tile itself. */
@@ -129,6 +130,10 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
         font-weight: 500;
         fill: var(--primary-text-color);
       }
+      .radial .center-text {
+        font-weight: 500;
+        fill: var(--primary-text-color);
+      }
       .radial .unit {
         font-size: 11px;
         fill: var(--secondary-text-color);
@@ -152,6 +157,13 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
         transform: translate(-50%, -50%);
         --mdc-icon-size: 22.58cqw;
       }
+      /* A custom sweep crops --y0 drawing units off the top: move the icon up by as much. */
+      .radial .dial.fitted .icon {
+        top: calc(25cqw - var(--y0) * 0.8065cqw);
+      }
+      .radial .dial.fitted .icon.centre {
+        top: calc(48.39cqw - var(--y0) * 0.8065cqw);
+      }
       .radial .name {
         max-width: min(124px, 100%);
         font-size: 12px;
@@ -163,6 +175,20 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
     `,
     render(e, { show, hass }) {
       const id = gradientId(e.config);
+      const options = e.config.gauge;
+      const angles = gaugeAngles(defaults, options);
+      const custom = customAngles(options);
+      const trackD = custom ? arcPath(CX, CY, R, angles[0], angles[1]) : defaultTrack;
+      // A custom sweep crops the drawing to the arc and the centre disc, full width kept.
+      let y0 = 0;
+      let h = defaultCropped ? 100 : 120;
+      if (custom) {
+        const box = union(arcBox(CX, CY, R, angles[0], angles[1], STROKE / 2 + 1), { x0: 26, y0: 26, x1: 94, y1: 94 });
+        y0 = Math.max(0, Math.floor(box.y0));
+        h = Math.min(120, Math.ceil(box.y1)) - y0;
+      }
+      const cropped = h < 120;
+      const center = e.available && show.value ? centerContent(e, options) : { kind: 'none' as const };
       const empty = e.span[1] - e.span[0] <= 0;
       // Plain numbers (pathLength 100), not calc() on custom properties, so every engine draws them.
       const dash = `stroke-dasharray: ${num((e.span[1] - e.span[0]) * 100)} 100; stroke-dashoffset: ${num(-e.span[0] * 100)}`;
@@ -175,14 +201,14 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
       const size = valueFontSize(e.valueText);
       let tick = nothing as unknown;
       if (show.target && e.targetPosition !== null && e.available) {
-        const deg = sweepAngles(sweep, [e.targetPosition, e.targetPosition])[0];
+        const deg = angleAt(angles, e.targetPosition);
         const [x1, y1] = polar(CX, CY, R - STROKE / 2 - 1, deg);
         const [x2, y2] = polar(CX, CY, R + STROKE / 2 + 1, deg);
         tick = svg`<line class="tick" x1=${x1.toFixed(2)} y1=${y1.toFixed(2)} x2=${x2.toFixed(2)} y2=${y2.toFixed(2)}></line>`;
       }
       return html`<div class="radial ${cropped ? 'cropped' : ''}">
-        <div class="dial">
-          <svg viewBox="0 0 120 ${cropped ? 100 : 120}" aria-hidden="true">
+        <div class="dial ${custom ? 'fitted' : ''}" style=${custom ? `aspect-ratio: 124 / ${h}; --y0: ${y0}` : nothing}>
+          <svg viewBox="0 ${y0} 120 ${h}" aria-hidden="true">
             <defs>
               <linearGradient id=${id} x1="0" y1="1" x2="1" y2="0">
                 <stop class="stop-start" offset="0"></stop>
@@ -206,8 +232,18 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
             ${
               e.available
                 ? svg`${
-                    show.value
+                    center.kind === 'text'
                       ? svg`<text
+                        class="center-text"
+                        x=${CX}
+                        y=${CY + 6 + shift}
+                        text-anchor="middle"
+                        style="font-size: ${Math.min(18, valueFontSize(center.text))}px${
+                          center.band ? `; fill: ${baseColor(e.band.color)}` : ''
+                        }"
+                      >${center.text}</text>`
+                      : center.kind === 'value'
+                        ? svg`<text
                         class="value"
                         x=${CX}
                         y=${CY + 4 + shift}
@@ -215,7 +251,7 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
                         style=${size < 22 ? `font-size: ${size}px` : nothing}
                       >${e.valueText}</text>
                       <text class="unit" x=${CX} y=${CY + 20 + shift} text-anchor="middle">${e.unit}</text>`
-                      : nothing
+                        : nothing
                   }`
                 : statusText(e.display)
             }
@@ -223,7 +259,7 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
           ${
             show.icon && e.available
               ? html`<ha-state-icon
-                  class="icon ${show.value ? '' : 'centre'}"
+                  class="icon ${show.value && center.kind !== 'none' ? '' : 'centre'}"
                   .hass=${hass}
                   .stateObj=${e.stateObj}
                   .icon=${iconOverride(e)}
@@ -231,7 +267,7 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
               : nothing
           }
         </div>
-        ${show.name ? html`<span class="name">${e.name}</span>` : nothing}
+        ${show.name && options?.center !== 'name' ? html`<span class="name">${e.name}</span>` : nothing}
       </div>`;
     },
   };
