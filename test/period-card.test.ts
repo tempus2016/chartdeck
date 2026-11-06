@@ -32,10 +32,13 @@ function hassWith() {
   );
   hass.callWS = vi.fn(async (msg: Record<string, unknown>) => {
     const start = Date.parse(msg.start_time as string) / 1000;
+    // Like the recorder, never return a reading from the future (just after midnight the period's
+    // first hour hasn't finished yet).
+    const second = Math.min(start + 3600, Math.max(start + 1, Date.now() / 1000 - 60));
     return {
       'sensor.in': [
         { s: '20', lu: start },
-        { s: '22', lu: start + 3600 },
+        { s: '22', lu: second },
       ],
     };
   }) as HomeAssistant['callWS'];
