@@ -78,7 +78,7 @@ registerStrings('en', {
   editor_group_by_auto: 'Automatic',
   editor_aggregate_auto: 'Automatic (change for meters, else average)',
   editor_range: 'Lowest to highest in each column',
-  editor_rounded: 'Rounded tops',
+  editor_rounded: 'Rounded ends',
   editor_column_labels: 'Show values on the columns',
   editor_column_color: 'Colour',
 });

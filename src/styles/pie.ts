@@ -38,7 +38,7 @@ registerStrings('en', {
   editor_shape_pie: 'Pie',
   editor_center_label: 'Line under the total',
   editor_gap: 'Space between slices',
-  editor_rounded: 'Rounded slice ends (donut)',
+  editor_rounded: 'Rounded ends',
   editor_gradient: 'Gradient fills',
 });
 
