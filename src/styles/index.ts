@@ -103,6 +103,8 @@ export interface ChartStyleModule {
   render(ctx: ChartContext): TemplateResult;
   /** Estimated height in px, for masonry sizing. */
   height: number;
+  /** Sections grid size, when not the full-width default (a small tile-like chart). */
+  gridOptions?: { columns: number; min_columns: number; min_rows: number };
   /** A 64 × 40 picture for the style picker, in theme colours. */
   thumbnail(): SVGTemplateResult;
   /** Throw a readable Error for an invalid option this style reads. */
