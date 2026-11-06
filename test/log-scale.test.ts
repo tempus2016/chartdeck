@@ -208,6 +208,16 @@ describe('line chart on a log scale', () => {
     expect(qa(card, '.hover-dot')).toHaveLength(0);
   });
 
+  it('breaks the line at zero in each small chart too', async () => {
+    const card = await mount({ multiples: true }, history);
+    const lines = qa(card, 'path.line');
+    // The light's line in two runs; the traffic never goes above zero, so its chart says it has nothing.
+    expect(lines).toHaveLength(1);
+    expect(lines[0].getAttribute('d')!.match(/M/g)).toHaveLength(2);
+    expect(lines[0].getAttribute('d')).not.toContain('NaN');
+    expect(qa(card, '.panel .chart-message')).toHaveLength(1);
+  });
+
   it('says so when nothing is above zero', async () => {
     const card = await mount({ entities: ['sensor.net'] }, history);
     expect(card.shadowRoot!.querySelector('.chart-message')!.textContent).toContain('Nothing above zero');

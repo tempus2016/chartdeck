@@ -23,7 +23,7 @@ import type { CardConfig } from '../types';
 
 registerStrings('en', {
   editor_style_rings: 'Rings',
-  editor_start_angle: 'Start angle (0 is the top)',
+  editor_rings_start_angle: 'Start angle (0 is the top)',
   editor_end_angle: 'End angle',
   editor_rounded_ends: 'Rounded ends',
 });
@@ -140,7 +140,7 @@ export function ringsEditor(ctx: ChartEditorContext) {
     },
     { name: 'rounded_ends', selector: { boolean: {} } },
   ]);
-  return chartForm(ctx, 'chart', schema, FIELDS);
+  return chartForm(ctx, 'chart', schema, FIELDS, { start_angle: 'editor_rings_start_angle' });
 }
 
 export const rings: ChartStyleModule = {

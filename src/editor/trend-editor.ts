@@ -25,7 +25,7 @@ registerStrings('en', {
   editor_points_hover: 'On hover',
   editor_points_always: 'Always',
   editor_points_never: 'Never',
-  editor_labels: 'Highest and lowest labels',
+  editor_trend_labels: 'Highest and lowest labels',
   editor_labels_hover: 'On hover',
   editor_labels_always: 'Always',
   editor_labels_never: 'Never',
@@ -182,6 +182,7 @@ export function trendEditor(ctx: ChartEditorContext): TemplateResult {
   };
   return chartForm(form, 'chart', schema, TREND_FIELDS, {
     legend: 'editor_trend_legend',
+    labels: 'editor_trend_labels',
     group: 'editor_trend_group',
   });
 }

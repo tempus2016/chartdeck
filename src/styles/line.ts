@@ -309,12 +309,17 @@ export const line: ChartStyleModule = {
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
     const multiples = multiplesOptions(ctx.raw);
     if (multiples) {
+      // A log axis has no place for zero or below: each small chart draws only the readings above it.
+      const panels =
+        ctx.raw.y_scale === 'log'
+          ? { ...frame, series: frame.series.map((s) => ({ ...s, points: positivePoints(s.points) })) }
+          : frame;
       // One small chart per series: the period buttons stay above, each chart has its own title.
       return chartFrame(
         { ...layout, header: 'above' },
         nav,
-        multiplesGrid(ctx, frame, multiples, own ?? shared, (s, axes, width) =>
-          linePlot(ctx, frame, [s], axes, width, `-${s.index}`, nothing, own ?? shared),
+        multiplesGrid(ctx, panels, multiples, own ?? shared, (s, axes, width) =>
+          linePlot(ctx, panels, [s], axes, width, `-${s.index}`, nothing, own ?? shared),
         ),
       );
     }
