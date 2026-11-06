@@ -8,10 +8,14 @@ import { columnChart } from './column';
 import { combined } from './combined';
 import { line } from './line';
 import { needle } from './needle';
+import { pictograph } from './pictograph';
+import { pie } from './pie';
 import { arc, ring } from './radial';
+import { rings } from './rings';
 import { segmented } from './segmented';
 import { tank } from './tank';
 import { thin } from './thin';
+import { waffle } from './waffle';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -112,4 +116,8 @@ export const STYLES: Record<StyleName, StyleModule> = {
   column: columnChart,
   area,
   combined,
+  pie,
+  rings,
+  pictograph,
+  waffle,
 };

@@ -69,7 +69,7 @@ describe('normalizeConfig', () => {
     expect(() => normalizeConfig({ type: 'x', entities: [{ entity: 'sensor.a', attribute: 3 as any }] })).toThrow(
       /attribute/,
     );
-    expect(() => normalizeConfig({ type: 'x', style: 'pie' as any })).toThrow(/style/);
+    expect(() => normalizeConfig({ type: 'x', style: 'nonsense' as any })).toThrow(/style/);
     expect(() => normalizeConfig({ type: 'x', entities: [{ name: 'no id' } as any] })).toThrow(/entity/);
     expect(() => normalizeConfig({ type: 'x', min: 10, max: 10, entities: ['sensor.a'] })).toThrow(/max/);
   });
