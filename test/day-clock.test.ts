@@ -334,6 +334,11 @@ describe('layout and text', () => {
     expect(ringKind(e('sensor.power', {}, { unit_of_measurement: 'W' }))).toBe('numeric');
     expect(ringKind(e('sensor.mode', { available: false }))).toBe('state');
     expect(ringKind(e('sensor.count'))).toBe('numeric');
+    // A text sensor with no unit gets a state ring, not empty number bars.
+    const washer = e('sensor.washer', {
+      stateObj: { entity_id: 'sensor.washer', state: 'washing', attributes: {} },
+    } as never);
+    expect(ringKind(washer)).toBe('state');
     expect(ringKind(e('sensor.flag', { config: { entity: 'sensor.flag', active: '1' } } as never))).toBe('state');
     expect(ringKind(e('sensor.flag', { config: { entity: 'sensor.flag', active: [] } } as never))).toBe('numeric');
   });

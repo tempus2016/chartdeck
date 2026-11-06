@@ -73,6 +73,7 @@ registerStrings('en', {
   swarm_shown: 'Dots shown',
   swarm_none: 'No readings',
   swarm_earliest_latest: 'Earliest – latest',
+  swarm_lowest_highest: 'Lowest – highest',
 });
 
 export interface SwarmOptions {
@@ -193,7 +194,8 @@ function tooltipRows(row: Row, scale: ValueScale, clock: boolean, hass: HomeAssi
       : []),
     [localize(hass, 'dist_median'), f(s.median)],
     [localize(hass, 'dist_middle'), `${f(s.q1)} – ${f(s.q3)}`],
-    [localize(hass, 'swarm_earliest_latest'), `${f(s.min)} – ${f(s.max)}`],
+    // By time of day the ends are the earliest and latest times; by value, the lowest and highest readings.
+    [localize(hass, clock ? 'swarm_earliest_latest' : 'swarm_lowest_highest'), `${f(s.min)} – ${f(s.max)}`],
   ];
 }
 

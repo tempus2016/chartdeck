@@ -117,7 +117,10 @@ export function ringKind(e: ResolvedEntity): 'state' | 'numeric' {
   if (!e.config.attribute && (attrs.unit_of_measurement !== undefined || attrs.state_class !== undefined)) {
     return 'numeric';
   }
-  return e.available ? 'numeric' : 'state';
+  // Without a unit, a ring of numbers only when the state reads as one; words get a state ring.
+  const state = e.stateObj?.state;
+  const numeric = typeof state === 'string' && state.trim() !== '' && Number.isFinite(Number(state));
+  return e.available && numeric ? 'numeric' : 'state';
 }
 
 /** A climate entity's state is its mode (heat all day); what it is doing is its `hvac_action`. */
