@@ -2,12 +2,11 @@ import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { isInteractive } from '../actions';
 import { baseColor } from '../bands';
-import { applyFormData, formData } from '../editor/schemas';
-import type { FieldBinding } from '../editor/schemas';
+import { SERIES_COLORS } from './frame';
 import { formatNumber, withUnit } from '../format';
-import { languageOf, localize, registerStrings } from '../localize';
+import { localize, registerStrings } from '../localize';
 import type { ResolvedEntity } from '../resolve';
-import type { ChartContext, ChartEditorContext } from '../styles/index';
+import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 
 /*
@@ -32,8 +31,8 @@ registerStrings('en', {
   parts_aria: '{style} of {names}',
 });
 
-/** Colours in order, for entities without their own `color`. */
-export const SERIES_COLORS = ['primary', 'amber', 'green', 'purple', 'red', '#14b8a6', '#ec4899', 'grey'];
+/** Colours in order, for entities without their own `color` (the same order as the history charts). */
+export { SERIES_COLORS };
 
 export type ColorBy = 'series' | 'bands' | 'shades';
 
@@ -237,51 +236,8 @@ export function checkText(raw: CardConfig, key: string): void {
   if (v !== undefined && typeof v !== 'string') throw new Error(`"${key}" must be text`);
 }
 
-/* The Chart section's form. */
-
-/** A dropdown of fixed values, labelled from `editor_<prefix>_<value>`. */
-export function choice(hass: HomeAssistant | undefined, prefix: string, values: readonly string[]) {
-  return {
-    select: {
-      mode: 'dropdown',
-      options: values.map((value) => ({ value, label: localize(hass, `editor_${prefix}_${value}`) })),
-    },
-  };
-}
-
-const cache = new Map<string, unknown[]>();
-
-/** Build a schema once per language (and per id), so ha-form isn't handed a new one each render. */
-export function cachedSchema(id: string, hass: HomeAssistant | undefined, build: () => unknown[]): unknown[] {
-  const k = `${id}|${languageOf(hass)}`;
-  let schema = cache.get(k);
-  if (!schema) {
-    schema = build();
-    cache.set(k, schema);
-  }
-  return schema;
-}
-
-/** An ha-form bound to card-config paths; a value set back to its default removes the key. */
-export function chartForm(
-  ctx: ChartEditorContext,
-  section: string,
-  schema: unknown[],
-  fields: FieldBinding[],
-): TemplateResult {
-  return html`<ha-form
-    data-section=${section}
-    .hass=${ctx.hass}
-    .data=${formData(ctx.config, fields)}
-    .schema=${schema}
-    .computeLabel=${(s: { name: string }) => localize(ctx.hass, `editor_${s.name}`)}
-    @value-changed=${(ev: CustomEvent) => {
-      ev.stopPropagation();
-      const next = applyFormData(ctx.config, fields, (ev.detail?.value ?? {}) as Record<string, unknown>);
-      if (next !== ctx.config) ctx.commit(next);
-    }}
-  ></ha-form>`;
-}
+/* The Chart section's form uses the shared editor helpers. */
+export { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 
 /**
  * Shared look: the drawing beside its legend on a wide card, above it on a narrow one; `.seg`
