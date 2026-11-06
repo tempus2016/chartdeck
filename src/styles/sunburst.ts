@@ -477,7 +477,8 @@ export const sunburst: ChartStyleModule = {
     .centre-value {
       font-size: 1.15em;
       font-weight: 500;
-      white-space: nowrap;
+      /* A long total ("339.4 kWh") wraps its unit under the number rather than over the rings. */
+      overflow-wrap: normal;
     }
   `,
   thumbnail: () => svg`

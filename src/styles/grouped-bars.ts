@@ -9,13 +9,15 @@ import { localize, registerStrings } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant, SortMode } from '../types';
+import { SERIES_COLORS } from '../chart/frame';
 
 export const MODES = ['grouped', 'stacked', 'percent'] as const;
 export type Mode = (typeof MODES)[number];
 const COLOR_BY = ['series', 'bands'] as const;
 
 /** Series colours in order, for entities without their own `color` (the line chart's order). */
-export const BAR_COLORS = ['primary', 'amber', 'green', 'purple', 'red', '#14b8a6', '#ec4899', 'grey'];
+/** Bar colours in order: the series colours every chart uses. */
+export const BAR_COLORS = SERIES_COLORS;
 
 /** Heights in px: one bar in grouped mode, the gap between a row's bars, a stacked bar, row padding. */
 const BAR_H = 12;

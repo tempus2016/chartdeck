@@ -132,6 +132,23 @@ describe('chartdeck-card-editor', () => {
     expect(events.at(-1)).toEqual({ ...raw, columns: 2, title: 'Power' });
   });
 
+  it('drops a group_by the new style cannot read when the style changes', async () => {
+    const pick = async (config: Record<string, unknown>, style: string) => {
+      const { editor, events } = await mount({
+        type: 'custom:chartdeck-card',
+        entities: ['sensor.a'],
+        ...config,
+      } as never);
+      (editor.shadowRoot!.querySelector(`button[data-style="${style}"]`) as HTMLButtonElement).click();
+      document.body.innerHTML = '';
+      return events.at(-1)!;
+    };
+    expect(await pick({ style: 'column', group_by: 'day' }, 'treemap')).not.toHaveProperty('group_by');
+    expect(await pick({ style: 'treemap', group_by: ['floor', 'area'] }, 'line')).not.toHaveProperty('group_by');
+    expect((await pick({ style: 'column', group_by: 'day' }, 'line')).group_by).toBe('day');
+    expect((await pick({ style: 'treemap', group_by: 'area' }, 'sunburst')).group_by).toBe('area');
+  });
+
   it('selecting a style emits style; selecting bar removes it', async () => {
     const { editor, events } = await mount(raw);
     const button = (name: string) =>
