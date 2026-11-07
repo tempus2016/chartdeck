@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/tempus2016/chartdeck/releases"><img src="https://img.shields.io/github/v/release/tempus2016/chartdeck?include_prereleases" alt="Latest Release"></a>
-  <a href="https://github.com/hacs/integration"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" alt="HACS Default"></a>
+  <a href="https://my.home-assistant.io/redirect/marketplace_repository/?owner=tempus2016&repository=chartdeck"><img src="https://img.shields.io/badge/Marketplace-Default-41BDF5.svg" alt="Home Assistant Marketplace"></a>
   <a href="https://github.com/tempus2016/chartdeck/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2025.1+-blue" alt="HA Version">
   <a href="https://github.com/tempus2016/chartdeck/releases"><img src="https://img.shields.io/github/downloads/tempus2016/chartdeck/total" alt="Downloads"></a>
@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="https://github.com/tempus2016/chartdeck/actions/workflows/build.yml"><img src="https://github.com/tempus2016/chartdeck/actions/workflows/build.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/tempus2016/chartdeck/actions/workflows/hacs.yml"><img src="https://github.com/tempus2016/chartdeck/actions/workflows/hacs.yml/badge.svg" alt="HACS Validation"></a>
+  <a href="https://github.com/tempus2016/chartdeck/actions/workflows/hacs.yml"><img src="https://github.com/tempus2016/chartdeck/actions/workflows/hacs.yml/badge.svg" alt="Marketplace validation"></a>
   <a href="https://github.com/tempus2016/chartdeck/actions/workflows/codeql.yml"><img src="https://github.com/tempus2016/chartdeck/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
@@ -89,12 +89,15 @@ This page is the summary. What changed in each version is on the [releases page]
 
 ## Installation
 
-Chartdeck is in the HACS default store:
+Chartdeck is in the Home Assistant Marketplace:
 
-1. Open HACS and search for *Chartdeck*.
-2. Download it, then reload your browser.
+1. Go to **Settings → Marketplace** and search for *Chartdeck*.
+2. Choose **Install**, then reload your browser.
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tempus2016&repository=chartdeck&category=lovelace)
+[![Open your Home Assistant instance and show Chartdeck in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=tempus2016&repository=chartdeck)
+
+On Home Assistant older than 2026.11, the Marketplace is still HACS: open HACS, search for
+*Chartdeck* and choose **Download**.
 
 To install by hand, save [chartdeck-card.js][latest-release] to `<config>/www/` and add
 `/local/chartdeck-card.js` as a dashboard resource of type `module`. The

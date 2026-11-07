@@ -12,9 +12,9 @@ npm start         # rebuild on change, served on port 5000 for a local Home Assi
 ```
 
 `npm run build` runs the linter first and stops if it fails, so a green build means lint and
-bundle both passed. `dist/chartdeck-card.js` is committed on purpose — HACS installs it
-straight from the repository — so a change to `src/` needs the bundle rebuilt in the same
-commit. CI fails if it was not.
+bundle both passed. `dist/chartdeck-card.js` is committed on purpose — the Marketplace
+(HACS) installs it straight from the repository — so a change to `src/` needs the bundle
+rebuilt in the same commit. CI fails if it was not.
 
 ## Commit messages matter
 
