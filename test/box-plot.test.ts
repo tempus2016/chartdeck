@@ -127,6 +127,11 @@ describe('box maths', () => {
 
 type Card = HTMLElement & { setConfig(c: CardConfig): void; hass?: HomeAssistant; updateComplete: Promise<boolean> };
 
+// The fixture is relative to now and the tooltip test groups by day, so a real clock moves
+// midnight through the readings: early or late in the day the first box holds the 40 spike as
+// an outlier. Pin the clock to mid-afternoon local time; only Date is faked, timers stay real.
+vi.useFakeTimers({ toFake: ['Date'] });
+vi.setSystemTime(new Date(2026, 10, 7, 15, 0, 0));
 const now = Date.now();
 const H = 3_600_000;
 const sec = (msAgo: number) => (now - msAgo) / 1000;
