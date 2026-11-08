@@ -39,13 +39,14 @@ const plugins = [
   [
     '@semantic-release/git',
     {
-      assets: ['README.md', 'package.json', 'package-lock.json', 'dist/chartdeck-card.js'],
+      assets: ['README.md', 'package.json', 'package-lock.json', 'dist/*.js', 'dist/*.js.map'],
     },
   ],
   [
     '@semantic-release/github',
     {
-      assets: 'dist/*.js',
+      // The main file, one file per language beside it, and a source map for each.
+      assets: ['dist/*.js', 'dist/*.js.map'],
       // No "released in" comments on issues and pull requests. Turning them on also needs
       // issues: write and pull-requests: write in .github/workflows/release.yml.
       successComment: false,

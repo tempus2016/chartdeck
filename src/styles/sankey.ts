@@ -10,24 +10,9 @@ import { tooltipStyles } from '../chart/tooltip';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, EntityConfig, HomeAssistant } from '../types';
-
-registerStrings('en', {
-  editor_style_sankey: 'Sankey (flow)',
-  editor_link_color: 'Colour flows by',
-  editor_link_color_auto: 'Where they come from, or where they go after a middle node',
-  editor_link_color_source: 'Where they come from',
-  editor_link_color_target: 'Where they go',
-  editor_from: 'Flows from',
-  editor_to: 'Flows to',
-  editor_flow_color: 'Flow colour',
-  sankey_aria: 'Flow chart: {flows}',
-  sankey_flow: '{from} to {to} {value}',
-  sankey_no_flows: 'Give each entity a "Flows from" and a "Flows to" in its options.',
-  sankey_nothing: 'Nothing is flowing right now.',
-});
 
 export const LINK_COLORS = ['auto', 'source', 'target'] as const;
 export type LinkColor = (typeof LINK_COLORS)[number];

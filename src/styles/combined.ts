@@ -55,7 +55,7 @@ import { AGGREGATES, parseGrouping } from '../history/group';
 import type { Aggregate } from '../history/group';
 import { parsePeriod } from '../history/period';
 import type { Point } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig } from '../types';
 import { areaStyles, drawArea, zeroFloor } from './area';
@@ -70,27 +70,6 @@ type Side = 'left' | 'right';
 
 /** Gaps between value labels on the right axis, as on the left. */
 const VALUE_GAPS = 4;
-
-registerStrings('en', {
-  editor_style_combined: 'Combined',
-  editor_series_type: 'Draw as',
-  editor_series_type_line: 'Line',
-  editor_series_type_column: 'Columns',
-  editor_series_type_area: 'Area',
-  editor_series_axis: 'Value axis',
-  editor_series_axis_auto: 'Automatic (by unit)',
-  editor_series_axis_left: 'Left',
-  editor_series_axis_right: 'Right',
-  editor_series_aggregate: 'Combine with',
-  editor_series_aggregate_auto: 'As the card',
-  editor_series_aggregate_mean: 'Average',
-  editor_series_aggregate_sum: 'Sum',
-  editor_series_aggregate_min: 'Lowest',
-  editor_series_aggregate_max: 'Highest',
-  editor_series_aggregate_first: 'First',
-  editor_series_aggregate_last: 'Last',
-  editor_series_aggregate_change: 'Change (meters that count up)',
-});
 
 type Own = { type?: SeriesType; y_axis?: Side; aggregate?: Aggregate };
 const own = (e: ResolvedEntity) => e.config as unknown as Own;

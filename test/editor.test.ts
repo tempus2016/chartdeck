@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ensureLanguage } from '../src/localize';
 import { makeHass } from './helpers/hass';
 import type { CardConfig } from '../src/types';
 
@@ -658,6 +659,9 @@ describe('editor: schemas', () => {
     expect(form(editor, 'display').schema).toBe(first);
     expect(form(editor, 'actions').schema).toBe(form(editor, 'actions').schema);
     editor.hass = makeHass({ 'sensor.a': '2' }, { locale: { language: 'de' } });
+    await settle(editor);
+    // The schema changes once German's file has arrived.
+    await ensureLanguage('de');
     await settle(editor);
     expect(form(editor, 'display').schema).not.toBe(first);
   });

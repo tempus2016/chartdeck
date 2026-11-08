@@ -29,17 +29,9 @@ import {
 } from '../chart/tooltip';
 import { timelineEditor, timelineEntityFields } from '../editor/timeline-editor';
 import { parsePeriod } from '../history/period';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { HassEntity, CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_timeline: 'State timeline',
-  timeline_no_states: 'No states recorded in this period.',
-  timeline_for: 'for {duration}',
-  timeline_now: 'Now',
-  timeline_measurement: 'Readings, not states: a line chart suits this one',
-});
 
 /** What each bar says, if it has room. */
 export const BAR_LABELS = ['state', 'duration', 'both', 'none'] as const;

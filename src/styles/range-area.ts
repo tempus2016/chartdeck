@@ -44,15 +44,9 @@ import { LINE_WIDTH_SELECTOR } from '../editor/schemas';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import type { Point } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_range_area: 'Range area',
-  editor_mean: 'Draw the average as a line',
-  editor_range_color: 'Colour',
-});
 
 /**
  * Where a range area reads from when the card doesn't say: long-term statistics, which keep each

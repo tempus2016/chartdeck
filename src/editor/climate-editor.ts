@@ -1,7 +1,6 @@
 import type { TemplateResult } from 'lit';
 import { CURVES } from '../chart/paths';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
-import { registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import {
   AXES_FIELDS,
@@ -17,16 +16,6 @@ import {
 } from './chart-editors';
 import { LINE_WIDTH_SELECTOR } from './schemas';
 import type { FieldBinding } from './schemas';
-
-registerStrings('en', {
-  editor_set_point: 'Show the set point',
-  editor_shading: 'Shade while heating or cooling',
-  editor_shade_fan: 'Shade while only the fan runs',
-  editor_current_color: 'Temperature colour',
-  editor_set_point_color: 'Set point colour',
-  editor_heating_color: 'Heating colour',
-  editor_cooling_color: 'Cooling colour',
-});
 
 /** Climate charts read attributes, which only history keeps, and draw them ungrouped. */
 const NOT_FOR_CLIMATE = new Set(['source', 'group_by', 'aggregate']);

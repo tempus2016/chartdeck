@@ -5,7 +5,7 @@ import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { isInteractive } from '../actions';
 import { formatNumber } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
@@ -20,21 +20,6 @@ export type PercentOf = (typeof PERCENT_OF)[number];
 const NARROW = 22;
 /** How much the last funnel stage narrows towards its bottom edge. */
 const TAPER = 0.8;
-
-registerStrings('en', {
-  editor_style_funnel: 'Funnel',
-  editor_funnel_shape: 'Shape',
-  editor_funnel_shape_funnel: 'Funnel (first stage at the top)',
-  editor_funnel_shape_pyramid: 'Pyramid (first stage at the bottom)',
-  editor_funnel_percent_of: 'Percentages',
-  editor_funnel_percent_of_first: 'Share of the first stage',
-  editor_funnel_percent_of_previous: 'Share of the stage before',
-  editor_funnel_percent_of_none: "Don't show",
-  editor_funnel_color_by: 'Colour',
-  editor_funnel_color_by_series: 'One colour per entity',
-  editor_funnel_color_by_bands: 'By colour band',
-  funnel_aria: '{style} of {names}',
-});
 
 /** Each stage's width as a percentage of the largest; no number (or none above 0) is 0. */
 export function stageWidths(values: (number | null)[]): number[] {

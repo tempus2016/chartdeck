@@ -18,7 +18,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber } from '../format';
 import { parsePeriod, rollingRange } from '../history/period';
 import type { Period } from '../history/period';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartStyleModule } from './index';
@@ -32,36 +32,6 @@ type Measure = (typeof MEASURES)[number];
 const LABEL_GAP = 18;
 /** Plot height: at least this, more when there are many entities. */
 const MIN_PLOT_H = 160;
-
-registerStrings('en', {
-  editor_style_slope: 'Slope',
-  editor_measure: 'Compare',
-  editor_measure_value: 'The reading then and now',
-  editor_measure_change: 'How much it rose in each period (meters)',
-  editor_color_by_direction: 'Up or down',
-  editor_color_by_group: 'By group',
-  editor_increase: 'A rise is',
-  editor_increase_bad: 'Bad (red)',
-  editor_increase_good: 'Good (green)',
-  editor_group: 'Group',
-  slope_now: 'Now',
-  slope_ago: '{n} {unit} ago',
-  slope_ago_one: 'A {unit} ago',
-  slope_previous: 'Previous {n} {unit}',
-  slope_previous_one: 'Previous {unit}',
-  slope_last: 'Last {n} {unit}',
-  slope_last_one: 'Last {unit}',
-  slope_unit_hour: 'hour',
-  slope_unit_hour_other: 'hours',
-  slope_unit_day: 'day',
-  slope_unit_day_other: 'days',
-  slope_unit_week: 'week',
-  slope_unit_week_other: 'weeks',
-  slope_unit_month: 'month',
-  slope_unit_month_other: 'months',
-  slope_entity_aria: '{name}, {from} to {to}',
-  slope_no_reading: 'no reading',
-});
 
 /**
  * Spread label centres apart so none are closer than `gap`, keeping their order and staying

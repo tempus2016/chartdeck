@@ -27,20 +27,8 @@ import {
 import type { Arc, ColorBy, LegendRow } from '../chart/parts';
 import { isInteractive } from '../actions';
 import type { FieldBinding } from '../editor/schemas';
-import { registerStrings } from '../localize';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
-
-registerStrings('en', {
-  editor_style_pie: 'Pie / donut',
-  editor_shape: 'Shape',
-  editor_shape_donut: 'Donut',
-  editor_shape_pie: 'Pie',
-  editor_center_label: 'Line under the total',
-  editor_gap: 'Space between slices',
-  editor_rounded: 'Rounded ends',
-  editor_gradient: 'Gradient fills',
-});
 
 export const SHAPES = ['donut', 'pie'] as const;
 export const PIE_CENTER = ['total', 'none'] as const;

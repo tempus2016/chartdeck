@@ -60,7 +60,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import type { GroupUnit } from '../history/group';
 import type { Point } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 
@@ -72,16 +72,6 @@ const LABEL_PX = 24;
 const GROUP_LABEL_PX: Record<GroupUnit, number> = { hour: 66, day: 52, week: 52, month: 60 };
 /** Corner radius of a column's outer end, in px, before narrow columns scale it down. */
 const RADIUS_PX = 4;
-
-registerStrings('en', {
-  editor_style_column: 'Column',
-  editor_group_by_auto: 'Automatic',
-  editor_aggregate_auto: 'Automatic (change for meters, else average)',
-  editor_range: 'Lowest to highest in each column',
-  editor_rounded: 'Rounded ends',
-  editor_column_labels: 'Show values on the columns',
-  editor_column_color: 'Colour',
-});
 
 const isColumnGroup = (v: unknown) => COLUMN_GROUPS.includes(v as (typeof COLUMN_GROUPS)[number]);
 

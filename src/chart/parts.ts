@@ -4,7 +4,7 @@ import { isInteractive } from '../actions';
 import { baseColor } from '../bands';
 import { SERIES_COLORS } from './frame';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
@@ -14,22 +14,6 @@ import type { CardConfig, HomeAssistant } from '../types';
  * the share maths, part colours, the legend beside the drawing, option checks and the Chart
  * section's form. They all draw from the entities' current values, so no history is involved.
  */
-
-registerStrings('en', {
-  editor_color_by: 'Colour',
-  editor_color_by_series: 'One colour per entity',
-  editor_color_by_bands: 'By colour band',
-  editor_color_by_shades: 'Shades of one colour',
-  editor_shade_color: 'Shade colour (palette name or CSS colour)',
-  editor_show_percent: 'Show each share as a percentage',
-  editor_center: 'In the middle',
-  editor_center_total: 'Total',
-  editor_center_average: 'Average',
-  editor_center_none: 'Nothing',
-  parts_total: 'Total',
-  parts_average: 'Average',
-  parts_aria: '{style} of {names}',
-});
 
 /** Colours in order, for entities without their own `color` (the same order as the history charts). */
 export { SERIES_COLORS };

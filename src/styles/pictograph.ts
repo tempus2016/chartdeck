@@ -15,18 +15,9 @@ import type { ColorBy } from '../chart/parts';
 import { isInteractive } from '../actions';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { registerStrings } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
-
-registerStrings('en', {
-  editor_style_pictograph: 'Pictograph',
-  editor_unit_icon: 'Icon (each entity can have its own)',
-  editor_per_icon: 'Each icon stands for (empty: automatic)',
-  editor_group_size: 'Icons per group (0: no groups)',
-  editor_partial: 'Part-fill an icon for fractions',
-});
 
 export const PICTO_COLOR_BY: ColorBy[] = ['series', 'bands'];
 /** More icons than this per entity would be unreadable; the scale is stretched instead. */

@@ -6,17 +6,13 @@ import { toReading } from '../history/fetch';
 import { boundaries, wallTime, zonedTime } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Range } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant, ResolvedBand } from '../types';
 import { formatDateTime } from './axes';
 import { VIEW_H, VIEW_W } from './frame';
 import type { ChartSeries, HistoryFrame } from './frame';
 import type { PlotScales } from './grid';
-
-registerStrings('en', {
-  annotation_at: '{label} at {time}',
-});
 
 /** What an annotation marks. */
 export const ANNOTATION_TYPES = ['line', 'band', 'time', 'state', 'point'] as const;

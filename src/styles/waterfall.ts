@@ -8,7 +8,7 @@ import { entityOptionsForm } from '../editor/entity-options';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import type { Point } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
@@ -16,24 +16,6 @@ import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index
 export const STEP_MODES = ['change', 'current'] as const;
 export const ORIENTATIONS = ['vertical', 'horizontal'] as const;
 type StepMode = (typeof STEP_MODES)[number];
-
-registerStrings('en', {
-  editor_style_waterfall: 'Waterfall',
-  editor_steps: 'Each step is',
-  editor_steps_change: 'How much it changed in the period',
-  editor_steps_current: 'Its current value',
-  editor_orientation: 'Direction',
-  editor_orientation_vertical: 'Upright',
-  editor_orientation_horizontal: 'Across',
-  editor_start_from_first: "Start from the first entity's reading at the start of the period",
-  editor_total: 'Show the total at the end',
-  editor_waterfall_invert: 'Counts down (a rise in these is a drop in the total)',
-  waterfall_start: 'Start',
-  waterfall_end: 'End',
-  waterfall_total: 'Total',
-  waterfall_no_readings: 'No readings',
-  waterfall_aria: 'Waterfall chart: {bars}',
-});
 
 /** How much a series changed: its last reading less its first, or null with no readings. */
 export function change(points: Point[]): number | null {

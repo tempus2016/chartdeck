@@ -1,29 +1,11 @@
 import { html } from 'lit';
 import type { TemplateResult } from 'lit';
 import { baseColor } from '../bands';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartEditorContext, EntityFields } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { HISTORY_FIELDS, cachedSchema, chartForm, choice, historySchema, historyVariant } from './chart-editors';
 import type { FieldBinding } from './schemas';
-
-registerStrings('en', {
-  editor_bar_labels: 'Text on the bars',
-  editor_bar_labels_state: 'State',
-  editor_bar_labels_duration: 'How long',
-  editor_bar_labels_both: 'State and how long',
-  editor_bar_labels_none: 'None',
-  editor_timeline_legend: 'Legend of states',
-  editor_timeline_legend_above: 'Above the chart',
-  editor_timeline_legend_hidden: 'Hidden',
-  editor_state_colors: 'State colours',
-  editor_state_colors_help: 'A palette name (amber, green, blue, red, purple, grey, primary) or any CSS colour.',
-  editor_state_colors_state: 'State',
-  editor_state_colors_color: 'Colour',
-  editor_state_colors_add: 'Add a state colour',
-  editor_state_colors_remove: 'Remove',
-  editor_timeline_group: 'Group (rows with the same group share a heading)',
-});
 
 /** A state timeline reads states, which statistics don't keep, and draws them ungrouped. */
 const NOT_FOR_TIMELINE = new Set(['source', 'group_by', 'aggregate']);

@@ -22,7 +22,7 @@ import {
 } from '../editor/chart-editors';
 import { LINE_WIDTH_SELECTOR } from '../editor/schemas';
 import type { FieldBinding } from '../editor/schemas';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import { iconOverride } from '../resolve';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
@@ -39,17 +39,6 @@ const H = 24;
 const MAX_POINTS = 120;
 /** A sparkline is thin: its default line is lighter than a line chart's. */
 const SPARK_LINE_WIDTH = 1.5;
-
-registerStrings('en', {
-  editor_style_sparkline: 'Sparklines',
-  editor_spark: 'Sparkline',
-  editor_spark_line: 'Line',
-  editor_spark_area: 'Area',
-  editor_spark_column: 'Columns',
-  editor_spark_bar: 'Bar under the name and value',
-  editor_spark_color: 'Colour',
-  spark_aria: 'Trend of {name}',
-});
 
 /**
  * Which kind a row draws: its own `spark`, else the card's, else a line. Columns of raw readings

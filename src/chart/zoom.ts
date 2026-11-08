@@ -1,6 +1,6 @@
 import { css, html, nothing, svg } from 'lit';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { Point, Range } from '../history/types';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
@@ -12,14 +12,6 @@ import { runs } from './paths';
 import { extent, linear, padDomain } from './scale';
 import { downsample } from './downsample';
 import type { Hover } from './tooltip';
-
-registerStrings('en', {
-  zoom_reset: 'Reset zoom',
-  zoom_window: 'Shown: {from} to {to}',
-  zoom_window_label: 'Part of the chart shown',
-  editor_zoom: 'Zoom and pan (pinch, Ctrl + scroll or drag)',
-  editor_overview: 'Overview strip below the chart',
-});
 
 /** The part of a chart's span on show, as fractions of it: 0–1 is all of it. */
 export interface ZoomWindow {

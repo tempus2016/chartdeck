@@ -17,6 +17,7 @@ import {
 import type { FieldBinding } from './schemas';
 import './bands-editor';
 import './limit-field';
+import { LanguageController } from '../language-controller';
 
 type Item = string | EntityConfig;
 
@@ -41,6 +42,9 @@ export function sensorUnit(
 
 /** The entity list: pick, reorder and remove entities, and edit each one's overrides. */
 export class CdEntitiesEditor extends LitElement {
+  // Draws again once the user's language arrives.
+  protected readonly languageController = new LanguageController(this);
+
   static properties = {
     hass: { attribute: false },
     entities: { attribute: false },

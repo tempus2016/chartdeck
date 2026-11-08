@@ -38,29 +38,10 @@ import type { Period } from '../history/period';
 import { storeFor } from '../history/store';
 import { zoneFor } from '../history/timezone';
 import type { Point, SeriesRequest } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_day_clock: '24-hour clock',
-  day_clock_times_one: 'once',
-  day_clock_times: '{n} times',
-  day_clock_a_day: '{text} a day',
-  day_clock_busiest: '{total} · busiest {time}',
-  day_clock_peak: 'peak {value} at {time}',
-  day_clock_state: '{name} {state}',
-  day_clock_per_day: '{label} per day',
-  day_clock_no_data: 'Nothing recorded',
-  day_clock_now: 'Now',
-  day_clock_on: 'on',
-  day_clock_average: 'Average day · last {n} days',
-  day_clock_on_days: 'on {on} of {of} days',
-  day_clock_so_far: '{duration} so far',
-  day_clock_range: '{from} – {to}',
-  day_clock_average_value: '{value} on average',
-});
 
 export const CENTER = ['total', 'now', 'none'] as const;
 export type Center = (typeof CENTER)[number];

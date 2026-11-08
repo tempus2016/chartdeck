@@ -2,7 +2,6 @@ import type { TemplateResult } from 'lit';
 import { CURVES } from '../chart/paths';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { AGGREGATES } from '../history/group';
-import { registerStrings } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { HISTORY_FIELDS, cachedSchema, chartForm, choice, historySchema, historyVariant } from './chart-editors';
@@ -10,75 +9,6 @@ import { LINE_WIDTH_SELECTOR } from './schemas';
 import type { FieldBinding } from './schemas';
 
 /** The trend style's Chart section and per-entity options. Defaults match the style's (see styles/trend.ts). */
-
-registerStrings('en', {
-  editor_points_per_hour: 'Points per hour (0 draws every reading)',
-  editor_graph: 'Graph',
-  editor_graph_line: 'Line',
-  editor_graph_bar: 'Bars',
-  editor_graph_none: 'None (value only)',
-  editor_fill: 'Fill under the line',
-  editor_fill_solid: 'Solid',
-  editor_fill_fade: 'Fade',
-  editor_fill_none: 'None',
-  editor_points: 'Dots on the line',
-  editor_points_hover: 'On hover',
-  editor_points_always: 'Always',
-  editor_points_never: 'Never',
-  editor_trend_labels: 'Highest and lowest labels',
-  editor_labels_hover: 'On hover',
-  editor_labels_always: 'Always',
-  editor_labels_never: 'Never',
-  editor_height: 'Graph height (per 500 px of width)',
-  editor_bar_spacing: 'Space between bars (px)',
-  editor_color_transition: 'Band colours',
-  editor_color_transition_smooth: 'Blend',
-  editor_color_transition_hard: 'Change at each band',
-  editor_extrema: 'Show lowest and highest',
-  editor_average: 'Show average',
-  editor_trend_legend: 'Legend (two or more entities)',
-  editor_trend_y_min: 'Lowest value (~ for soft)',
-  editor_trend_y_max: 'Highest value (~ for soft)',
-  editor_min_range: 'Smallest range shown',
-  editor_y_min_secondary: 'Right axis lowest (~ for soft)',
-  editor_y_max_secondary: 'Right axis highest (~ for soft)',
-  editor_min_range_secondary: 'Right axis smallest range',
-  editor_value_factor: 'Scale by 10 to the power of',
-  editor_align_header: 'Name and icon',
-  editor_align_header_default: 'Spread out',
-  editor_align_header_left: 'Left',
-  editor_align_header_right: 'Right',
-  editor_align_header_center: 'Centre',
-  editor_align_icon: 'Icon',
-  editor_align_icon_right: 'Right of the name',
-  editor_align_icon_left: 'Left of the name',
-  editor_align_icon_state: 'Beside the value',
-  editor_align_state: 'Value',
-  editor_align_state_left: 'Left',
-  editor_align_state_right: 'Right',
-  editor_align_state_center: 'Centre',
-  editor_font_size: 'Value size (%)',
-  editor_font_size_header: 'Name size (px)',
-  editor_color_name: 'Colour the name',
-  editor_color_value: 'Colour the value',
-  editor_trend_color_icon: 'Colour the icon',
-  editor_trend_group: 'No background (inside another card)',
-  editor_icon_image: 'Image instead of the icon (URL)',
-  editor_trend_tooltip: 'Show the value under the pointer',
-  editor_y_axis_side: 'Axis',
-  editor_y_axis_side_primary: 'Left',
-  editor_y_axis_side_secondary: 'Right (its own scale)',
-  editor_entity_aggregate: 'Combine with',
-  editor_fixed_value: 'Draw the current value as a flat line',
-  editor_show_state: 'Show its value beside the main one',
-  editor_show_indicator: 'Colour dot by the value',
-  editor_show_graph: 'On the graph',
-  editor_show_line: 'Line',
-  editor_show_fill: 'Fill',
-  editor_show_points: 'Dots',
-  editor_show_legend_entity: 'In the legend',
-  editor_show_legend_state: 'Value in the legend',
-});
 
 const TREND_FIELDS: FieldBinding[] = [
   ...HISTORY_FIELDS,

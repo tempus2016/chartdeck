@@ -51,7 +51,7 @@ import { LINE_WIDTH_SELECTOR, entitySeriesFields, entitySeriesSchema } from '../
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { CURVES } from '../chart/paths';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { Point } from '../history/types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant } from '../types';
@@ -60,15 +60,6 @@ import type { CardConfig, HomeAssistant } from '../types';
 const MAX_POINTS = 500;
 /** Area outlines are a little finer than a line chart's: the fill carries the shape. */
 export const AREA_LINE_WIDTH = 2;
-
-registerStrings('en', {
-  editor_style_area: 'Area',
-  editor_stack: 'Stack',
-  editor_stack_none: "Don't stack",
-  editor_stack_normal: 'On top of each other',
-  editor_stack_percent: 'To 100 %',
-  editor_negative_color: 'Colour below zero',
-});
 
 /**
  * Value-axis ends to fix so a filled chart stands on zero: readings that are all positive (or all

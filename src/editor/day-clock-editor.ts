@@ -1,26 +1,10 @@
 import type { TemplateResult } from 'lit';
 import { BUCKETS } from '../chart/day-clock';
 import { AGGREGATES } from '../history/group';
-import { registerStrings } from '../localize';
 import type { ChartEditorContext, EntityFields } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { cachedSchema, chartForm, choice } from './chart-editors';
 import type { FieldBinding } from './schemas';
-
-registerStrings('en', {
-  editor_days: 'Days (more than 1 shows the average day)',
-  editor_center: 'In the middle',
-  editor_day_clock_center_total: 'Time on',
-  editor_day_clock_center_now: 'The time now',
-  editor_day_clock_center_none: 'Nothing',
-  editor_bucket: 'One bar for every',
-  editor_bucket_15: '15 minutes',
-  editor_bucket_30: '30 minutes',
-  editor_bucket_60: 'Hour',
-  editor_aggregate_auto: 'Automatic (change for meters, else average)',
-  editor_ring_color: 'Colour',
-  editor_active: 'Counts as on (empty: on, open, heating, home…)',
-});
 
 export const DAY_CLOCK_FIELDS: FieldBinding[] = [
   { name: 'days', path: ['days'], default: 1 },

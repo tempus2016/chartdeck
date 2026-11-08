@@ -17,16 +17,9 @@ import {
 import type { Arc, ColorBy, LegendRow } from '../chart/parts';
 import { isInteractive } from '../actions';
 import type { FieldBinding } from '../editor/schemas';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
-
-registerStrings('en', {
-  editor_style_rings: 'Rings',
-  editor_rings_start_angle: 'Start angle (0 is the top)',
-  editor_end_angle: 'End angle',
-  editor_rounded_ends: 'Rounded ends',
-});
 
 export const RINGS_CENTER = ['average', 'total', 'none'] as const;
 export const RINGS_COLOR_BY: ColorBy[] = ['series', 'bands'];

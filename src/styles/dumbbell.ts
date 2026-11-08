@@ -9,7 +9,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { parsePeriod } from '../history/period';
 import type { Period } from '../history/period';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant } from '../types';
@@ -18,31 +18,6 @@ export const ENDS = ['range', 'then', 'target'] as const;
 export type Ends = (typeof ENDS)[number];
 export const ORIENTATIONS = ['horizontal', 'vertical'] as const;
 export type Orientation = (typeof ORIENTATIONS)[number];
-
-registerStrings('en', {
-  editor_style_dumbbell: 'Dumbbell',
-  editor_ends: 'Compare',
-  editor_ends_range: 'Lowest and highest in the period',
-  editor_ends_then: 'Start of the period and now',
-  editor_ends_target: 'Target and now',
-  editor_show_now: 'Mark the current value',
-  editor_orientation: 'Direction',
-  editor_orientation_horizontal: 'Across',
-  editor_orientation_vertical: 'Upright',
-  dumbbell_low: 'Low',
-  dumbbell_high: 'High',
-  dumbbell_now: 'Now',
-  dumbbell_target: 'Target',
-  dumbbell_ago_hour_one: 'An hour ago',
-  dumbbell_ago_hour: '{n} hours ago',
-  dumbbell_ago_day_one: 'A day ago',
-  dumbbell_ago_day: '{n} days ago',
-  dumbbell_ago_week_one: 'A week ago',
-  dumbbell_ago_week: '{n} weeks ago',
-  dumbbell_ago_month_one: 'A month ago',
-  dumbbell_ago_month: '{n} months ago',
-  dumbbell_no_value: 'No value',
-});
 
 /** What a mark on a row stands for. */
 export type MarkKind = 'low' | 'high' | 'now' | 'then' | 'target';

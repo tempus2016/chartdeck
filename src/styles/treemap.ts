@@ -11,22 +11,10 @@ import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { GROUP_FIELDS, HIERARCHY_LABELS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_treemap: 'Treemap',
-  editor_treemap_color_by: 'Colour',
-  editor_treemap_color_by_group: 'One colour per group',
-  editor_treemap_color_by_bands: 'By colour band',
-  treemap_aria: 'Treemap of {names}',
-  treemap_total: '{value} in all',
-  treemap_empty: 'Nothing to show: no entity has a value above zero.',
-  treemap_no_reading: 'No reading:',
-  treemap_other: 'Other',
-});
 
 export const TREEMAP_COLOR_BY = ['group', 'bands'] as const;
 export type TreemapColorBy = (typeof TREEMAP_COLOR_BY)[number];

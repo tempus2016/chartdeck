@@ -57,7 +57,7 @@ import {
 } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 
@@ -70,22 +70,6 @@ const PLOT_PX = 180;
 const COMPACT_PLOT_PX = 110;
 /** Rough width of one character of a stream's name (11 px text), for keeping names apart. */
 const LABEL_CHAR_PX = 6.2;
-
-registerStrings('en', {
-  editor_style_streamgraph: 'Streamgraph',
-  editor_baseline: 'Shape',
-  editor_baseline_wiggle: 'Streamgraph (flowing)',
-  editor_baseline_centre: 'Centred',
-  editor_baseline_share: 'Share of the total (100 %)',
-  editor_baseline_zero: 'Stacked from zero',
-  editor_stream_order: 'Order',
-  editor_stream_order_inside_out: 'Biggest in the middle',
-  editor_stream_order_listed: 'As listed, first at the bottom',
-  editor_stream_labels: 'Names on the streams',
-  editor_stream_curve: 'Edges',
-  editor_fill_color: 'Colour',
-  stream_total: 'Total',
-});
 
 /** One sample across every stream: when, and each series' value there. */
 interface Samples {

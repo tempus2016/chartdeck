@@ -47,7 +47,7 @@ import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Range, Source } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 
@@ -60,27 +60,6 @@ const MAX_READINGS = 120;
 const MAX_BOX_PX = 44;
 /** Share of a category's room the boxes take together; the rest is the gap between categories. */
 const SLOT = 0.72;
-
-registerStrings('en', {
-  editor_style_box: 'Box plot',
-  box_aria: 'Box plot of {names}',
-  box_highest: 'Highest',
-  box_upper_quartile: 'Upper quartile',
-  box_median: 'Median',
-  box_lower_quartile: 'Lower quartile',
-  box_lowest: 'Lowest',
-  box_mean: 'Average',
-  box_count: 'Readings',
-  box_outliers: 'Outliers',
-  editor_orientation: 'Direction',
-  editor_orientation_vertical: 'Upright',
-  editor_orientation_horizontal: 'Across',
-  editor_whiskers: 'Whiskers reach',
-  editor_whiskers_tukey: '1.5 × box height (outliers as dots)',
-  editor_whiskers_range: 'The lowest and highest',
-  editor_readings: 'Show each reading as a dot',
-  editor_box_color: 'Box colour',
-});
 
 type BoxRaw = CardConfig & { orientation?: unknown; whiskers?: unknown; readings?: unknown };
 

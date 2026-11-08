@@ -7,7 +7,6 @@ import { linear } from './scale';
 import { choice } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber } from '../format';
-import { registerStrings } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 
@@ -75,20 +74,6 @@ export interface CategoryOptions {
 }
 
 const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-
-registerStrings('en', {
-  editor_orientation: 'Direction',
-  editor_orientation_horizontal: 'Across',
-  editor_orientation_vertical: 'Upright',
-  editor_value_axis: 'Value labels',
-  editor_value_grid: 'Lines at each value label',
-  editor_value_min: 'Lowest value shown',
-  editor_value_max: 'Highest value shown',
-  dist_median: 'Median',
-  dist_middle: 'Middle half',
-  dist_range: 'Lowest – highest',
-  dist_count: 'Readings',
-});
 
 /** The editor fields every distribution chart shares (see `categorySchema`). */
 export const CATEGORY_FIELDS: FieldBinding[] = [

@@ -18,18 +18,9 @@ import {
 import type { ColorBy, LegendRow } from '../chart/parts';
 import { isInteractive } from '../actions';
 import type { FieldBinding } from '../editor/schemas';
-import { registerStrings } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
-
-registerStrings('en', {
-  editor_style_waffle: 'Waffle',
-  editor_waffles: 'Waffles',
-  editor_waffles_one: 'One, split between the entities',
-  editor_waffles_each: 'One per entity, side by side',
-  editor_headline: 'Show the first share in large type',
-});
 
 export const WAFFLES = ['one', 'each'] as const;
 export const WAFFLE_COLOR_BY: ColorBy[] = ['series', 'bands'];

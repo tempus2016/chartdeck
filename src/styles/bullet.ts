@@ -1,22 +1,13 @@
 import { css, html, nothing, svg } from 'lit';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { entityMark, markStyles, rangeFill, rangeSegments, targetText } from '../chart/marks';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
 
 export const RANGE_MODES = ['shades', 'colours'] as const;
 export type RangeMode = (typeof RANGE_MODES)[number];
-
-registerStrings('en', {
-  editor_style_bullet: 'Bullet',
-  editor_ranges: 'Ranges behind the bar',
-  editor_ranges_shades: 'Shades of grey',
-  editor_ranges_colours: 'Colour band colours',
-  compare_target: 'target {target}',
-  chart_aria: '{style} chart of {names}',
-});
 
 function bulletRow(e: ResolvedEntity, index: number, ctx: ChartContext, mode: RangeMode) {
   const { show } = ctx.config;

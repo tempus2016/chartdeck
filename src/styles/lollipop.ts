@@ -1,21 +1,13 @@
 import { css, html, nothing, svg } from 'lit';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { entityMark, markStyles } from '../chart/marks';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
 
 export const ORIENTATIONS = ['vertical', 'horizontal'] as const;
 export type Orientation = (typeof ORIENTATIONS)[number];
-
-registerStrings('en', {
-  editor_style_lollipop: 'Lollipop',
-  editor_orientation: 'Direction',
-  editor_orientation_vertical: 'Upright',
-  editor_orientation_horizontal: 'Across',
-  chart_aria: '{style} chart of {names}',
-});
 
 /** The stem, dot and target ring, placed by the entity's drawing variables. */
 function stick(e: ResolvedEntity, ctx: ChartContext, withValue: boolean) {
