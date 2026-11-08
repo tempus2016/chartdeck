@@ -51,7 +51,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { boundaries } from '../history/timezone';
 import type { Zone } from '../history/timezone';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 
@@ -67,24 +67,6 @@ const HALF = 0.42;
 const MAX_DOTS = 300;
 /** A band wider than this (px) draws its shape as if it were this wide. */
 const MAX_BAND_PX = 110;
-
-registerStrings('en', {
-  editor_style_violin: 'Violin',
-  editor_shape: 'Shape',
-  editor_shape_violin: 'Violin',
-  editor_shape_raincloud: 'Raincloud (half violin, box and readings)',
-  editor_box: 'Box with the median and middle half',
-  editor_readings: 'Show each reading as a dot',
-  editor_bandwidth: 'Smoothing (in the entity’s unit, empty for automatic)',
-  editor_split_by: 'One shape per',
-  editor_split_by_none: 'Entity',
-  editor_split_by_day: 'Entity and day',
-  editor_split_by_week: 'Entity and week',
-  editor_split_by_month: 'Entity and month',
-  violin_median: 'median {value}',
-  violin_none: 'No readings',
-  violin_raincloud: 'Raincloud',
-});
 
 /** One shape to draw: an entity, or an entity's day / week / month. */
 interface Group {
@@ -309,8 +291,6 @@ const ENTITY_FIELDS = {
   schema: [{ name: 'fill_color', selector: { text: {} } }],
   fields: [{ name: 'fill_color', path: ['color'] }],
 };
-
-registerStrings('en', { editor_fill_color: 'Colour' });
 
 export const violin: ChartStyleModule = {
   layout: 'chart',

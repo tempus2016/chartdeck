@@ -45,7 +45,7 @@ import {
 } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 
@@ -56,25 +56,6 @@ type Bars = (typeof BARS)[number];
 const COLOR_BY = ['series', 'bands'] as const;
 
 const HOUR = 3_600_000;
-
-registerStrings('en', {
-  editor_style_histogram: 'Histogram',
-  editor_count: 'Count',
-  editor_count_time: 'Time spent in each range',
-  editor_count_readings: 'Readings in each range',
-  editor_show_as: 'Show as',
-  editor_show_as_percent: 'Share of the whole (%)',
-  editor_show_as_total: 'Hours or readings',
-  editor_bins: 'Number of bins (empty: automatic)',
-  editor_bin_width: 'Bin width (wins over the number)',
-  editor_bars: 'Two or more entities',
-  editor_bars_side: 'Bars side by side',
-  editor_bars_overlap: 'Bars over each other',
-  editor_hist_x_axis: 'Value labels along the bottom',
-  editor_bar_color: 'Bar colour',
-  histogram_readings: '{n} readings',
-  histogram_reading: '1 reading',
-});
 
 const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 

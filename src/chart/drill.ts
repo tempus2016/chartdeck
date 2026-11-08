@@ -1,17 +1,10 @@
 import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
 import { findNode } from './hierarchy';
 import type { TreeNode } from './hierarchy';
-
-registerStrings('en', {
-  editor_drill_down: 'Tap a group to show what makes it up',
-  drill_into: '{label}. Show what makes it up',
-  drill_back: 'Back to {name}',
-  drill_top: 'All',
-});
 
 /**
  * Drilling down: tapping a group in a hierarchy chart (a treemap box, a sunburst ring, an icicle

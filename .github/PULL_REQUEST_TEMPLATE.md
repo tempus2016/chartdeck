@@ -14,7 +14,7 @@ inside Home Assistant, so say what you actually looked at.
 -->
 
 - [ ] `npm run lint`, `npm test` and `npm run build` pass
-- [ ] `dist/chartdeck-card.js` is rebuilt and committed (CI fails otherwise)
+- [ ] `dist/` is rebuilt and committed (CI fails otherwise)
 - [ ] Anything new can be set up from the visual editor, not only in YAML
 - [ ] Tried in a real Home Assistant dashboard, in both normal and edit mode, light and dark theme
 - [ ] Checked the browser console for errors

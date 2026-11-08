@@ -4,7 +4,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import type { Grouping } from '../history/group';
 import type { Point, Range } from '../history/types';
-import { languageOf, localize, registerStrings } from '../localize';
+import { languageOf, localize } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { formatDateTime, formatTime, timeZoneOf } from './axes';
@@ -24,19 +24,6 @@ export interface ExtremesOptions {
 }
 
 export const DEFAULT_EXTREMES: ExtremesOptions = { min: false, max: false, average: 'none' };
-
-registerStrings('en', {
-  extremes_high: 'High',
-  extremes_low: 'Low',
-  extremes_average: 'Avg',
-  editor_extremes_max: 'Mark the highest reading',
-  editor_extremes_min: 'Mark the lowest reading',
-  editor_extremes_average: 'Average',
-  editor_extremes_average_none: "Don't show",
-  editor_extremes_average_line: 'Line across the chart',
-  editor_extremes_average_figure: 'Figure only',
-  editor_extremes: 'Mark highest, lowest and average',
-});
 
 type Raw = CardConfig & { extremes?: unknown };
 

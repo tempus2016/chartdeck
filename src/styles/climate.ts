@@ -40,28 +40,13 @@ import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
 import { zoneFor } from '../history/timezone';
 import type { Point, Range } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartStyleModule } from './index';
 
 /** Room-temperature points kept after thinning: about two per pixel on a wide card. */
 const MAX_POINTS = 500;
-
-registerStrings('en', {
-  editor_style_climate: 'Climate',
-  climate_set_point: 'Set point',
-  climate_range: '{low} – {high}',
-  climate_not_thermostat: '{name} is not a thermostat. Pick a climate entity.',
-  climate_action_heating: 'Heating',
-  climate_action_preheating: 'Preheating',
-  climate_action_cooling: 'Cooling',
-  climate_action_defrosting: 'Defrosting',
-  climate_action_drying: 'Drying',
-  climate_action_fan: 'Fan',
-  climate_action_idle: 'Idle',
-  climate_action_off: 'Off',
-});
 
 /** The card's climate options with defaults filled in. */
 export interface ClimateOptions {

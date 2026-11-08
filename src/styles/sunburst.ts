@@ -10,27 +10,10 @@ import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { GROUP_FIELDS, HIERARCHY_LABELS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_sunburst: 'Sunburst',
-  editor_style_icicle: 'Icicle',
-  editor_sunburst_shape: 'Shape',
-  editor_sunburst_shape_full: 'Full circle',
-  editor_sunburst_shape_half: 'Half circle',
-  editor_hierarchy_color_by: 'Colour',
-  editor_hierarchy_color_by_group: 'One colour per group',
-  editor_hierarchy_color_by_bands: 'By colour band',
-  hierarchy_total: 'Total',
-  hierarchy_other: 'Other',
-  hierarchy_empty: 'Nothing to show: no entity has a value above zero.',
-  hierarchy_no_reading: 'No reading:',
-  sunburst_aria: 'Sunburst of {names}',
-  icicle_aria: 'Icicle chart of {names}',
-});
 
 export const SUNBURST_SHAPES = ['full', 'half'] as const;
 export type SunburstShape = (typeof SUNBURST_SHAPES)[number];

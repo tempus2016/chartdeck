@@ -7,21 +7,10 @@ import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import { entityOptionsForm } from '../editor/entity-options';
 import { GROUP_FIELDS, HIERARCHY_LABELS, entityGroupsForm, groupBySchema, withGroupList } from '../editor/group-fields';
 import type { FieldBinding } from '../editor/schemas';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_radar: 'Radar',
-  editor_radar_scale: 'Scale',
-  editor_radar_scale_limits: "Each axis from its entity's minimum to maximum",
-  editor_radar_scale_shared: 'One scale for all, from 0 to the largest value',
-  editor_radar_fill: 'Fill the shapes',
-  editor_radar_axis: 'Axis name (entities with the same axis name line up across groups)',
-  radar_aria: 'Radar chart of {names}',
-  radar_other: 'Other',
-});
 
 export const RADAR_SCALES = ['limits', 'shared'] as const;
 export type RadarScale = (typeof RADAR_SCALES)[number];

@@ -28,24 +28,10 @@ import { storeFor } from '../history/store';
 import { zoneFor } from '../history/timezone';
 import type { Point, Range, SeriesRequest, Source } from '../history/types';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import { resolveBands } from '../resolve';
 import type { CardConfig, MergedEntity, ResolvedBand } from '../types';
 import type { ChartContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_wind_rose: 'Wind rose',
-  wind_prevailing: 'Prevailing',
-  wind_mean_speed: 'Mean speed',
-  wind_strongest: 'Strongest',
-  wind_calm: 'Calm',
-  wind_speed: 'Speed',
-  wind_speed_unit: 'Speed ({unit})',
-  wind_share: 'Of the time',
-  wind_aria: 'Wind rose, prevailing {direction} {share}',
-  wind_aria_calm: 'Wind rose, prevailing {direction} {share}, calm {calm}',
-  wind_aria_still: 'Wind rose, calm {calm}',
-});
 
 /** A rolling month: long enough for the pattern to show, short enough to load quickly. */
 export const DEFAULT_WIND_PERIOD = { last: 30, unit: 'day' };

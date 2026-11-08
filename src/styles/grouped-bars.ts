@@ -5,7 +5,7 @@ import { extentOf, withZero } from '../chart/compare';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant, SortMode } from '../types';
@@ -26,21 +26,6 @@ const STACK_H = 20;
 const ROW_PAD = 8;
 /** Percent mode labels a segment only when it is at least this share of the width. */
 const MIN_LABEL_SHARE = 0.12;
-
-registerStrings('en', {
-  editor_style_grouped_bars: 'Grouped bars',
-  editor_mode: 'Bars',
-  editor_mode_grouped: 'Side by side',
-  editor_mode_stacked: 'Stacked',
-  editor_mode_percent: 'Stacked to 100 %',
-  editor_bars_color_by: 'Colour',
-  editor_bars_color_by_series: 'One colour per series',
-  editor_bars_color_by_bands: 'By colour band',
-  editor_bar_group: 'Row',
-  editor_bar_series: 'Series',
-  editor_bar_color: 'Bar colour',
-  grouped_bars_aria: 'Bar chart of {names}',
-});
 
 /** One entity as the chart sees it, in config order. */
 export interface BarInput {

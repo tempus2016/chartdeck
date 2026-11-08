@@ -10,7 +10,7 @@ import { pauseStore, storeFor } from '../history/store';
 import { boundaries, startOf, wallTime, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
@@ -52,28 +52,6 @@ export interface HistoryFrame {
   /** Set when readings are grouped: each point is then one group, from `t` to `end`. */
   group?: Grouping;
 }
-
-registerStrings('en', {
-  period_previous: 'Previous period',
-  period_next: 'Next period',
-  period_return: 'Back to {label}',
-  period_today: 'Today',
-  period_yesterday: 'Yesterday',
-  period_this_week: 'This week',
-  period_last_week: 'Last week',
-  period_this_month: 'This month',
-  period_last_month: 'Last month',
-  period_this_year: 'This year',
-  period_last_year: 'Last year',
-  period_last_hour: 'Last hour',
-  period_last_hours: 'Last {n} hours',
-  period_last_day: 'Last day',
-  period_last_days: 'Last {n} days',
-  period_last_week_rolling: 'Last 7 days',
-  period_last_weeks: 'Last {n} weeks',
-  period_last_month_rolling: 'Last month',
-  period_last_months: 'Last {n} months',
-});
 
 /** Checks for the options every history chart shares. */
 export function validateHistoryOptions(raw: CardConfig): void {

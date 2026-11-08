@@ -2,6 +2,7 @@ import { LitElement, css, html, nothing } from 'lit';
 import type { PropertyValues } from 'lit';
 import { localize } from '../localize';
 import type { HomeAssistant, Limit } from '../types';
+import { LanguageController } from '../language-controller';
 
 export type LimitMode = 'default' | 'number' | 'entity';
 
@@ -17,6 +18,9 @@ export function limitMode(value: Limit | undefined): LimitMode {
 
 /** A min / max / target picker: the card's default, a fixed number, or an entity's state. */
 export class CdLimitField extends LitElement {
+  // Draws again once the user's language arrives.
+  protected readonly languageController = new LanguageController(this);
+
   static properties = {
     hass: { attribute: false },
     label: { attribute: false },

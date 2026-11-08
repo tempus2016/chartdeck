@@ -1,25 +1,11 @@
 import { html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { SECTOR_COUNTS } from '../chart/wind';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig } from '../types';
 import { HISTORY_FIELDS, cachedSchema, chartForm, choice, historySchema, historyVariant } from './chart-editors';
 import type { FieldBinding } from './schemas';
-
-registerStrings('en', {
-  editor_sectors: 'Directions',
-  editor_sectors_4: '4 (N, E, S, W)',
-  editor_sectors_8: '8 (N, NE, E…)',
-  editor_sectors_16: '16 (N, NNE, NE…)',
-  editor_calm: 'Calm below (blank: 0.5 m/s, or the same in km/h, mph or knots)',
-  editor_wind_roles:
-    'The first entity is the wind direction, in degrees or compass points such as SW. The second is the wind speed: without one, the petals only show how often the wind came from each way.',
-  editor_wind_now: 'Direction: {direction}. Speed: {speed}.',
-  editor_wind_none: 'none',
-  editor_wind_statistics:
-    "Long-term statistics give each hour's average direction. That is only right across north when the sensor records direction as an angle (state class measurement_angle); otherwise an hour swinging between NNW and NNE averages to south. History is exact.",
-});
 
 /** The history fields with the wind rose's month as the default span, and no grouping. */
 const PERIOD_FIELDS: FieldBinding[] = HISTORY_FIELDS.filter((f) => f.name !== 'group_by' && f.name !== 'aggregate').map(

@@ -1,7 +1,7 @@
 import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { Point, Range } from '../history/types';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
@@ -140,8 +140,6 @@ function valueText(p: Point | undefined, s: ChartSeries, ctx: ChartContext): str
   if (!p || p.v === null) return '—';
   return withUnit(formatNumber(p.v, s.entity.decimals, ctx.hass), s.entity.unit);
 }
-
-registerStrings('en', { chart_total: 'Total' });
 
 /** The units every series shares, or '' when they differ. */
 export function sharedUnit(series: readonly ChartSeries[]): string {

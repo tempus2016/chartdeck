@@ -65,7 +65,7 @@ import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } f
 import { positivePoints } from '../chart/log-scale';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartContext, ChartStyleModule } from './index';
 import type { Range } from '../history/types';
 import type { CardConfig, ResolvedBand } from '../types';
@@ -74,15 +74,6 @@ import type { CardConfig, ResolvedBand } from '../types';
 const MAX_POINTS = 500;
 
 const COLOR_BY = ['series', 'bands'] as const;
-
-registerStrings('en', {
-  editor_style_line: 'Line',
-  chart_loading: 'Loading history…',
-  chart_error: "Couldn't load history: {error}",
-  chart_no_data: 'No readings in this period.',
-  chart_aria: '{style} chart of {names}',
-  chart_log_nothing: 'Nothing above zero to draw on a log scale.',
-});
 
 /**
  * A vertical gradient with a hard stop at each band's start, in plot coordinates, so a line

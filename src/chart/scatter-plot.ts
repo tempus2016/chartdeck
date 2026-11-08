@@ -15,7 +15,7 @@ import {
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import type { Point } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartContext, ChartEditorContext, EntityFields } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { AXIS_LABELS, formatDateTime, validateAxisOptions } from './axes';
@@ -73,24 +73,6 @@ export const DEFAULT_MAX_SIZE = 32;
 const SIZE_LIMITS = [2, 80] as const;
 const DOT_LIMITS = [2, 30] as const;
 const JITTER_LIMITS = [0, 20] as const;
-
-registerStrings('en', {
-  editor_style_scatter: 'Scatter',
-  editor_style_bubble: 'Bubble',
-  editor_against: 'Along the bottom',
-  editor_against_entity: 'The first entity',
-  editor_against_time: 'Time',
-  editor_dot_size: 'Dot size (px)',
-  editor_jitter: 'Jitter (px)',
-  editor_min_size: 'Smallest bubble (px)',
-  editor_max_size: 'Largest bubble (px)',
-  editor_dot_color: 'Dot colour',
-  editor_xy_x_axis: 'Labels along the bottom',
-  scatter_needs_two: 'Add a second entity. The first goes along the bottom, the others up the side.',
-  bubble_needs_three: 'Add three entities: one along the bottom, one up the side, and one for the size of each bubble.',
-  scatter_role_x: 'Across',
-  bubble_role_size: 'Size',
-});
 
 /* -------------------------------------------------------------- maths -------------------------------------------------------------- */
 

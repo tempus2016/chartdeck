@@ -4,6 +4,7 @@ import { BAND_PRESETS, PALETTE, baseColor } from '../bands';
 import { languageOf, localize } from '../localize';
 import type { Band, HomeAssistant } from '../types';
 import { deepEqual } from './schemas';
+import { LanguageController } from '../language-controller';
 
 export type PresetName = keyof typeof BAND_PRESETS;
 
@@ -36,6 +37,9 @@ function isPaletteColor(color: string): boolean {
 
 /** Severity bands: a preset picker, then one editable row per band. */
 export class CdBandsEditor extends LitElement {
+  // Draws again once the user's language arrives.
+  protected readonly languageController = new LanguageController(this);
+
   static properties = {
     hass: { attribute: false },
     bands: { attribute: false },

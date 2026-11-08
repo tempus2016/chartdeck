@@ -45,7 +45,7 @@ import type { Bound, TrendPoint } from '../chart/trend-data';
 import { trendEditor, trendEntityFields } from '../editor/trend-editor';
 import { formatNumber, withUnit } from '../format';
 import type { Aggregate } from '../history/group';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import { iconOverride } from '../resolve';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig } from '../types';
@@ -56,13 +56,6 @@ import type { ChartContext, ChartStyleModule } from './index';
  * value in large type, and a graph of its history filling the bottom of the card edge to edge.
  * Hovering or dragging along the graph shows the value at that moment in place of the current one.
  */
-
-registerStrings('en', {
-  editor_style_trend: 'Trend',
-  trend_min: 'Low',
-  trend_avg: 'Average',
-  trend_max: 'High',
-});
 
 export const GRAPH_KINDS = ['line', 'bar', 'none'] as const;
 export const FILL_KINDS = ['solid', 'fade', 'none'] as const;

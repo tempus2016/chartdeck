@@ -2,43 +2,9 @@ import { html } from 'lit';
 import type { TemplateResult } from 'lit';
 import { ANNOTATION_TYPES, POINT_AT, timeList } from '../chart/annotations';
 import type { Annotation, AnnotationType } from '../chart/annotations';
-import { languageOf, localize, registerStrings } from '../localize';
+import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
-
-registerStrings('en', {
-  editor_annotations: 'Annotations',
-  editor_annotation_type: 'Kind',
-  editor_annotation_type_line: 'Line at a value',
-  editor_annotation_type_band: 'Shaded band of values',
-  editor_annotation_type_time: 'Marks at set times',
-  editor_annotation_type_state: 'Marks when an entity changes',
-  editor_annotation_type_point: 'Label on a reading',
-  editor_annotation_add_line: 'Line',
-  editor_annotation_add_band: 'Band',
-  editor_annotation_add_time: 'Times',
-  editor_annotation_add_state: 'State changes',
-  editor_annotation_add_point: 'Point label',
-  editor_annotation_add: 'Add an annotation:',
-  editor_annotation_value: 'Value (a number or an entity)',
-  editor_annotation_from: 'From (a number or an entity; blank for the bottom)',
-  editor_annotation_to: 'To (a number or an entity; blank for the top)',
-  editor_annotation_times: 'Times: 07:00 for every day, or 2026-10-28 07:00 (commas between)',
-  editor_annotation_entity: 'Entity',
-  editor_annotation_series: 'Series (blank for the first)',
-  editor_annotation_state: 'State (blank for every change)',
-  editor_annotation_shade: 'Shade while in this state',
-  editor_annotation_at: 'Reading',
-  editor_annotation_at_max: 'Highest',
-  editor_annotation_at_min: 'Lowest',
-  editor_annotation_at_last: 'Latest',
-  editor_annotation_at_first: 'First',
-  editor_annotation_label: 'Label',
-  editor_annotation_color: 'Colour',
-  editor_annotation_dash: 'Dashed',
-  editor_annotation_remove: 'Remove annotation',
-  editor_zones: 'Shade the severity bands behind the chart',
-});
 
 const DELETE_ICON = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
 

@@ -26,7 +26,7 @@ import {
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { AGGREGATES } from '../history/group';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant } from '../types';
 
@@ -51,24 +51,6 @@ const DEFAULTS: Record<HeatmapGrid, { last: number; unit: string; source: string
   hours: { last: 4, unit: 'week', source: 'history' },
   calendar: { last: 12, unit: 'month', source: 'statistics' },
 };
-
-registerStrings('en', {
-  editor_style_heatmap: 'Heatmap',
-  heatmap_aria: 'Heatmap of {name}',
-  heatmap_hours: 'Days averaged',
-  heatmap_empty: 'No readings',
-  editor_grid: 'Layout',
-  editor_grid_hours: 'Hour by weekday',
-  editor_grid_calendar: 'Calendar (a day per cell)',
-  editor_color_by_scale: 'Smooth scale',
-  editor_cell_shape: 'Cells',
-  editor_cell_shape_square: 'Square',
-  editor_cell_shape_rounded: 'Rounded',
-  editor_cell_shape_hexagon: 'Hexagon',
-  editor_color_min: 'Lowest colour at',
-  editor_color_max: 'Highest colour at',
-  editor_legend: 'Legend',
-});
 
 type Raw = CardConfig & { grid?: unknown; cell_shape?: unknown; color_min?: unknown; color_max?: unknown };
 

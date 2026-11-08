@@ -44,7 +44,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { wallTime } from '../history/timezone';
 import type { Point } from '../history/types';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 
@@ -60,21 +60,6 @@ const MAX_DOTS = 400;
 const ROW_PX = 96;
 /** Dot sizes when sized by value are rounded to this many steps, one path each. */
 const SIZE_STEPS = 6;
-
-registerStrings('en', {
-  editor_style_beeswarm: 'Beeswarm',
-  editor_place_by: 'Place each dot by',
-  editor_place_by_value: 'Its value',
-  editor_place_by_time_of_day: 'The time of day it happened',
-  editor_dot_size: 'Dot size (px)',
-  editor_size_by_value: 'Bigger dots for bigger values',
-  swarm_readings: '{n} readings',
-  swarm_events: '{n} times on',
-  swarm_shown: 'Dots shown',
-  swarm_none: 'No readings',
-  swarm_earliest_latest: 'Earliest – latest',
-  swarm_lowest_highest: 'Lowest – highest',
-});
 
 export interface SwarmOptions {
   placeBy: PlaceBy;
@@ -241,8 +226,6 @@ const ENTITY_FIELDS = {
   schema: [{ name: 'fill_color', selector: { text: {} } }],
   fields: [{ name: 'fill_color', path: ['color'] }],
 };
-
-registerStrings('en', { editor_fill_color: 'Colour' });
 
 export const beeswarm: ChartStyleModule = {
   layout: 'chart',

@@ -1,13 +1,9 @@
 import { html } from 'lit';
 import type { TemplateResult } from 'lit';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import { cachedSchema } from './chart-editors';
 import { entityId, setEntityOption } from './edit';
-
-registerStrings('en', {
-  editor_entity_options_none: 'Add an entity above first.',
-});
 
 /**
  * One field per listed entity, for an option a chart reads from each of them (its group, its

@@ -10,7 +10,7 @@ import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
 import { AGGREGATES, GROUP_UNITS } from '../history/group';
 import { CALENDAR_SPANS, PERIOD_UNITS, PERIOD_UNTIL } from '../history/period';
-import { languageOf, localize, registerStrings } from '../localize';
+import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { annotationsEditor } from './annotations-editor';
@@ -26,34 +26,6 @@ export function choice(hass: HomeAssistant | undefined, prefix: string, values: 
     },
   };
 }
-
-registerStrings('en', {
-  editor_period_calendar: 'Period',
-  editor_period_calendar_rolling: 'The last…',
-  editor_period_calendar_day: 'Today',
-  editor_period_calendar_week: 'This week',
-  editor_period_calendar_month: 'This month',
-  editor_period_calendar_year: 'This year',
-  editor_period_offset: 'Periods back (0 is the current one)',
-  editor_period_until: 'Draw up to',
-  editor_period_until_now: 'Now',
-  editor_period_until_end: 'The end of the period',
-  editor_period_navigate: 'Show previous and next buttons',
-  editor_group_by: 'Group readings by',
-  editor_group_by_none: "Don't group",
-  editor_group_by_hour: 'Hour',
-  editor_group_by_day: 'Day',
-  editor_group_by_week: 'Week',
-  editor_group_by_month: 'Month',
-  editor_aggregate: 'Combine with',
-  editor_aggregate_mean: 'Average',
-  editor_aggregate_sum: 'Sum',
-  editor_aggregate_min: 'Lowest',
-  editor_aggregate_max: 'Highest',
-  editor_aggregate_first: 'First',
-  editor_aggregate_last: 'Last',
-  editor_aggregate_change: 'Change (meters that count up)',
-});
 
 /** Fields every history chart shows first: what span it covers, and where the readings come from. */
 export const HISTORY_FIELDS: FieldBinding[] = [
@@ -130,30 +102,6 @@ export function rollingHistorySchema(hass?: HomeAssistant) {
   ];
 }
 
-registerStrings('en', {
-  editor_x_axis: 'Time labels',
-  editor_y_axis: 'Value labels',
-  editor_axis_labels: 'Axis labels',
-  editor_axis_labels_outside: 'Beside the chart',
-  editor_axis_labels_inside: 'Over the chart',
-  editor_grid_horizontal: 'Lines across',
-  editor_grid_vertical: 'Lines down',
-  editor_y_min: 'Lowest value shown',
-  editor_y_max: 'Highest value shown',
-  editor_y_scale: 'Value scale',
-  editor_y_scale_linear: 'Even steps',
-  editor_y_scale_log: 'Logarithmic (powers of ten)',
-  editor_tooltip: 'Show values on hover or touch',
-  editor_line_width: 'Line width (px)',
-  editor_dots: 'Dot at each reading',
-  editor_on_top: 'Draw above the other lines',
-  editor_compact: 'Compact',
-  editor_header: 'Names and values',
-  editor_header_above: 'Above the chart',
-  editor_header_over: 'Over the chart',
-  editor_header_hidden: 'Hidden',
-});
-
 /** Spacing and where the names and current values go, shared by every history chart. */
 export const LAYOUT_FIELDS: FieldBinding[] = [
   { name: 'header', path: ['header'], default: 'above' },
@@ -229,20 +177,6 @@ export const ZOOM_SCHEMA = [
 /** Shading the severity bands behind a history chart; the annotation list has its own editor. */
 export const ANNOTATION_FIELDS: FieldBinding[] = [{ name: 'zones', path: ['zones'], default: false }];
 export const ANNOTATION_SCHEMA = [{ name: 'zones', selector: { boolean: {} } }];
-registerStrings('en', {
-  editor_labels_show: 'Which readings',
-  editor_labels_show_all: 'All (as many as fit)',
-  editor_labels_show_last: 'The latest',
-  editor_labels_show_minmax: 'Highest and lowest',
-  editor_labels_show_ends: 'First and latest',
-  editor_labels_position: 'Label position',
-  editor_labels_position_auto: 'Above peaks, below dips',
-  editor_labels_position_above: 'Above',
-  editor_labels_position_below: 'Below',
-  editor_labels_position_center: 'On the point',
-  editor_labels_overlap: 'Let labels overlap',
-});
-
 /** Value labels on a chart's readings: on/off, then which, where, and whether they may overlap. */
 export const LABEL_FIELDS: FieldBinding[] = [
   { name: 'labels', path: ['labels'], default: false },
@@ -272,22 +206,9 @@ export function labelSchema(hass: HomeAssistant | undefined, config: CardConfig 
 }
 
 export const labelsVariant = (config: CardConfig | undefined) => (config?.labels === true ? 'labels' : '');
-registerStrings('en', {
-  editor_sync: 'Sync group (charts with the same name share the pointer and period steps)',
-});
-
 /** A group name shared with other charts on the dashboard. */
 export const SYNC_FIELDS: FieldBinding[] = [{ name: 'sync', path: ['sync'] }];
 export const SYNC_SCHEMA = [{ name: 'sync', selector: { text: {} } }];
-
-registerStrings('en', {
-  editor_multiples: 'A small chart for each entity',
-  editor_multiples_scale: 'Value scale',
-  editor_multiples_scale_auto: 'The same when the units match',
-  editor_multiples_scale_shared: 'The same for every chart',
-  editor_multiples_scale_independent: 'Each chart its own',
-  editor_multiples_columns: 'Columns (empty fits the card)',
-});
 
 /** Small multiples: on/off, then how the charts share a scale and how many go across. */
 export const MULTIPLES_FIELDS: FieldBinding[] = [

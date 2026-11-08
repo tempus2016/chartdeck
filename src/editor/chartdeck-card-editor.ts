@@ -31,6 +31,7 @@ import './bands-editor';
 import './entities-editor';
 import './limit-field';
 import { GROUP_LEVELS } from '../chart/hierarchy';
+import { LanguageController } from '../language-controller';
 
 /** Styles whose `group_by` groups entities by place rather than readings by time. */
 const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar'];
@@ -62,6 +63,9 @@ export async function loadHaComponents(): Promise<void> {
 }
 
 export class ChartdeckCardEditor extends LitElement {
+  // Draws again once the user's language arrives.
+  protected readonly languageController = new LanguageController(this);
+
   static properties = {
     hass: { attribute: false },
     _config: { state: true },

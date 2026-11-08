@@ -1,7 +1,6 @@
 import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import type { FieldBinding } from '../editor/schemas';
-import { registerStrings } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
 import { axisOptions, valueAxis } from './axes';
@@ -34,11 +33,6 @@ export function validateXRange(raw: CardConfig): void {
     throw new Error('"x_min" must be below "x_max"');
   }
 }
-
-registerStrings('en', {
-  editor_x_min: 'Lowest value across',
-  editor_x_max: 'Highest value across',
-});
 
 /** Editor fields for `x_min` / `x_max`: empty fits the readings. */
 export const X_RANGE_FIELDS: FieldBinding[] = [

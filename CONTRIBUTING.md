@@ -49,8 +49,11 @@ real Home Assistant before release.
 
 ## Translations
 
-Copy `src/locales/en.json` to `src/locales/<code>.json`, translate the values, and register it
-in `src/localize.ts`. No git? Open an issue with the language and your translated file pasted
+Chartdeck speaks English, German, Spanish, French, Dutch and Portuguese. To add a language, copy
+`src/locales/en.json` to `src/locales/<code>.json`, translate the values (leave every
+`{placeholder}` as it is), and add a line for it to `LOADERS` in `src/localize.ts`. Each
+language builds into a file of its own that loads only for people using it. A string left out
+shows in English. To fix a translation, edit the value in that language's file. No git? Open an issue with the language and your translated file pasted
 in, and it will be wired in for you.
 
 ## Reporting something

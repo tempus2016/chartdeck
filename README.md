@@ -40,6 +40,8 @@ This page is the summary. What changed in each version is on the [releases page]
   fast on wall tablets, and follows your Home Assistant theme.
 - **Limits from anywhere.** Minimum, maximum and target can each be a number or another
   entity.
+- **In your language.** The card and its editor follow the language in your Home Assistant
+  profile: English, German, Spanish, French, Dutch or Portuguese.
 
 ## Styles
 
@@ -99,7 +101,8 @@ Chartdeck is in the Home Assistant Marketplace:
 On Home Assistant older than 2026.11, the Marketplace is still HACS: open HACS, search for
 *Chartdeck* and choose **Download**.
 
-To install by hand, save [chartdeck-card.js][latest-release] to `<config>/www/` and add
+To install by hand, save every `.js` file of the [latest release][latest-release] to
+`<config>/www/` *(v2.1.0+: each translation is a file of its own beside the main one)* and add
 `/local/chartdeck-card.js` as a dashboard resource of type `module`. The
 [Installation][wiki-installation] page has the detail.
 

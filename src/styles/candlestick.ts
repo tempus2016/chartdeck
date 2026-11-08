@@ -52,7 +52,7 @@ import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 
@@ -67,22 +67,6 @@ const STRIP = 0.22;
 const STRIP_GAP = 0.05;
 /** The thinnest body (a period that closed where it opened), in plot units. */
 const MIN_BODY = 1.5;
-
-registerStrings('en', {
-  editor_style_candlestick: 'Candlestick',
-  editor_candle_by: 'One candle per',
-  editor_under_aggregate: 'Entities underneath: combine readings with',
-  editor_up_color: 'Colour when it rose',
-  editor_down_color: 'Colour when it fell',
-  editor_underneath: 'Draw the other entities underneath as',
-  editor_underneath_columns: 'Columns',
-  editor_underneath_line: 'A line',
-  candle_open: 'Open',
-  candle_high: 'High',
-  candle_low: 'Low',
-  candle_close: 'Close',
-  candle_week_of: 'Week of {date}',
-});
 
 /** The card's period, with a candlestick's defaults: the last 14 days. */
 export function candlePeriod(raw: CardConfig): CardConfig['period'] {
@@ -319,8 +303,6 @@ const ENTITY_FIELDS = {
   schema: [{ name: 'fill_color', selector: { text: {} } }],
   fields: [{ name: 'fill_color', path: ['color'] }],
 };
-
-registerStrings('en', { editor_fill_color: 'Colour' });
 
 export const candlestick: ChartStyleModule = {
   layout: 'chart',

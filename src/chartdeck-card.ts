@@ -14,6 +14,7 @@ import type { StyleModule, ValueStyleModule } from './styles/index';
 import { shared } from './styles/shared';
 import type { CardConfig, HomeAssistant, NormalizedConfig, StyleName } from './types';
 import { VERSION } from './version';
+import { LanguageController } from './language-controller';
 
 console.info(`%c CHARTDECK %c ${VERSION} `, 'color:#fff;background:#3b8bff;font-weight:700', 'color:#3b8bff');
 
@@ -53,6 +54,9 @@ function prefersReducedMotion(): boolean {
 }
 
 export class ChartdeckCard extends LitElement {
+  // Draws again once the user's language arrives.
+  protected readonly languageController = new LanguageController(this);
+
   static properties = {
     hass: { attribute: false },
     preview: { type: Boolean },

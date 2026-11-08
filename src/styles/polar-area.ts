@@ -6,23 +6,10 @@ import { axisAngle, labelAnchor, polar, sectorPath } from '../chart/polar';
 import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
-
-registerStrings('en', {
-  editor_style_polar_area: 'Polar area',
-  editor_polar_scale: 'Scale',
-  editor_polar_scale_shared: 'One scale for all, from 0 to the largest value',
-  editor_polar_scale_limits: "Each slice from its entity's minimum to maximum",
-  editor_polar_color_by: 'Colour',
-  editor_polar_color_by_series: 'One colour per entity',
-  editor_polar_color_by_shades: 'Shades of one colour, darker for more',
-  editor_polar_color_by_bands: 'By colour band',
-  editor_polar_color: 'Colour for shades',
-  polar_area_aria: 'Polar area chart of {names}',
-});
 
 export const POLAR_SCALES = ['shared', 'limits'] as const;
 export type PolarScale = (typeof POLAR_SCALES)[number];

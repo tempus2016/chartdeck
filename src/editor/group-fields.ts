@@ -1,18 +1,9 @@
 import { GROUP_LEVELS, parseGroupBy } from '../chart/hierarchy';
-import { localize, registerStrings } from '../localize';
+import { localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { entityOptionsForm } from './entity-options';
 import type { FieldBinding } from './schemas';
-
-registerStrings('en', {
-  editor_hierarchy_group_by: 'Group by',
-  editor_group_by_floor: 'Floor',
-  editor_group_by_area: 'Area',
-  editor_group_by_device: 'Device',
-  editor_group_by_label: 'Label',
-  editor_entity_groups: 'Own group (wins over "Group by"; "Ground floor / Kitchen" for two levels)',
-});
 
 export const GROUP_FIELDS: FieldBinding[] = [{ name: 'group_by', path: ['group_by'], default: [] }];
 
