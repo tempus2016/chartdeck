@@ -41,6 +41,7 @@ import { streamgraph } from './streamgraph';
 import { candlestick } from './candlestick';
 import { violin } from './violin';
 import { beeswarm } from './beeswarm';
+import { stripPlot } from './strip-plot';
 import { sankey } from './sankey';
 import { chord } from './chord';
 import { timeline } from './timeline';
@@ -180,6 +181,7 @@ export const STYLES: Record<StyleName, StyleModule> = {
   candlestick,
   violin,
   beeswarm,
+  strip_plot: stripPlot,
   sankey,
   chord,
   timeline,

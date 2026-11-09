@@ -42,6 +42,7 @@ export type StyleName =
   | 'candlestick'
   | 'violin'
   | 'beeswarm'
+  | 'strip_plot'
   | 'sankey'
   | 'chord'
   | 'timeline'
@@ -91,6 +92,7 @@ export const STYLE_NAMES: StyleName[] = [
   'candlestick',
   'violin',
   'beeswarm',
+  'strip_plot',
   'sankey',
   'chord',
   'timeline',
