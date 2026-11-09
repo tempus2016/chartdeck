@@ -150,6 +150,9 @@ describe('chartdeck-card', () => {
     // Masonry re-lays out its columns after the first render and can move a card that has
     // just started drawing in; a moved element loses its running transition and would snap
     // to the final value, so the draw-in starts over instead.
+    // The restart only happens within DRAW_IN_MS of the draw-in starting; on a busy machine the
+    // two frames can take longer than that, so hold performance.now() still for the test.
+    vi.spyOn(performance, 'now').mockReturnValue(performance.now());
     const card = await mount(base());
     await frame();
     await frame();

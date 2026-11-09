@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../src/chartdeck-card';
 import { SYNC_EVENT, onSync, syncGroup, syncSend, validateSyncOptions } from '../src/chart/sync';
 import type { CardConfig, HomeAssistant } from '../src/types';
@@ -17,7 +17,10 @@ describe('sync options', () => {
 });
 
 type Card = HTMLElement & { setConfig(c: CardConfig): void; hass?: HomeAssistant; updateComplete: Promise<boolean> };
-const now = Date.now();
+// The chart's span ends at the moment it renders, and the fixture is relative to the moment the
+// file loads. On a busy machine seconds pass between the two, so the guides drift off the
+// expected position. Pin the clock; only Date is faked, timers stay real.
+const now = new Date(2026, 10, 7, 15, 0, 0).getTime();
 const H = 3_600_000;
 const sec = (ago: number) => (now - ago) / 1000;
 
@@ -63,8 +66,14 @@ const settle = async (...cards: Card[]) => {
   for (let i = 0; i < 2; i++) for (const c of cards) await c.updateComplete;
 };
 
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(now);
+});
+
 afterEach(() => {
   document.body.innerHTML = '';
+  vi.useRealTimers();
 });
 
 describe('synced charts', () => {
@@ -73,7 +82,9 @@ describe('synced charts', () => {
     const b = await mount({ sync: 'house' });
     const c = await mount({ sync: 'garden' });
     const d = await mount({});
-    point(q(a, '.plot-area')!, 'pointermove', 0.5);
+    // 0.6 across is 9.6 h ago, nearer the readings 4 h ago than those 20 h ago. (Half way would
+    // be a dead heat between them, settled only by however much real time had passed.)
+    point(q(a, '.plot-area')!, 'pointermove', 0.6);
     await settle(a, b, c, d);
     // a snaps to its reading 4 h ago (five sixths across); b's guide is at that same moment.
     expect(q(a, '.crosshair')!.getAttribute('style')).toMatch(/left:83.33%/);
@@ -87,7 +98,7 @@ describe('synced charts', () => {
     expect(q(b, '.crosshair')!.getAttribute('style')).toMatch(/left:9\d/);
     expect(q(a, '.crosshair')!.getAttribute('style')).toMatch(/left:83.33%/);
     point(q(b, '.plot-area')!, 'pointerleave', 0.9);
-    point(q(a, '.plot-area')!, 'pointerleave', 0.5);
+    point(q(a, '.plot-area')!, 'pointerleave', 0.6);
     await settle(a, b);
     expect(q(a, '.crosshair')).toBeNull();
     expect(q(b, '.crosshair')).toBeNull();

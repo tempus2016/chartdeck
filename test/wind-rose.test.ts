@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../src/chartdeck-card';
 import { parseBearing, normalizeDegrees } from '../src/history/bearing';
 import { key, loadHistory, parseHistory } from '../src/history/fetch';
@@ -279,7 +279,9 @@ describe('wind rose numbers', () => {
 
 type Card = HTMLElement & { setConfig(c: CardConfig): void; hass?: HomeAssistant; updateComplete: Promise<boolean> };
 
-const now = Date.now();
+// The fixture is relative to the moment the file loads and the shares are of time up to the moment it renders, so seconds passing
+// between the two shrink them. Pin the clock; only Date is faked, timers stay real.
+const now = new Date(2026, 10, 7, 15, 0, 0).getTime();
 const sec = (msAgo: number) => (now - msAgo) / 1000;
 const D = 24 * H;
 
@@ -361,8 +363,14 @@ const stats = (card: Card) =>
     ]),
   );
 
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(now);
+});
+
 afterEach(() => {
   document.body.innerHTML = '';
+  vi.useRealTimers();
 });
 
 describe('wind rose card', () => {
