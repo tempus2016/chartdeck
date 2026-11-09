@@ -24,6 +24,9 @@ import {
 } from './schemas';
 import type { FieldBinding } from './schemas';
 
+/** The export menu's switch, in the Display section of chart styles. */
+const EXPORT_FIELDS: FieldBinding[] = [{ name: 'export', path: ['export'], default: false }];
+
 import { thumbnail } from './thumbnails';
 import { cardConditionFields, conditionFields } from './condition-fields';
 import { STYLES, STYLE_GROUPS, isChart } from '../styles/index';
@@ -386,7 +389,9 @@ export class ChartdeckCardEditor extends LitElement {
   }
 
   protected renderDisplay(): TemplateResult {
-    return html`${this._toggles(DISPLAY_TOGGLE_FIELDS)}
+    // Charts can carry the export menu (save a picture, copy the values or the YAML).
+    const chart = isChart(STYLES[(this._config?.style ?? 'bar') as StyleName] ?? STYLES.bar);
+    return html`${this._toggles(chart ? [...DISPLAY_TOGGLE_FIELDS, ...EXPORT_FIELDS] : DISPLAY_TOGGLE_FIELDS)}
     ${this._form('display', displaySchema(this.hass), DISPLAY_FIELDS)}`;
   }
 

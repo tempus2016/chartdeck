@@ -3,6 +3,7 @@ import type { PropertyValues } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { attachActions, isInteractive } from './actions';
 import { colorStops, legendItems } from './bands';
+import { exportMenu, exportStyles, placeExport, stopExport, validateExport } from './chart/export';
 import { normalizeConfig } from './config';
 import { energyChecked, energyConfig } from './history/energy';
 import { energyTotals } from './history/energy-totals';
@@ -68,7 +69,7 @@ export class ChartdeckCard extends LitElement {
     _config: { state: true },
   };
 
-  static styles = [shared, ...Object.values(STYLES).map((s) => s.styles)];
+  static styles = [shared, exportStyles, ...Object.values(STYLES).map((s) => s.styles)];
 
   declare hass?: HomeAssistant;
   /** Set by Home Assistant on the editor's preview card, which it rebuilds on every change. */
@@ -107,6 +108,7 @@ export class ChartdeckCard extends LitElement {
 
   setConfig(config: CardConfig): void {
     const normalized = normalizeConfig(config);
+    validateExport(config);
     const style = STYLES[normalized.style];
     // The Energy dashboard source is checked here, then the chart checks it as the statistics it draws.
     const checked = energyChecked(config);
@@ -235,6 +237,7 @@ export class ChartdeckCard extends LitElement {
   protected updated(): void {
     this._scheduleReady();
     this._syncActions();
+    placeExport(this);
   }
 
   connectedCallback(): void {
@@ -264,6 +267,7 @@ export class ChartdeckCard extends LitElement {
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._disconnectStyle();
+    stopExport(this);
     for (const detach of this._detachers.values()) detach();
     this._detachers.clear();
   }
@@ -390,7 +394,19 @@ export class ChartdeckCard extends LitElement {
       }
     }
     const legend = this._legend(first);
+    const menu =
+      isChart(style) && hass
+        ? exportMenu({
+            host: this,
+            hass,
+            raw: config.cardOptions as CardConfig,
+            items: this._items,
+            content: () => this.shadowRoot?.querySelector<HTMLElement>('.content') ?? null,
+            requestUpdate: () => this.requestUpdate(),
+          })
+        : nothing;
     return html`<ha-card .header=${config.title}>
+      ${menu}
       <div
         class="content style-${this._styleName}"
         style=${valueCh === undefined ? nothing : `--cd-value-ch: ${valueCh}`}

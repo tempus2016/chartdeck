@@ -31,6 +31,7 @@ import type { CardConfig } from '../types';
 import { convertPoints } from '../units';
 import { allHiddenMessage, legendToggleHeader, legendToggleStyles, withLegend } from './legend-toggle';
 import type { LegendItems } from './legend-toggle';
+import { rememberPlotted } from './export';
 import { CURVES } from './paths';
 import type { Curve } from './paths';
 
@@ -212,7 +213,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     }
     return out;
   });
-  return withLegend(
+  const frame = withLegend(
     {
       status: conditionStatus(loaded.status, conditions),
       error: loaded.error,
@@ -228,6 +229,9 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     },
     ctx,
   );
+  // What was drawn, for the export menu's CSV: the series on show (names can hide some).
+  rememberPlotted(ctx.host, frame.series);
+  return frame;
 }
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
