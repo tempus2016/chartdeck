@@ -25,6 +25,7 @@ import {
 import type { FieldBinding } from './schemas';
 
 import { thumbnail } from './thumbnails';
+import { cardConditionFields, conditionFields } from './condition-fields';
 import { STYLES, STYLE_GROUPS, isChart } from '../styles/index';
 import { sensorUnit } from './entities-editor';
 import './bands-editor';
@@ -235,6 +236,7 @@ export class ChartdeckCardEditor extends LitElement {
         .unit=${this._config?.unit}
         .chartFields=${this._chartFields()}
         .transformFields=${this._transformFields()}
+        .conditionFields=${conditionFields(this._config?.style)}
         @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
       ></cd-entities-editor>
       ${this._ruleForm('include')} ${this._ruleForm('exclude')}`;
@@ -374,9 +376,12 @@ export class ChartdeckCardEditor extends LitElement {
   protected renderChart(): TemplateResult | typeof nothing {
     const module = STYLES[(this._config?.style ?? 'bar') as StyleName];
     if (!module || !isChart(module) || !module.editor || !this._config) return nothing;
+    // History charts: the card's `when`, for every series without its own, in a form of its own.
+    const when = cardConditionFields(this._config.style);
     return this._panel(
       'chart',
-      module.editor({ hass: this.hass, config: this._config, commit: (config) => this._commit(config) }),
+      html`${module.editor({ hass: this.hass, config: this._config, commit: (config) => this._commit(config) })}
+      ${when ? this._form('card-condition', when.schema, when.fields) : nothing}`,
     );
   }
 

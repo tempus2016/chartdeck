@@ -50,6 +50,7 @@ import type { Aggregate, GroupUnit } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
 import { convertPoints } from '../units';
+import { chartConditions, conditionStatus, conditionalPoints } from '../history/condition';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -123,10 +124,16 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const statistics = source === 'statistics' ? candleQuery(unit, zone, ctx.hass.config?.time_zone) : undefined;
   const loaded = store.get(ctx.hass, requests, { start, end: span.end }, source, { live: span.live, statistics });
+  // Series with a `when` (their own or the card's) keep only the readings taken while it held.
+  const conditions = chartConditions(ctx, { start, end: span.end }, span.live);
   let candles: (Candle | null)[] = [];
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string };
-    const points = convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion);
+    const points = conditionalPoints(
+      entity.config,
+      convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion),
+      conditions,
+    );
     let grouped: Point[];
     // The entity's history transform (running total, rate of change), before the readings are grouped.
     const shown = seriesTransform(entity, points, range, until, zone, ctx.hass);
@@ -149,7 +156,7 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
     };
   });
   return {
-    status: loaded.status,
+    status: conditionStatus(loaded.status, conditions),
     error: loaded.error,
     range,
     period,

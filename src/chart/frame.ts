@@ -9,6 +9,15 @@ import type { Aggregate, Grouping } from '../history/group';
 import { pauseStore, storeFor } from '../history/store';
 import { cumulativeSeries, validateCumulative } from '../history/transform-cumulative';
 import { derivativeSeries, validateDerivative } from '../history/transform-derivative';
+import {
+  conditionOf,
+  conditionStatus,
+  conditionalPoints,
+  loadConditions,
+  pauseConditions,
+  validateConditions,
+} from '../history/condition';
+import type { Conditions } from '../history/condition';
 import { boundaries, startOf, wallTime, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -39,6 +48,11 @@ export interface ChartSeries {
   dash: boolean;
   /** The readings as loaded, before grouping (trimmed to the range), for spreads within a group. */
   readings?: Point[];
+  /**
+   * A series with a `when`, when the chart asks for it (`FrameOptions.ghost`): every reading,
+   * kept or not, prepared like `points`, for the faint line behind it.
+   */
+  hidden?: Point[];
 }
 
 export interface HistoryFrame {
@@ -56,6 +70,8 @@ export interface HistoryFrame {
   zone: Zone;
   /** Set when readings are grouped: each point is then one group, from `t` to `end`. */
   group?: Grouping;
+  /** The conditions' states (the card or a series has a `when`), for the strip under the plot. */
+  conditions?: Conditions;
 }
 
 /** Checks for the options every history chart shares. */
@@ -64,6 +80,7 @@ export function validateHistoryOptions(raw: CardConfig): void {
   parseGrouping(raw);
   validateCumulative(raw);
   validateDerivative(raw);
+  validateConditions(raw);
   if (raw.source !== undefined && !SOURCES.includes(raw.source as Source)) {
     throw new Error(`"source" must be one of: ${SOURCES.join(', ')}`);
   }
@@ -89,6 +106,8 @@ export interface FrameOptions {
   text?: boolean;
   /** Grouped statistics: load hourly rows and group them here, so each group keeps its rows. */
   hourly?: boolean;
+  /** Also keep every reading of a series with a `when` (`ChartSeries.hidden`), for the faint line behind it. */
+  ghost?: boolean;
 }
 
 /**
@@ -134,38 +153,58 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   // Statistics groups load from one row early: the row before a group gives its `first`.
   const load = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
   const loaded = store.get(ctx.hass, requests, load, source, { live: span.live, statistics });
+  // Series with a `when` keep only the readings taken while their condition held.
+  const conditions = loadConditions(
+    ctx.host,
+    ctx.hass,
+    ctx.items.map((e) => e.config),
+    load,
+    span.live,
+    ctx.requestUpdate,
+    ctx.raw,
+  );
   const bounds = group ? boundaries(group.unit, range.start, range.end, zone) : [];
   const cardCurve = (ctx.raw.curve as Curve | undefined) ?? 'smooth';
   // Readings stop at the present, even when the span runs on to the end of today.
   const until = Math.min(range.end, now);
-  const series = ctx.items.map((entity, index): ChartSeries => {
-    const own = entity.config as typeof entity.config & { color?: string; curve?: Curve; dash?: boolean };
-    let points = loaded.data.get(key(requests[index])) ?? [];
-    points = convertPoints(points, entity.conversion);
-    if (!options.text) ({ entity, points } = seriesTransform(entity, points, range, until, zone, ctx.hass));
-    const readings = points;
+  // Grouped, or carried on to the right edge: a sensor holds its last reading until it changes.
+  const prepare = (entity: ResolvedEntity, points: Point[]): Point[] => {
     const last = points[points.length - 1];
     if (group) {
-      points =
-        source === 'statistics'
-          ? groupStatistics(points, bounds, group.aggregate, until, options.range === true)
-          : groupHistory(points, bounds, options.aggregate?.(entity) ?? group.aggregate, until, options.range === true);
-    } else if (source === 'history' && last && last.v !== null && last.t < until) {
-      // A sensor holds its last reading until it changes, so carry it on to the right edge.
-      points = [...points, { t: until, v: last.v }];
+      return source === 'statistics'
+        ? groupStatistics(points, bounds, group.aggregate, until, options.range === true)
+        : groupHistory(points, bounds, options.aggregate?.(entity) ?? group.aggregate, until, options.range === true);
     }
-    return {
+    if (source === 'history' && last && last.v !== null && last.t < until) return [...points, { t: until, v: last.v }];
+    return points;
+  };
+  // Per series, in this order: readings in the shown unit (unit conversion), then only those taken
+  // while its condition held (`when`), then its transform (running total, rate of change).
+  const transform = (entity: ResolvedEntity, points: Point[]) =>
+    options.text ? { entity, points } : seriesTransform(entity, points, range, until, zone, ctx.hass);
+  const series = ctx.items.map((loadedEntity, index): ChartSeries => {
+    const own = loadedEntity.config as typeof loadedEntity.config & { color?: string; curve?: Curve; dash?: boolean };
+    const all = convertPoints(loaded.data.get(key(requests[index])) ?? [], loadedEntity.conversion);
+    const { entity, points: readings } = transform(
+      loadedEntity,
+      conditionalPoints(loadedEntity.config, all, conditions),
+    );
+    const out: ChartSeries = {
       index,
       entity,
-      points,
+      points: prepare(entity, readings),
       color: baseColor(own.color ?? SERIES_COLORS[index % SERIES_COLORS.length]),
       curve: own.curve ?? cardCurve,
       dash: own.dash === true,
       readings,
     };
+    if (options.ghost && conditions && conditionOf(loadedEntity.config, ctx.raw)) {
+      out.hidden = prepare(entity, transform(loadedEntity, all).points);
+    }
+    return out;
   });
   return {
-    status: loaded.status,
+    status: conditionStatus(loaded.status, conditions),
     error: loaded.error,
     range,
     period,
@@ -175,6 +214,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     back: span.back,
     zone,
     group,
+    ...(conditions ? { conditions } : {}),
   };
 }
 
@@ -348,6 +388,7 @@ const periodNavStyles = css`
 /** Pause a card's history when it leaves the page; it carries on (or reloads) when it returns. */
 export function disconnectHistory(host: HTMLElement): void {
   pauseStore(host);
+  pauseConditions(host);
 }
 
 /** The row above the chart: each series' colour, name and current value; tapping one opens it. */

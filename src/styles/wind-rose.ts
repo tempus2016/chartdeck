@@ -25,6 +25,7 @@ import { PERIOD_MS } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import type { Period } from '../history/period';
 import { storeFor } from '../history/store';
+import { conditionStatus, conditionalPoints, loadConditions } from '../history/condition';
 import { zoneFor } from '../history/timezone';
 import type { Point, Range, SeriesRequest, Source } from '../history/types';
 import { formatNumber, withUnit } from '../format';
@@ -129,11 +130,16 @@ function loadWind(ctx: ChartContext, direction: Role, speed: Role | undefined, n
     live: span.live,
     statistics,
   });
-  const points = (r: SeriesRequest) => loaded.data.get(key(r)) ?? [];
-  const dirPoints = points(requests[0]);
-  const speedPoints = speed ? points(requests[1]) : undefined;
+  // Each sensor with a `when` (its own or the card's) keeps only the readings taken while it held;
+  // a gap in either drops that stretch from the rose.
+  const roles = speed ? [direction.entity, speed.entity] : [direction.entity];
+  const conditions = loadConditions(ctx.host, ctx.hass, roles, load, span.live, ctx.requestUpdate, ctx.raw);
+  const points = (r: SeriesRequest, role: Role) =>
+    conditionalPoints(role.entity, loaded.data.get(key(r)) ?? [], conditions);
+  const dirPoints = points(requests[0], direction);
+  const speedPoints = speed ? points(requests[1], speed) : undefined;
   const frame: HistoryFrame = {
-    status: loaded.status,
+    status: conditionStatus(loaded.status, conditions),
     error: loaded.error,
     range,
     period,

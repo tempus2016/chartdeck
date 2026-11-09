@@ -1,13 +1,23 @@
 import { bandFor } from './bands';
 import { mergeEntity } from './config';
 import { matchEntities } from './fill';
+import { conditionEntities } from './history/condition';
 import { defaultDecimals, formatNumber, withUnit } from './format';
 import { localize } from './localize';
 import { fillSpan, position } from './scale';
 import { conversion, convertedDecimals } from './units';
 import type { Conversion } from './units';
 import { DEFAULT_BANDS } from './config';
-import type { Band, HassEntity, HomeAssistant, MergedEntity, NormalizedConfig, ResolvedBand, SortMode } from './types';
+import type {
+  Band,
+  CardConfig,
+  HassEntity,
+  HomeAssistant,
+  MergedEntity,
+  NormalizedConfig,
+  ResolvedBand,
+  SortMode,
+} from './types';
 
 export interface ResolvedEntity {
   entityId: string;
@@ -224,5 +234,6 @@ export function watchedEntityIds(config: NormalizedConfig): Set<string> {
     }
   }
   for (const band of config.legendBands) if (typeof band.from === 'string') ids.add(band.from);
+  for (const id of conditionEntities(config.entities, config.cardOptions as CardConfig)) ids.add(id);
   return ids;
 }

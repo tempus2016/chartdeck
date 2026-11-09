@@ -47,6 +47,7 @@ import type { GroupUnit } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
 import { convertPoints } from '../units';
+import { chartConditions, conditionStatus, conditionalPoints } from '../history/condition';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Range, Source } from '../history/types';
 import { localize } from '../localize';
@@ -107,12 +108,18 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
     live: span.live,
     statistics,
   });
+  // Series with a `when` (their own or the card's) keep only the readings taken while it held.
+  const conditions = chartConditions(ctx, range, span.live);
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string };
     return {
       index,
       entity,
-      points: convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion),
+      points: conditionalPoints(
+        entity.config,
+        convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion),
+        conditions,
+      ),
       color: baseColor(own.color ?? SERIES_COLORS[index % SERIES_COLORS.length]),
       curve: 'straight',
       dash: false,
@@ -122,7 +129,7 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
   const until = Math.min(range.end, now);
   for (const s of series) Object.assign(s, seriesTransform(s.entity, s.points, range, until, zone, ctx.hass));
   return {
-    status: loaded.status,
+    status: conditionStatus(loaded.status, conditions),
     error: loaded.error,
     range,
     period,
