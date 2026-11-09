@@ -258,10 +258,10 @@ describe('gauge editor', () => {
   it('shows gauge options only for gauge styles, tick labels only on the needle', async () => {
     expect(form((await editor({ style: 'bar' })).ed)).toBeNull();
     const ring = form((await editor({ style: 'ring' })).ed)!;
-    expect(names(ring.schema)).toEqual(['start_angle', 'end_angle', 'center']);
+    expect(names(ring.schema)).toEqual(['start_angle', 'end_angle', 'center', 'ghost']);
     const needle = form((await editor({ style: 'needle', center: 'text' })).ed)!;
-    expect(names(needle.schema)).toEqual(['start_angle', 'end_angle', 'center', 'center_text', 'tick_labels']);
-    expect(needle.data).toEqual({ center: 'text', tick_labels: false });
+    expect(names(needle.schema)).toEqual(['start_angle', 'end_angle', 'center', 'center_text', 'tick_labels', 'ghost']);
+    expect(needle.data).toEqual({ center: 'text', tick_labels: false, ghost: 'off' });
   });
 
   it('writes the options to the card, dropping defaults', async () => {

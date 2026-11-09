@@ -54,6 +54,8 @@ import { trend } from './trend';
 export interface RenderContext {
   show: ShowOptions;
   hass: HomeAssistant;
+  /** Ask the card to draw again, for a value style that loads something (the gauges' ghost). */
+  requestUpdate?(): void;
 }
 
 /** Where a style sits in the editor's style picker. */

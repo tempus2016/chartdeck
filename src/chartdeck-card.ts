@@ -281,6 +281,9 @@ export class ChartdeckCard extends LitElement {
     }
   }
 
+  /** A value style's data arrived: draw again. */
+  private _redraw = (): void => this.requestUpdate();
+
   private _renderEntity(e: ResolvedEntity, index: number, style: ValueStyleModule, hass: HomeAssistant) {
     const config = this._config!;
     const interactive = isInteractive(e.config);
@@ -301,7 +304,7 @@ export class ChartdeckCard extends LitElement {
       tabindex=${interactive ? 0 : nothing}
       style=${vars}
     >
-      ${style.render(e, { show: config.show, hass })}
+      ${style.render(e, { show: config.show, hass, requestUpdate: this._redraw })}
     </div>`;
   }
 

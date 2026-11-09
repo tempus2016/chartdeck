@@ -2,6 +2,7 @@ import { languageOf, localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import { setOption } from './edit';
 import { MAX_LINE_WIDTH, MIN_LINE_WIDTH } from '../chart/series-style';
+import { GHOST_SPANS } from '../gauge';
 
 /** One ha-form field and where it lives in the card config. */
 export interface FieldBinding {
@@ -49,6 +50,7 @@ export const GAUGE_FIELDS: FieldBinding[] = [
   { name: 'center', path: ['center'], default: 'value' },
   { name: 'center_text', path: ['center_text'] },
   { name: 'tick_labels', path: ['tick_labels'], default: false },
+  { name: 'ghost', path: ['ghost'], default: 'off' },
 ];
 
 const gaugeSchemas = new Map<string, unknown[]>();
@@ -86,6 +88,15 @@ export function gaugeSchema(hass: HomeAssistant | undefined, style: string, cent
       },
       ...(text ? [{ name: 'center_text', selector: { text: {} } }] : []),
       ...(style === 'needle' ? [{ name: 'tick_labels', selector: { boolean: {} } }] : []),
+      {
+        name: 'ghost',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: GHOST_SPANS.map((value) => ({ value, label: localize(hass, `editor_ghost_${value}`) })),
+          },
+        },
+      },
     ];
     gaugeSchemas.set(key, schema);
   }
