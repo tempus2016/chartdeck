@@ -17,6 +17,7 @@ import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { annotationsEditor } from './annotations-editor';
+import { NOW_MARKER_FIELDS, nowMarkerSchema } from './now-marker-editor';
 import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
 import type { FieldBinding } from './schemas';
 
@@ -293,6 +294,7 @@ const LINE_FIELDS: FieldBinding[] = [
   ...ZOOM_FIELDS,
   ...FORECAST_FIELDS,
   ...ANNOTATION_FIELDS,
+  ...NOW_MARKER_FIELDS,
   ...EXTREMES_FIELDS,
   ...ANOMALY_FIELDS,
   ...SYNC_FIELDS,
@@ -330,6 +332,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...ZOOM_SCHEMA,
       ...forecastSchema(ctx.config),
       ...ANNOTATION_SCHEMA,
+      ...nowMarkerSchema(ctx.hass),
       ...extremesSchema(ctx.hass),
       ...anomalySchema(ctx.config),
       ...SYNC_SCHEMA,

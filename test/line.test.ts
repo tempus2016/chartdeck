@@ -293,6 +293,7 @@ describe('line chart editor', () => {
       zoom: false,
       overview: false,
       forecast_hours: 24,
+      now_marker: 'off',
       zones: false,
       header: 'above',
       compact: false,

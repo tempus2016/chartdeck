@@ -62,6 +62,7 @@ import {
 } from '../chart/extremes';
 import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
+import { nowMarkerLayer, nowMarkerStyles, stopNowMarker, validateNowMarker } from '../chart/now-marker';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
 import { positivePoints } from '../chart/log-scale';
 import { conditionStrip, conditionStyles, ghostLines } from '../chart/condition-strip';
@@ -264,6 +265,7 @@ export const line: ChartStyleModule = {
     ${forecastStyles}
     ${anomalyStyles}
     ${compareStyles}
+    ${nowMarkerStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -295,6 +297,7 @@ export const line: ChartStyleModule = {
     validateForecast(raw);
     validateAnomalies(raw);
     validateCompare(raw);
+    validateNowMarker(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -319,6 +322,7 @@ export const line: ChartStyleModule = {
     stopSync(host);
     stopForecast(host);
     stopCompare(host);
+    stopNowMarker(host);
   },
   render(ctx) {
     // Forecasts carry series on past now, stretching the span to show them.
@@ -472,6 +476,7 @@ export const line: ChartStyleModule = {
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
         ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay}
+        ${nowMarkerLayer(ctx, frame, view, scales, width)}
         ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing}
         ${
           tooltip
