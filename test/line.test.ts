@@ -265,6 +265,8 @@ describe('line chart editor', () => {
       source: 'history',
       group_by: 'none',
       aggregate: 'mean',
+      compare: [],
+      compare_style: 'grey',
       curve: 'smooth',
       color_by: 'series',
       labels: false,
