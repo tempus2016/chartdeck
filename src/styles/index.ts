@@ -9,6 +9,7 @@ import { bubble } from './bubble';
 import { columnChart } from './column';
 import { combined } from './combined';
 import { heatmap } from './heatmap';
+import { spiral } from './spiral';
 import { histogram } from './histogram';
 import { line } from './line';
 import { needle } from './needle';
@@ -154,6 +155,7 @@ export const STYLES: Record<StyleName, StyleModule> = {
   scatter,
   bubble,
   heatmap,
+  spiral,
   box,
   funnel,
   radar,
