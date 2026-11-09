@@ -19,6 +19,7 @@ import { rings } from './rings';
 import { scatter } from './scatter';
 import { segmented } from './segmented';
 import { tank } from './tank';
+import { battery } from './battery';
 import { thin } from './thin';
 import { waffle } from './waffle';
 import { funnel } from './funnel';
@@ -141,6 +142,7 @@ export const STYLES: Record<StyleName, StyleModule> = {
   thin,
   segmented,
   tank,
+  battery,
   ring,
   needle,
   arc,

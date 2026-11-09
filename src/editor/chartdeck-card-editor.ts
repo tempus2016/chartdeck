@@ -314,6 +314,9 @@ export class ChartdeckCardEditor extends LitElement {
     const places = levels.length > 0 && levels.every((l) => (GROUP_LEVELS as readonly unknown[]).includes(l));
     if (levels.length > 0 && places !== HIERARCHY_STYLES.includes(style))
       next = setOption(next, ['group_by'], undefined);
+    // The battery grid reads best with the emptiest first, so picking it sorts lowest first
+    // unless a sort is already set (YAML without one keeps the order listed, like every style).
+    if (style === 'battery' && next.sort === undefined) next = setOption(next, ['sort'], 'ascending');
     this._commit(next);
   }
 

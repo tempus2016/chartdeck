@@ -41,6 +41,8 @@
   "editor_style_thin": "Fina",
   "editor_style_segmented": "Segmentada",
   "editor_style_tank": "Depósito",
+  "editor_style_battery": "Cuadrícula de baterías",
+  "battery_aria": "Niveles de batería: {levels}",
   "editor_style_ring": "Anillo",
   "editor_style_needle": "Aguja",
   "editor_style_arc": "Arco",

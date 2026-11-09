@@ -41,6 +41,8 @@
   "editor_style_thin": "Fina",
   "editor_style_segmented": "Segmentada",
   "editor_style_tank": "Depósito",
+  "editor_style_battery": "Grelha de baterias",
+  "battery_aria": "Níveis de bateria: {levels}",
   "editor_style_ring": "Anel",
   "editor_style_needle": "Ponteiro",
   "editor_style_arc": "Arco",
