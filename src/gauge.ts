@@ -8,6 +8,10 @@ import type { CardConfig, StyleName } from './types';
 export const CENTER_MODES = ['value', 'band', 'name', 'text', 'none'] as const;
 export type CenterMode = (typeof CENTER_MODES)[number];
 
+/** The history ghost's span (see gauge-ghost.ts). */
+export const GHOST_SPANS = ['off', '24h', '7d'] as const;
+export type GhostSpan = (typeof GHOST_SPANS)[number];
+
 export interface GaugeOptions {
   /** Set only when the card sets it; otherwise the style's own default angle. */
   startAngle?: number;
@@ -15,6 +19,8 @@ export interface GaugeOptions {
   center: CenterMode;
   centerText: string;
   tickLabels: boolean;
+  /** The history ghost's span; set only when the card turns it on. */
+  ghost?: GhostSpan;
 }
 
 /** Each gauge style's sweep when no angle is set. */
@@ -53,6 +59,9 @@ export function parseGaugeOptions(raw: CardConfig, style: StyleName = raw.style 
   if (raw.tick_labels !== undefined && typeof raw.tick_labels !== 'boolean') {
     throw new Error('"tick_labels" must be true or false');
   }
+  if (raw.ghost !== undefined && raw.ghost !== null && !GHOST_SPANS.includes(raw.ghost as GhostSpan)) {
+    throw new Error(`"ghost" must be one of: ${GHOST_SPANS.join(', ')}`);
+  }
   const options: GaugeOptions = {
     center: center as CenterMode,
     centerText: (raw.center_text as string | undefined) ?? '',
@@ -60,6 +69,7 @@ export function parseGaugeOptions(raw: CardConfig, style: StyleName = raw.style 
   };
   if (startAngle !== undefined) options.startAngle = startAngle;
   if (endAngle !== undefined) options.endAngle = endAngle;
+  if (raw.ghost && raw.ghost !== 'off') options.ghost = raw.ghost as GhostSpan;
   return options;
 }
 

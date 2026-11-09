@@ -4,6 +4,7 @@ import { centerContent, customAngles, gaugeAngles, angleAt, arcBox, union } from
 import { arcPath, polar, sweepAngles } from '../geometry';
 import { iconOverride } from '../resolve';
 import { fitStatusText } from '../status-text';
+import { ghostFor, ghostMarks, ghostStyles } from '../gauge-ghost';
 import type { ValueStyleModule } from './index';
 
 let counter = 0;
@@ -62,6 +63,7 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
     height: defaultCropped ? 135 : 155,
     minColumnWidth: 128,
     styles: css`
+      ${ghostStyles}
       /* A definite width: the dial is a size container and can't size the tile itself. */
       .radial {
         display: flex;
@@ -173,7 +175,7 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
         white-space: nowrap;
       }
     `,
-    render(e, { show, hass }) {
+    render(e, { show, hass, requestUpdate }) {
       const id = gradientId(e.config);
       const options = e.config.gauge;
       const angles = gaugeAngles(defaults, options);
@@ -206,6 +208,14 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
         const [x2, y2] = polar(CX, CY, R + STROKE / 2 + 1, deg);
         tick = svg`<line class="tick" x1=${x1.toFixed(2)} y1=${y1.toFixed(2)} x2=${x2.toFixed(2)} y2=${y2.toFixed(2)}></line>`;
       }
+      // The last day's (or week's) range just inside the track, between it and the centre disc.
+      const ghost = ghostMarks(
+        ghostFor(hass, e.entityId, e.config.attribute, options?.ghost, requestUpdate),
+        e,
+        options?.ghost,
+        { cx: CX, cy: CY, r: 37.5, width: 4, tick: [35, 40.5], at: (t) => angleAt(angles, t) },
+        hass,
+      );
       return html`<div class="radial ${cropped ? 'cropped' : ''}">
         <div class="dial ${custom ? 'fitted' : ''}" style=${custom ? `aspect-ratio: 124 / ${h}; --y0: ${y0}` : nothing}>
           <svg viewBox="0 ${y0} 120 ${h}" aria-hidden="true">
@@ -217,6 +227,7 @@ export function radialStyle(sweep: 360 | 270): ValueStyleModule {
             </defs>
             <circle class="disc" cx=${CX} cy=${CY} r="34"></circle>
             <path class="track" d=${trackD}></path>
+            ${ghost}
             ${
               e.available
                 ? svg`<path
