@@ -31,6 +31,8 @@ import { formatNumber, withUnit } from '../format';
 import { localize } from '../localize';
 import { resolveBands } from '../resolve';
 import type { CardConfig, MergedEntity, ResolvedBand } from '../types';
+import { conversion, convertPoints } from '../units';
+import type { Conversion } from '../units';
 import type { ChartContext, ChartStyleModule } from './index';
 
 /** A rolling month: long enough for the pattern to show, short enough to load quickly. */
@@ -81,6 +83,18 @@ export function windRoles(ctx: Pick<ChartContext, 'config' | 'items'>): { direct
   const role = (entity: MergedEntity | undefined): Role | undefined =>
     entity && { id: entity.entity, entity, index: ctx.items.findIndex((e) => e.entityId === entity.entity) };
   return { direction: role(listed[0]), speed: role(listed[1]) };
+}
+
+/**
+ * The unit speeds are shown in, and how to get there: the speed entity's `unit` converts from its
+ * sensor's unit when the card knows the pair (m/s to km/h), as on every other chart; otherwise the
+ * unit is only shown. An attribute has no unit of its own, so it is never converted.
+ */
+export function speedUnit(role: Role, ctx: Pick<ChartContext, 'hass'>): { unit: string; conversion?: Conversion } {
+  const own = role.entity.attribute ? '' : String(ctx.hass.states[role.id]?.attributes?.unit_of_measurement ?? '');
+  const unit = role.entity.unit ?? own;
+  const c = role.entity.unit === undefined ? undefined : conversion(own || undefined, role.entity.unit);
+  return c ? { unit, conversion: c } : { unit };
 }
 
 /** Everything the rose is drawn from. */
@@ -576,18 +590,16 @@ export const windRoseStyle: ChartStyleModule = {
 
     const n = windSectors(ctx.raw);
     const speedRole = loaded.speed ? roles.speed : undefined;
-    const unit = speedRole
-      ? (speedRole.entity.unit ??
-        (speedRole.entity.attribute
-          ? ''
-          : String(ctx.hass.states[speedRole.id]?.attributes?.unit_of_measurement ?? '')))
-      : undefined;
+    const speed = speedRole ? speedUnit(speedRole, ctx) : undefined;
+    const unit = speed?.unit;
+    // Speeds, the default bands (picked for the shown unit) and the calm limit all in the shown unit.
+    const speedPoints = loaded.speed && convertPoints(loaded.speed, speed?.conversion);
     const defaults = speedDefaults(unit);
     const bands: SpeedBand[] = speedRole
-      ? speedBands(resolveBands(speedRole.entity.severity, ctx.hass), defaults.from, ctx)
+      ? speedBands(resolveBands(speedRole.entity.severity, ctx.hass, unit), defaults.from, ctx)
       : [{ from: 0, color: 'var(--primary-color, #2f6fe4)', label: '' }];
     const calm = speedRole ? (calmOption(ctx.raw) ?? defaults.calm) : 0;
-    const samples = pairWind(loaded.direction, loaded.speed, loaded.until, loaded.maxHold);
+    const samples = pairWind(loaded.direction, speedPoints, loaded.until, loaded.maxHold);
     const rose = windRose(
       samples,
       n,
@@ -615,7 +627,7 @@ export const windRoseStyle: ChartStyleModule = {
       ? {
           unit: unit ?? '',
           decimals: speedRole.index >= 0 ? ctx.items[speedRole.index].decimals : 1,
-          points: loaded.speed ?? [],
+          points: speedPoints ?? [],
         }
       : undefined;
     return chartFrame(

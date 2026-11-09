@@ -43,6 +43,8 @@ import type { Point, Range } from '../history/types';
 import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
+import { conversion, convertPoints } from '../units';
+import type { Conversion } from '../units';
 import type { ChartContext, ChartStyleModule } from './index';
 
 /** Room-temperature points kept after thinning: about two per pixel on a wide card. */
@@ -110,20 +112,33 @@ export function actionLabel(hass: HomeAssistant | undefined, entity: ResolvedEnt
   return own === `climate_action_${action}` ? action : own;
 }
 
-interface Temps {
+export interface Temps {
   unit: string;
   decimals: number;
+  /** Set when the card's `unit` converts Home Assistant's temperature unit (°F to °C). */
+  conversion?: Conversion;
+  /** A temperature attribute (in Home Assistant's unit) in the shown unit; anything else as it was. */
+  convert(v: unknown): unknown;
+  /** A temperature already in the shown unit as text, or a dash. */
   text(v: unknown): string;
 }
 
-/** How this thermostat's temperatures are written: the card's unit and decimals, else HA's unit and one decimal. */
-function temps(entity: ResolvedEntity, hass: HomeAssistant): Temps {
+/**
+ * How this thermostat's temperatures are written: the card's unit and decimals, else HA's unit and
+ * one decimal. A thermostat reports its temperatures in Home Assistant's unit system, so a `unit`
+ * in the same family converts them (°F to °C, as `unit` does on a sensor); any other is only shown.
+ */
+export function temps(entity: ResolvedEntity, hass: HomeAssistant): Temps {
   const system = (hass.config as { unit_system?: { temperature?: string } } | undefined)?.unit_system;
-  const unit = entity.config.unit ?? system?.temperature ?? '°C';
+  const own = system?.temperature ?? '°C';
+  const unit = entity.config.unit ?? own;
   const decimals = entity.config.decimals ?? 1;
+  const c = conversion(own, entity.config.unit);
   return {
     unit,
     decimals,
+    ...(c ? { conversion: c } : {}),
+    convert: (v) => (c && typeof v === 'number' && Number.isFinite(v) ? c.apply(v) : v),
     text: (v) => (typeof v === 'number' && Number.isFinite(v) ? withUnit(formatNumber(v, decimals, hass), unit) : '—'),
   };
 }
@@ -159,7 +174,7 @@ function header(ctx: ChartContext, entity: ResolvedEntity, options: ClimateOptio
     ${item(
       html`<span class="swatch" style="background:${options.colors.current}"></span>`,
       entity.name,
-      live ? t.text(attrs[CLIMATE_ATTRIBUTES.current]) : entity.display,
+      live ? t.text(t.convert(attrs[CLIMATE_ATTRIBUTES.current])) : entity.display,
     )}
     ${
       options.setPoint && live
@@ -168,9 +183,9 @@ function header(ctx: ChartContext, entity: ResolvedEntity, options: ClimateOptio
             localize(ctx.hass, 'climate_set_point'),
             setPointText(
               t,
-              attrs[CLIMATE_ATTRIBUTES.target],
-              attrs[CLIMATE_ATTRIBUTES.low],
-              attrs[CLIMATE_ATTRIBUTES.high],
+              t.convert(attrs[CLIMATE_ATTRIBUTES.target]),
+              t.convert(attrs[CLIMATE_ATTRIBUTES.low]),
+              t.convert(attrs[CLIMATE_ATTRIBUTES.high]),
               ctx.hass,
             ),
           )
@@ -355,7 +370,12 @@ export const climate: ChartStyleModule = {
     const loaded = storeFor(ctx.host, ctx.requestUpdate).get(ctx.hass, Object.values(requests), range, 'history', {
       live: span.live,
     });
-    const data = climateData(loaded.data, requests, Math.min(range.end, now), key);
+    const read = climateData(loaded.data, requests, Math.min(range.end, now), key);
+    // The temperatures' history in the shown unit too; the action is words.
+    const temp = (points: Point[]) => convertPoints(points, t.conversion);
+    const data: ClimateData = t.conversion
+      ? { ...read, current: temp(read.current), target: temp(read.target), low: temp(read.low), high: temp(read.high) }
+      : read;
     const frame: HistoryFrame = {
       status: loaded.status,
       error: loaded.error,

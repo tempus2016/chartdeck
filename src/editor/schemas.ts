@@ -3,6 +3,7 @@ import type { CardConfig, HomeAssistant } from '../types';
 import { setOption } from './edit';
 import { MAX_LINE_WIDTH, MIN_LINE_WIDTH } from '../chart/series-style';
 import { GHOST_SPANS } from '../gauge';
+import { convertibleUnits } from '../units';
 
 /** One ha-form field and where it lives in the card config. */
 export interface FieldBinding {
@@ -224,8 +225,32 @@ export function actionsSchema() {
   return ACTIONS_SCHEMA;
 }
 
-export function entityTextSchema() {
-  return ENTITY_TEXT_SCHEMA;
+const unitSchemas = new Map<string, unknown[]>();
+
+/**
+ * Name, unit and decimals. When the sensor's unit is one the card converts (W, °F, m/s…), the unit
+ * offers the units it converts to; any other text can still be typed and is shown as written.
+ */
+export function entityTextSchema(sensorUnit?: string) {
+  const units = convertibleUnits(sensorUnit);
+  if (units.length === 0) return ENTITY_TEXT_SCHEMA;
+  const key = units[0];
+  let schema = unitSchemas.get(key);
+  if (!schema) {
+    const grid = ENTITY_TEXT_SCHEMA[0];
+    schema = [
+      {
+        ...grid,
+        schema: grid.schema.map((field) =>
+          field.name === 'unit'
+            ? { name: 'unit', selector: { select: { mode: 'dropdown', custom_value: true, options: units } } }
+            : field,
+        ),
+      },
+    ];
+    unitSchemas.set(key, schema);
+  }
+  return schema;
 }
 
 export function entityActionsSchema() {

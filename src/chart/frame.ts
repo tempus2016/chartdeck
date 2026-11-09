@@ -14,6 +14,7 @@ import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
+import { convertPoints } from '../units';
 import { CURVES } from './paths';
 import type { Curve } from './paths';
 
@@ -116,6 +117,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string; curve?: Curve; dash?: boolean };
     let points = loaded.data.get(key(requests[index])) ?? [];
+    points = convertPoints(points, entity.conversion);
     const readings = points;
     const last = points[points.length - 1];
     if (group) {

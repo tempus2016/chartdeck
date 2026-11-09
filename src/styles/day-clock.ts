@@ -36,6 +36,7 @@ import type { Aggregate } from '../history/group';
 import { parsePeriod, stepsFor } from '../history/period';
 import type { Period } from '../history/period';
 import { storeFor } from '../history/store';
+import { convertPoints } from '../units';
 import { zoneFor } from '../history/timezone';
 import type { Point, SeriesRequest } from '../history/types';
 import { localize } from '../localize';
@@ -309,7 +310,11 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
       if (ring.count > 0) parts.push(daily(timesText(hass, ring.count)));
       ring.stat = parts.join(' · ');
     } else {
-      const numbers: Point[] = points.map((p) => ({ ...p, v: toReading(p.s), s: undefined }));
+      // Loaded as words (a ring may be a state ring), read as numbers here, then in the shown unit.
+      const numbers: Point[] = convertPoints(
+        points.map((p) => ({ ...p, v: toReading(p.s), s: undefined })),
+        entity.conversion,
+      );
       ring.slots = foldSlots(numbers, bounds, bucket, ring.aggregate, until, zone.timeZone);
       const additive = isAdditive(ring.aggregate);
       ring.heights = barHeights(ring.slots, additive);

@@ -208,7 +208,13 @@ export class CdEntitiesEditor extends LitElement {
     };
     return html`<div class="overrides">
       ${this._form('entity-attribute', index, own, entityAttributeSchema(own.entity), ENTITY_ATTRIBUTE_FIELDS)}
-      ${this._form('entity-text', index, own, entityTextSchema(), ENTITY_TEXT_FIELDS)}
+      ${this._form(
+        'entity-text',
+        index,
+        own,
+        entityTextSchema(sensorUnit(this.hass, own.entity, own.attribute)),
+        ENTITY_TEXT_FIELDS,
+      )}
       ${
         this.chartFields
           ? this._form('entity-chart', index, own, this.chartFields.schema, this.chartFields.fields)

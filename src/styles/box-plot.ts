@@ -45,6 +45,7 @@ import { parseGrouping } from '../history/group';
 import type { GroupUnit } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
+import { convertPoints } from '../units';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Range, Source } from '../history/types';
 import { localize } from '../localize';
@@ -110,7 +111,7 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
     return {
       index,
       entity,
-      points: loaded.data.get(key(requests[index])) ?? [],
+      points: convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion),
       color: baseColor(own.color ?? SERIES_COLORS[index % SERIES_COLORS.length]),
       curve: 'straight',
       dash: false,

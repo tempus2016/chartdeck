@@ -48,6 +48,7 @@ import { AGGREGATES, GROUP_UNITS } from '../history/group';
 import type { Aggregate, GroupUnit } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
+import { convertPoints } from '../units';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -124,7 +125,7 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
   let candles: (Candle | null)[] = [];
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string };
-    const points = loaded.data.get(key(requests[index])) ?? [];
+    const points = convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion);
     let grouped: Point[];
     if (index === 0) {
       candles =

@@ -4,6 +4,8 @@ import { matchEntities } from './fill';
 import { defaultDecimals, formatNumber, withUnit } from './format';
 import { localize } from './localize';
 import { fillSpan, position } from './scale';
+import { conversion, convertedDecimals } from './units';
+import type { Conversion } from './units';
 import { DEFAULT_BANDS } from './config';
 import type { Band, HassEntity, HomeAssistant, MergedEntity, NormalizedConfig, ResolvedBand, SortMode } from './types';
 
@@ -19,6 +21,8 @@ export interface ResolvedEntity {
   target: number | null;
   name: string;
   unit: string;
+  /** Set when `unit` converts the sensor's own unit (W to kW): history is converted with it too. */
+  conversion?: Conversion;
   decimals: number;
   position: number;
   span: [number, number];
@@ -86,11 +90,18 @@ function statusText(entity: MergedEntity, stateObj: HassEntity, raw: unknown, ha
   return hass.formatEntityState?.(stateObj) ?? localize(hass, 'unavailable');
 }
 
-function resolveLimit(limit: unknown, hass: HomeAssistant, what = 'limit'): number | null {
+/**
+ * A limit or band start: a number as written (in the unit the card shows), or an entity's state,
+ * converted from that entity's unit to `unit` when the card knows the pair.
+ */
+function resolveLimit(limit: unknown, hass: HomeAssistant, what = 'limit', unit?: string): number | null {
   if (isUnset(limit)) return null;
   if (typeof limit === 'number') return Number.isFinite(limit) ? limit : null;
   const id = String(limit);
-  const n = parseNumber(hass.states[id]?.state);
+  const read = parseNumber(hass.states[id]?.state);
+  const from = hass.states[id]?.attributes?.unit_of_measurement;
+  const c = read === null ? undefined : conversion(typeof from === 'string' ? from : undefined, unit);
+  const n = c && read !== null ? c.apply(read) : read;
   if (n === null && !warned.has(id)) {
     warned.add(id);
     const fallback = what === 'limit' ? 'using the default' : 'leaving that colour band out';
@@ -104,11 +115,11 @@ function resolveLimit(limit: unknown, hass: HomeAssistant, what = 'limit'): numb
  * numeric is left out (with one warning), so the band below it carries on; with none left, the
  * default colour.
  */
-export function resolveBands(bands: Band[], hass: HomeAssistant | undefined): ResolvedBand[] {
+export function resolveBands(bands: Band[], hass: HomeAssistant | undefined, unit?: string): ResolvedBand[] {
   if (bands.every((b) => typeof b.from === 'number')) return bands as ResolvedBand[];
   const read: ResolvedBand[] = [];
   for (const band of bands) {
-    const from = hass ? resolveLimit(band.from, hass, 'band start') : null;
+    const from = hass ? resolveLimit(band.from, hass, 'band start', unit) : null;
     if (from !== null) read.push({ ...band, from });
   }
   return read.length ? read.sort((a, b) => a.from - b.from) : DEFAULT_BANDS;
@@ -119,18 +130,25 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
   const stateObj = hass.states[entityId];
   const name = entity.name ?? stateObj?.attributes?.friendly_name ?? entityId;
   // The sensor's unit and display precision describe its state, not its attributes.
-  const unit = entity.unit ?? (entity.attribute ? '' : (stateObj?.attributes?.unit_of_measurement ?? ''));
+  const own = entity.attribute ? '' : String(stateObj?.attributes?.unit_of_measurement ?? '');
+  const unit = entity.unit ?? own;
+  // A unit the card can convert to (W to kW) converts; any other is only shown (see units.ts).
+  const converted = entity.unit === undefined ? undefined : conversion(own || undefined, entity.unit);
   const raw = rawValue(entity, stateObj);
-  const value = toValue(raw);
+  const read = toValue(raw);
+  const value = converted && read !== null ? converted.apply(read) : read;
   const available = value !== null;
   let decimals: number;
   if (!isUnset(entity.decimals)) decimals = entity.decimals as number;
   else if (entity.attribute) decimals = available ? reportedDecimals(raw) : 0;
-  else decimals = defaultDecimals(hass, entityId, unit);
-  const min = resolveLimit(entity.min, hass) ?? 0;
-  const max = resolveLimit(entity.max, hass) ?? 100;
-  const target = resolveLimit(entity.target, hass);
-  const bands = resolveBands(entity.severity, hass);
+  else if (converted && typeof hass.entities?.[entityId]?.display_precision === 'number') {
+    // The sensor's own precision, moved for the new unit's size (W at 0 is kW at 3).
+    decimals = convertedDecimals(hass.entities[entityId].display_precision as number, converted.slope);
+  } else decimals = defaultDecimals(hass, entityId, unit);
+  const min = resolveLimit(entity.min, hass, 'limit', unit) ?? 0;
+  const max = resolveLimit(entity.max, hass, 'limit', unit) ?? 100;
+  const target = resolveLimit(entity.target, hass, 'limit', unit);
+  const bands = resolveBands(entity.severity, hass, unit);
 
   let valueText = '';
   let display: string;
@@ -154,6 +172,7 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
     target,
     name,
     unit,
+    ...(converted ? { conversion: converted } : {}),
     decimals,
     position: available ? position(value, min, max) : 0,
     span: available ? fillSpan(value, min, max) : [0, 0],
