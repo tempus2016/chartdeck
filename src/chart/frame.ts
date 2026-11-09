@@ -34,6 +34,8 @@ export interface ChartSeries {
   color: string;
   curve: Curve;
   dash: boolean;
+  /** The readings as loaded, before grouping (trimmed to the range), for spreads within a group. */
+  readings?: Point[];
 }
 
 export interface HistoryFrame {
@@ -80,6 +82,8 @@ export interface FrameOptions {
   aggregate?: (entity: ResolvedEntity) => Aggregate | undefined;
   /** Keep each state's words (`Point.s`) instead of reading numbers, for charts of states like "on" or "heat". */
   text?: boolean;
+  /** Grouped statistics: load hourly rows and group them here, so each group keeps its rows. */
+  hourly?: boolean;
 }
 
 /** Load (or reuse) the card's history and pair it with its entities. */
@@ -97,10 +101,11 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     ...(options.text ? { text: true } : {}),
   }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
-  const statistics =
+  let statistics =
     group && source === 'statistics'
       ? statisticsQueryFor(group, zone, ctx.hass.config?.time_zone, options.range === true)
       : undefined;
+  if (statistics && options.hourly) statistics = { ...statistics, period: 'hour' };
   // Statistics groups load from one row early: the row before a group gives its `first`.
   const load = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
   const loaded = store.get(ctx.hass, requests, load, source, { live: span.live, statistics });
@@ -111,6 +116,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string; curve?: Curve; dash?: boolean };
     let points = loaded.data.get(key(requests[index])) ?? [];
+    const readings = points;
     const last = points[points.length - 1];
     if (group) {
       points =
@@ -128,6 +134,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
       color: baseColor(own.color ?? SERIES_COLORS[index % SERIES_COLORS.length]),
       curve: own.curve ?? cardCurve,
       dash: own.dash === true,
+      readings,
     };
   });
   return {
