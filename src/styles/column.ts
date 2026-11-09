@@ -386,9 +386,12 @@ function render(ctx0: ChartContext): TemplateResult {
     };
   }
   if (whiskers) {
+    // Whiskers follow the drawn series' order; a series' index is its place among the card's
+    // entities, which differs once names hide some (legend_toggle).
+    const whiskersOf = new Map(frame.series.map((s, k) => [s.index, whiskers[k]]));
     tip.text = (s, p) => {
       if (!p || p.v === null) return '—';
-      const w = whiskers[s.index][slotOf.get(p.t) ?? -1];
+      const w = whiskersOf.get(s.index)?.[slotOf.get(p.t) ?? -1];
       const value = withUnit(fmt(p.v, s), s.entity.unit);
       if (!w) return value;
       return localize(ctx.hass, 'error_bars_tooltip', { value, low: fmt(w.lo, s), high: fmt(w.hi, s) });

@@ -166,6 +166,30 @@ describe('error bars on the column chart', () => {
     expect(tooltipRows(card)[0]).toMatch(/^Temp \d+\.\d °C \(\d+\.\d – \d+\.\d\)$/);
   });
 
+  it("reads each shown series' own whiskers in the tooltip when names hide one", async () => {
+    localStorage.clear();
+    const card = await mount({
+      group_by: 'day',
+      error_bars: 'min_max',
+      legend_toggle: true,
+      entities: ['sensor.temp', 'sensor.hum'],
+    });
+    const first = q(card, 'button.series-toggle') as HTMLElement;
+    first.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    first.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    for (let i = 0; i < 3; i++) {
+      await card.updateComplete;
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    expect(qa(card, '.whisker-bar').length).toBe(qa(card, '.col').length);
+    pointAt(q(card, '.plot-area')!, 'pointermove', 0.5);
+    await card.updateComplete;
+    const rows = tooltipRows(card);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatch(/^Humidity \d+ % \(\d+ – \d+\)$/);
+    localStorage.clear();
+  });
+
   it('draws whiskers beside each series in side-by-side columns', async () => {
     const card = await mount({ group_by: 'day', error_bars: 'min_max', entities: ['sensor.temp', 'sensor.hum'] });
     expect(qa(card, '.whisker-bar').length).toBe(qa(card, '.col').length);
