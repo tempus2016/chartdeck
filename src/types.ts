@@ -5,6 +5,7 @@ export type StyleName =
   | 'thin'
   | 'segmented'
   | 'tank'
+  | 'battery'
   | 'ring'
   | 'needle'
   | 'arc'
@@ -50,6 +51,7 @@ export const STYLE_NAMES: StyleName[] = [
   'thin',
   'segmented',
   'tank',
+  'battery',
   'ring',
   'needle',
   'arc',

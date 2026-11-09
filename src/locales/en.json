@@ -41,6 +41,8 @@
   "editor_style_thin": "Thin",
   "editor_style_segmented": "Segmented",
   "editor_style_tank": "Tank",
+  "editor_style_battery": "Battery grid",
+  "battery_aria": "Battery levels: {levels}",
   "editor_style_ring": "Ring",
   "editor_style_needle": "Needle",
   "editor_style_arc": "Arc",

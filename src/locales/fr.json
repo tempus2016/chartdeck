@@ -41,6 +41,8 @@
   "editor_style_thin": "Fine",
   "editor_style_segmented": "Segmentée",
   "editor_style_tank": "Réservoir",
+  "editor_style_battery": "Grille de batteries",
+  "battery_aria": "Niveaux de batterie : {levels}",
   "editor_style_ring": "Anneau",
   "editor_style_needle": "Aiguille",
   "editor_style_arc": "Arc",

@@ -41,6 +41,8 @@
   "editor_style_thin": "Dun",
   "editor_style_segmented": "Gesegmenteerd",
   "editor_style_tank": "Tank",
+  "editor_style_battery": "Batterijraster",
+  "battery_aria": "Batterijniveaus: {levels}",
   "editor_style_ring": "Ring",
   "editor_style_needle": "Naald",
   "editor_style_arc": "Boog",

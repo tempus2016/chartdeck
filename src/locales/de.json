@@ -41,6 +41,8 @@
   "editor_style_thin": "Schmal",
   "editor_style_segmented": "Segmentiert",
   "editor_style_tank": "Tank",
+  "editor_style_battery": "Batterieraster",
+  "battery_aria": "Batteriestände: {levels}",
   "editor_style_ring": "Ring",
   "editor_style_needle": "Nadel",
   "editor_style_arc": "Bogen",
