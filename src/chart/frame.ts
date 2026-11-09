@@ -7,6 +7,7 @@ import { key } from '../history/fetch';
 import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQueryFor } from '../history/group';
 import type { Aggregate, Grouping } from '../history/group';
 import { pauseStore, storeFor } from '../history/store';
+import { derivativeSeries, validateDerivative } from '../history/transform-derivative';
 import { boundaries, startOf, wallTime, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -57,6 +58,7 @@ export interface HistoryFrame {
 export function validateHistoryOptions(raw: CardConfig): void {
   parsePeriod(raw.period as CardConfig['period']);
   parseGrouping(raw);
+  validateDerivative(raw);
   if (raw.source !== undefined && !SOURCES.includes(raw.source as Source)) {
     throw new Error(`"source" must be one of: ${SOURCES.join(', ')}`);
   }
@@ -80,6 +82,27 @@ export interface FrameOptions {
   aggregate?: (entity: ResolvedEntity) => Aggregate | undefined;
   /** Keep each state's words (`Point.s`) instead of reading numbers, for charts of states like "on" or "heat". */
   text?: boolean;
+}
+
+/**
+ * One series' readings with its entity's history transform applied (`transform: cumulative`, a
+ * running total; `transform: derivative`, a rate of change), and the entity with its value and
+ * unit to match. Readings that are already in the shown unit go in (unit conversion comes first);
+ * an entity without a transform comes back as it was. Every chart that draws history as numbers
+ * calls this: the frame here, and box plot, candlestick and the 24-hour clock, which load their own.
+ */
+export function seriesTransform(
+  entity: ResolvedEntity,
+  points: Point[],
+  range: Range,
+  until: number,
+  zone: Zone,
+  hass: ChartContext['hass'],
+): { entity: ResolvedEntity; points: Point[] } {
+  // The span is for transforms that follow the calendar (a running total's resets); a rate doesn't.
+  void [range, until, zone];
+  ({ entity, points } = derivativeSeries(entity, points, hass));
+  return { entity, points };
 }
 
 /** Load (or reuse) the card's history and pair it with its entities. */
@@ -111,6 +134,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string; curve?: Curve; dash?: boolean };
     let points = loaded.data.get(key(requests[index])) ?? [];
+    if (!options.text) ({ entity, points } = seriesTransform(entity, points, range, until, zone, ctx.hass));
     const last = points[points.length - 1];
     if (group) {
       points =

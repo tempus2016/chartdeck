@@ -50,6 +50,7 @@ export class CdEntitiesEditor extends LitElement {
     entities: { attribute: false },
     unit: { attribute: false },
     chartFields: { attribute: false },
+    transformFields: { attribute: false },
     _expanded: { state: true },
   };
 
@@ -113,6 +114,8 @@ export class CdEntitiesEditor extends LitElement {
   declare unit?: string;
   /** The chart style's own per-entity options, when the card is a chart that has any. */
   declare chartFields?: EntityFields;
+  /** History charts: the per-entity transforms (running total, rate of change), in a form of their own. */
+  declare transformFields?: EntityFields;
   /** Indexes of rows whose overrides are open. */
   declare _expanded: Set<number>;
 
@@ -212,6 +215,11 @@ export class CdEntitiesEditor extends LitElement {
       ${
         this.chartFields
           ? this._form('entity-chart', index, own, this.chartFields.schema, this.chartFields.fields)
+          : nothing
+      }
+      ${
+        this.transformFields
+          ? this._form('entity-transform', index, own, this.transformFields.schema, this.transformFields.fields)
           : nothing
       }
       <ha-icon-picker

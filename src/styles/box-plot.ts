@@ -13,6 +13,7 @@ import {
   frameStyles,
   periodNav,
   seriesHeader,
+  seriesTransform,
   validateHistoryOptions,
 } from '../chart/frame';
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
@@ -116,6 +117,9 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
       dash: false,
     };
   });
+  // Each entity's history transform (running total, rate of change), on its readings before boxing.
+  const until = Math.min(range.end, now);
+  for (const s of series) Object.assign(s, seriesTransform(s.entity, s.points, range, until, zone, ctx.hass));
   return {
     status: loaded.status,
     error: loaded.error,
@@ -128,7 +132,7 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
     zone,
     bounds: group ? boundaries(group.unit, range.start, range.end, zone) : [],
     unit: group?.unit,
-    until: Math.min(range.end, now),
+    until,
   };
 }
 
