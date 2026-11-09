@@ -8,6 +8,7 @@ import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQuer
 import type { Aggregate, Grouping } from '../history/group';
 import { pauseStore, storeFor } from '../history/store';
 import { cumulativeSeries, validateCumulative } from '../history/transform-cumulative';
+import { derivativeSeries, validateDerivative } from '../history/transform-derivative';
 import { boundaries, startOf, wallTime, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -62,6 +63,7 @@ export function validateHistoryOptions(raw: CardConfig): void {
   parsePeriod(raw.period as CardConfig['period']);
   parseGrouping(raw);
   validateCumulative(raw);
+  validateDerivative(raw);
   if (raw.source !== undefined && !SOURCES.includes(raw.source as Source)) {
     throw new Error(`"source" must be one of: ${SOURCES.join(', ')}`);
   }
@@ -105,6 +107,7 @@ export function seriesTransform(
   hass: ChartContext['hass'],
 ): { entity: ResolvedEntity; points: Point[] } {
   ({ entity, points } = cumulativeSeries(entity, points, range, until, zone, hass));
+  ({ entity, points } = derivativeSeries(entity, points, hass));
   return { entity, points };
 }
 

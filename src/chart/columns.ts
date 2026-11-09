@@ -37,6 +37,8 @@ export function autoGroupUnit(period: Period): GroupUnit {
 /** A meter that counts up (energy, water, gas): its columns should show how much it went up. */
 export function isMeter(e: ResolvedEntity): boolean {
   if (e.config.attribute) return false;
+  // Drawn as its rate of change, a meter reads like any measurement.
+  if ((e.config as { transform?: string }).transform === 'derivative') return false;
   const stateClass = e.stateObj?.attributes?.state_class;
   return stateClass === 'total_increasing' || stateClass === 'total';
 }

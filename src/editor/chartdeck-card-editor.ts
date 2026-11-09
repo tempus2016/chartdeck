@@ -33,6 +33,7 @@ import './limit-field';
 import { GROUP_LEVELS } from '../chart/hierarchy';
 import { LanguageController } from '../language-controller';
 import { withCumulativeFields } from '../history/transform-cumulative';
+import { withDerivativeFields } from '../history/transform-derivative';
 
 /** Styles whose `group_by` groups entities by place rather than readings by time. */
 const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar', 'marimekko'];
@@ -218,7 +219,12 @@ export class ChartdeckCardEditor extends LitElement {
   private _transformFields() {
     if (!this._config) return undefined;
     const style = this._config.style ?? 'bar';
-    return withCumulativeFields(style, this.hass, this._config, undefined);
+    return withDerivativeFields(
+      style,
+      this.hass,
+      this._config,
+      withCumulativeFields(style, this.hass, this._config, undefined),
+    );
   }
 
   /** Entity list, pickers and per-entity overrides, then the rules that add more. */
