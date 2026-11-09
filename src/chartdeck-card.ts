@@ -4,6 +4,9 @@ import { repeat } from 'lit/directives/repeat.js';
 import { attachActions, isInteractive } from './actions';
 import { colorStops, legendItems } from './bands';
 import { normalizeConfig } from './config';
+import { energyChecked, energyConfig } from './history/energy';
+import { energyTotals } from './history/energy-totals';
+import { pauseStore } from './history/store';
 import './editor/chartdeck-card-editor';
 import { formatNumber } from './format';
 import { localize } from './localize';
@@ -103,7 +106,9 @@ export class ChartdeckCard extends LitElement {
   setConfig(config: CardConfig): void {
     const normalized = normalizeConfig(config);
     const style = STYLES[normalized.style];
-    if (isChart(style)) style.validate?.(config);
+    // The Energy dashboard source is checked here, then the chart checks it as the statistics it draws.
+    const checked = energyChecked(config);
+    if (isChart(style)) style.validate?.(checked);
     this._watched = watchedEntityIds(normalized);
     if (isChart(style)) for (const id of style.watch?.(config) ?? []) this._watched.add(id);
     // A different chart style may hold subscriptions the new one doesn't know about.
@@ -250,6 +255,8 @@ export class ChartdeckCard extends LitElement {
   private _disconnectStyle(): void {
     const style = this._config ? STYLES[this._config.style] : undefined;
     if (style && isChart(style)) style.disconnect?.(this);
+    // A pie or Sankey of energy totals loads statistics too (no-op for any other card).
+    pauseStore(this);
   }
 
   disconnectedCallback(): void {
@@ -304,9 +311,11 @@ export class ChartdeckCard extends LitElement {
   }
 
   render() {
-    const config = this._config;
-    if (!config) return nothing;
+    if (!this._config) return nothing;
     const hass = this.hass;
+    // `source: energy`: the entities come from the Energy dashboard's settings, once they load.
+    const energy = energyConfig(this._config, hass, () => this.requestUpdate());
+    const config = energy.config;
     const style = this._style;
     let body;
     let first: ResolvedEntity | undefined;
@@ -314,7 +323,10 @@ export class ChartdeckCard extends LitElement {
     let valueCh: number | undefined;
     const resolved = hass ? resolveEntities(config, hass) : [];
     this._matched = hass ? matchedIds(config, hass) : [];
-    if (config.entities.length === 0 && !config.include) {
+    if (energy.message) {
+      this._items = [];
+      body = html`<div class="hint">${energy.message}</div>`;
+    } else if (config.entities.length === 0 && !config.include) {
       this._items = [];
       body = html`<div class="hint">${localize(hass, 'no_entities')}</div>`;
     } else if (!hass) {
@@ -339,16 +351,24 @@ export class ChartdeckCard extends LitElement {
       const values = this._items.filter((e) => e.available).map((e) => e.display.length);
       valueCh = values.length ? Math.max(...values) : undefined;
       if (isChart(style)) {
-        body = html`<div class="chart">
-          ${style.render({
-            items: this._items,
-            config,
-            raw: config.cardOptions as CardConfig,
-            hass,
-            requestUpdate: () => this.requestUpdate(),
-            host: this,
-          })}
-        </div>`;
+        const ctx = {
+          items: this._items,
+          config,
+          raw: config.cardOptions as CardConfig,
+          hass,
+          requestUpdate: () => this.requestUpdate(),
+          host: this,
+        };
+        // A pie or Sankey of the Energy dashboard draws each flow's total over its period.
+        const totals = energy.totals ? energyTotals(ctx) : undefined;
+        if (totals?.message !== undefined) {
+          body = html`<div class="chart">
+            <div class="chart-message ${totals.error ? 'error' : ''}">${totals.message}</div>
+          </div>`;
+        } else {
+          if (totals) this._items = totals.items;
+          body = html`<div class="chart">${style.render({ ...ctx, items: this._items })}</div>`;
+        }
       } else {
         const tiles = style.layout === 'tiles';
         const grid = columnsTemplate(style, config.columns);

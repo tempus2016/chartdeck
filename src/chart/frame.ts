@@ -1,8 +1,11 @@
 import { css, html, nothing, svg } from 'lit';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
+import { isInteractive } from '../actions';
 import { baseColor } from '../bands';
 import { parsePeriod, periodRange, setSteps, stepsFor } from '../history/period';
 import type { Period } from '../history/period';
+import { belowAxis, energyValueText } from '../history/energy';
+import type { EnergyMarks } from '../history/energy';
 import { key } from '../history/fetch';
 import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQueryFor } from '../history/group';
 import type { Aggregate, Grouping } from '../history/group';
@@ -121,6 +124,8 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
       // A sensor holds its last reading until it changes, so carry it on to the right edge.
       points = [...points, { t: until, v: last.v }];
     }
+    // Energy leaving the house (source: energy, split) is drawn below the axis.
+    if ((entity.config as EnergyMarks).energy_below) points = belowAxis(points);
     return {
       index,
       entity,
@@ -316,19 +321,30 @@ export function disconnectHistory(host: HTMLElement): void {
   pauseStore(host);
 }
 
-/** The row above the chart: each series' colour, name and current value; tapping one opens it. */
+/**
+ * The row above the chart: each series' colour, name and current value; tapping one opens it.
+ * An Energy dashboard series shows its total over the span instead (see `energyValueText`).
+ */
 export function seriesHeader(frame: HistoryFrame, ctx: ChartContext): TemplateResult | typeof nothing {
   const { show } = ctx.config;
   if (!show.name && !show.value) return nothing;
   return html`<div class="series-header">
-    ${frame.series.map(
-      (s) =>
-        html`<div class="entity series-item" data-index=${s.index} tabindex="0" aria-label=${s.entity.label}>
-          <span class="swatch" style="background:${s.color}"></span>
-          ${show.name ? html`<span class="series-name">${s.entity.name}</span>` : nothing}
-          ${show.value ? html`<span class="series-value">${s.entity.display}</span>` : nothing}
-        </div>`,
-    )}
+    ${frame.series.map((s) => {
+      const value = energyValueText(s.entity, s.points, frame.group, ctx.hass) ?? s.entity.display;
+      const label = value ? `${s.entity.name}, ${value}` : s.entity.name;
+      // A series with no action (a statistic with no entity to open) isn't a button.
+      const acts = isInteractive(s.entity.config);
+      return html`<div
+        class="entity series-item ${acts ? '' : 'inert'}"
+        data-index=${s.index}
+        tabindex=${acts ? '0' : nothing}
+        aria-label=${label}
+      >
+        <span class="swatch" style="background:${s.color}"></span>
+        ${show.name ? html`<span class="series-name">${s.entity.name}</span>` : nothing}
+        ${show.value && value ? html`<span class="series-value">${value}</span>` : nothing}
+      </div>`;
+    })}
   </div>`;
 }
 
@@ -391,6 +407,9 @@ export const frameStyles = css`
     min-width: 0;
     cursor: pointer;
     border-radius: 4px;
+  }
+  .series-item.inert {
+    cursor: default;
   }
   .series-item:focus-visible {
     outline: 2px solid var(--primary-color);

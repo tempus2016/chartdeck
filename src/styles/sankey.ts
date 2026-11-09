@@ -7,7 +7,14 @@ import { chartWidth, stopChartWidth } from '../chart/grid';
 import { acceptFlows, findCycle, fitText, linkPath, sankeyLayout, spreadLabels, textWidth } from '../chart/sankey';
 import type { Flow, SankeyLayout, SankeyLink, SankeyNode } from '../chart/sankey';
 import { tooltipStyles } from '../chart/tooltip';
-import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
+import {
+  ENERGY_TOTALS_FIELDS,
+  cachedSchema,
+  chartForm,
+  choice,
+  energyTotalsSchema,
+  energyTotalsVariant,
+} from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { localize } from '../localize';
@@ -294,10 +301,11 @@ function render(ctx: ChartContext): TemplateResult {
 const FIELDS: FieldBinding[] = [{ name: 'link_color', path: ['link_color'], default: 'auto' }];
 
 export function sankeyEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema('sankey', ctx.hass, () => [
+  const schema = cachedSchema(`sankey|${energyTotalsVariant(ctx.config)}`, ctx.hass, () => [
+    ...energyTotalsSchema(ctx.hass, ctx.config),
     { name: 'link_color', selector: choice(ctx.hass, 'link_color', LINK_COLORS) },
   ]);
-  return chartForm(ctx, 'chart', schema, FIELDS);
+  return chartForm(ctx, 'chart', schema, [...ENERGY_TOTALS_FIELDS, ...FIELDS]);
 }
 
 const ENTITY_FIELDS: FieldBinding[] = [

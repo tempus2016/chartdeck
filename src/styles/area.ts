@@ -37,6 +37,7 @@ import {
 import type { TooltipOptions } from '../chart/tooltip';
 import {
   AXES_FIELDS,
+  ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
@@ -52,6 +53,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { CURVES } from '../chart/paths';
 import { localize } from '../localize';
+import { shownValue } from '../history/energy';
 import type { Point } from '../history/types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant } from '../types';
@@ -266,7 +268,7 @@ function render(ctx: ChartContext): TemplateResult {
         const layer = p ? layers[s.index][index.get(p) ?? -1] : null;
         if (!p || p.v === null || !layer) return '—';
         const share = Math.round(Math.abs(layer[1] - layer[0]));
-        return `${withUnit(formatNumber(p.v, s.entity.decimals, ctx.hass), s.entity.unit)} · ${share} %`;
+        return `${withUnit(formatNumber(shownValue(s.entity, p.v), s.entity.decimals, ctx.hass), s.entity.unit)} · ${share} %`;
       };
     }
   }
@@ -299,6 +301,7 @@ function render(ctx: ChartContext): TemplateResult {
 
 const AREA_FIELDS: FieldBinding[] = [
   ...HISTORY_FIELDS,
+  ENERGY_SPLIT_FIELD,
   { name: 'curve', path: ['curve'], default: 'smooth' },
   { name: 'stack', path: ['stack'], default: 'none' },
   { name: 'line_width', path: ['line_width'], default: AREA_LINE_WIDTH },

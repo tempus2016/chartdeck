@@ -1,6 +1,7 @@
 import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { formatNumber, withUnit } from '../format';
+import { shownValue } from '../history/energy';
 import { localize } from '../localize';
 import type { Point, Range } from '../history/types';
 import type { ChartContext } from '../styles/index';
@@ -135,10 +136,10 @@ export function hoverHandlers(ctx: ChartContext, range: Range, series: readonly 
 
 const pct = (n: number) => `${Math.round(n * 10000) / 100}%`;
 
-/** One series' line in the tooltip: its value at the guide, formatted as the entity is. */
+/** One series' line in the tooltip: its value at the guide, formatted as the entity is (energy out reads positive). */
 function valueText(p: Point | undefined, s: ChartSeries, ctx: ChartContext): string {
   if (!p || p.v === null) return '—';
-  return withUnit(formatNumber(p.v, s.entity.decimals, ctx.hass), s.entity.unit);
+  return withUnit(formatNumber(shownValue(s.entity, p.v), s.entity.decimals, ctx.hass), s.entity.unit);
 }
 
 /** The units every series shares, or '' when they differ. */

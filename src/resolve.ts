@@ -2,6 +2,7 @@ import { bandFor } from './bands';
 import { mergeEntity } from './config';
 import { matchEntities } from './fill';
 import { defaultDecimals, formatNumber, withUnit } from './format';
+import { isStatistic } from './history/energy';
 import { localize } from './localize';
 import { fillSpan, position } from './scale';
 import { DEFAULT_BANDS } from './config';
@@ -28,7 +29,7 @@ export interface ResolvedEntity {
   bands: ResolvedBand[];
   /** Number only, no unit; '' when unavailable. */
   valueText: string;
-  /** Number with unit, or the localised state / "Entity not found". */
+  /** Number with unit, or the localised state / "Entity not found" ('' for a statistic with no entity). */
   display: string;
   /** Aria label: "<name>, <display>". */
   label: string;
@@ -42,7 +43,7 @@ const warned = new Set<string>();
  */
 export function iconOverride(e: ResolvedEntity): string | undefined {
   const band = e.available ? e.band.icon : undefined;
-  return band ?? e.config.icon ?? (e.stateObj ? undefined : 'mdi:help-circle-outline');
+  return band ?? e.config.icon ?? (e.stateObj || isStatistic(e) ? undefined : 'mdi:help-circle-outline');
 }
 
 export function resetLimitWarnings(): void {
@@ -138,7 +139,8 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
     valueText = formatNumber(value, decimals, hass);
     display = withUnit(valueText, unit);
   } else if (!stateObj) {
-    display = localize(hass, 'entity_not_found');
+    // A long-term statistic with no entity (source: energy) has no current value, but isn't missing.
+    display = isStatistic({ config: entity }) ? '' : localize(hass, 'entity_not_found');
   } else {
     display = statusText(entity, stateObj, raw, hass);
   }
@@ -162,7 +164,7 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
     bands,
     valueText,
     display,
-    label: `${name}, ${display}`,
+    label: display ? `${name}, ${display}` : name,
   };
 }
 
@@ -177,7 +179,7 @@ export function matchedIds(config: NormalizedConfig, hass: HomeAssistant): strin
 export function resolveEntities(config: NormalizedConfig, hass: HomeAssistant): ResolvedEntity[] {
   const matched = matchedIds(config, hass).map((id, i) => mergeEntity(id, config.cardOptions, i));
   const resolved = [...config.entities, ...matched].map((e) => resolveOne(e, hass));
-  return config.hideUnavailable ? resolved.filter((e) => e.available) : resolved;
+  return config.hideUnavailable ? resolved.filter((e) => e.available || isStatistic(e)) : resolved;
 }
 
 export function sortEntities(list: ResolvedEntity[], mode: SortMode): ResolvedEntity[] {
