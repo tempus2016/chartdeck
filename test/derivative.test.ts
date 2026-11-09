@@ -237,7 +237,12 @@ describe('derivativeSeries', () => {
   it('reads an attribute as never a meter, and keeps the entity when there is no rate', () => {
     const e = entity({ state_class: 'total_increasing' }, { transform: 'derivative', attribute: 'x' }, '');
     expect(values(derivativeSeries(e, pts([0, 5], [1, 3]), hass).points)).toEqual([[1, -2]]);
-    const none = derivativeSeries(e, pts([0, 5]), hass);
+    // One reading held all span: a rate of 0 to now. No reading at all: nothing.
+    expect(values(derivativeSeries(e, pts([0, 5]), hass, 2 * H).points)).toEqual([
+      [0, 0],
+      [2, 0],
+    ]);
+    const none = derivativeSeries(e, pts([0, null]), hass);
     expect(none.points).toEqual([]);
     expect(none.entity.display).toBe('1 kWh');
     expect(none.entity.unit).toBe('/h');
@@ -369,6 +374,43 @@ describe('line chart with a rate of change', () => {
     const header = card.shadowRoot!.querySelector('.series-item')!.textContent!.replace(/\s+/g, ' ').trim();
     expect(header).toBe('Meter 1.0 kW');
     expect(card.shadowRoot!.querySelectorAll('path.line')).toHaveLength(1);
+  });
+
+  it('draws a meter that has not moved all span at 0, and still says when there is no reading', async () => {
+    const now = Date.now();
+    type Card = HTMLElement & {
+      setConfig(c: CardConfig): void;
+      hass?: HomeAssistant;
+      updateComplete: Promise<boolean>;
+    };
+    async function mount(history: Record<string, unknown>) {
+      const hass = makeHass({
+        'sensor.meter': [
+          '12.5',
+          { friendly_name: 'Meter', unit_of_measurement: 'kWh', state_class: 'total_increasing' },
+        ],
+      });
+      hass.callWS = vi.fn(async () => history) as HomeAssistant['callWS'];
+      const card = document.createElement('chartdeck-card') as Card;
+      card.setConfig({
+        type: 'custom:chartdeck-card',
+        style: 'line',
+        entities: [{ entity: 'sensor.meter', transform: 'derivative', transform_unit_time: 'h' }],
+      } as CardConfig);
+      card.hass = hass;
+      document.body.appendChild(card);
+      await card.updateComplete;
+      await new Promise((r) => setTimeout(r, 0));
+      await card.updateComplete;
+      return card.shadowRoot!;
+    }
+    // Unchanged for days: the last 24 hours' history is only the state carried in to their start.
+    const flat = await mount({ 'sensor.meter': [{ s: '12.5', lu: (now - 72 * H) / 1000 }] });
+    expect(flat.querySelector('.chart-message')).toBeNull();
+    expect(flat.querySelectorAll('path.line')).toHaveLength(1);
+    expect(flat.querySelector('.series-item')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('Meter 0.0 kW');
+    const empty = await mount({ 'sensor.meter': [] });
+    expect(empty.querySelector('.chart-message')!.textContent).toBe('No readings in this period.');
   });
 
   it('rejects a bad time unit with a readable error', () => {

@@ -18,6 +18,9 @@ import type { Point } from './types';
  *   rate: that step is dropped and the next one is measured from the new reading.
  * - The first reading after a gap, and the reading carried in from before the span (its real time
  *   is earlier than the left edge, so the time since it is unknown), start a new run: no rate.
+ * - A series that held one value all span (history then has only the reading carried in to its
+ *   start, so no step to measure) changed at a rate of 0: it is drawn at 0 from that reading to
+ *   now. A series with no reading at all stays empty ("No readings").
  * - `transform_smoothing: n` averages each rate with the n − 1 before it in the same run.
  * - `transform_smoothing_time: 15min` (a number and s, min, h or d) averages over a trailing time
  *   window instead, each rate weighted by how much of the window it covers: for a meter that is
@@ -173,6 +176,17 @@ export function rates(points: Point[], unitMs: number, increasing = false, smoot
   return out;
 }
 
+/**
+ * When every reading in a series is the same value (most often the one reading carried in to
+ * the span's start, from a sensor that hasn't changed since), the time of the first of them;
+ * undefined when there is none, or the value changed (its rate is then measured, or unknown).
+ */
+export function heldValue(points: Point[]): number | undefined {
+  const known = points.filter((p) => p.v !== null);
+  if (!known.length || known.some((p) => p.v !== known[0].v)) return undefined;
+  return known[0].t;
+}
+
 const ENERGY_PER_HOUR: Record<string, string> = { 'Wh/h': 'W', 'kWh/h': 'kW', 'MWh/h': 'MW' };
 
 /** The unit of a rate: "°C/h", "L/min"; energy per hour as power (kWh/h is kW); none as "/h". */
@@ -199,13 +213,22 @@ export function derivativeSeries(
   entity: ResolvedEntity,
   points: Point[],
   hass: HomeAssistant,
+  until = Date.now(),
 ): { entity: ResolvedEntity; points: Point[] } {
   const own = entity.config as DerivativeConfig;
   if (own.transform !== 'derivative') return { entity, points };
   const time = (own.transform_unit_time as DerivativeUnitTime | undefined) ?? 'h';
   const increasing = !entity.config.attribute && entity.stateObj?.attributes?.state_class === 'total_increasing';
   const smoothing = typeof own.transform_smoothing === 'number' ? own.transform_smoothing : 1;
-  const out = rates(points, UNIT_MS[time], increasing, smoothing, parseWindow(own.transform_smoothing_time) ?? 0);
+  let out = rates(points, UNIT_MS[time], increasing, smoothing, parseWindow(own.transform_smoothing_time) ?? 0);
+  const steady = out.every((p) => p.v === null) ? heldValue(points) : undefined;
+  // Held at one value all span (history then has only the reading carried in to its start): it
+  // changed at a rate of 0, from that reading to now, as a line chart of it draws it flat.
+  if (steady !== undefined && steady < until)
+    out = [
+      { t: steady, v: 0 },
+      { t: until, v: 0 },
+    ];
   return { entity: withLatest(entity, out, rateUnit(entity.unit, time), hass), points: out };
 }
 

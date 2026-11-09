@@ -134,7 +134,7 @@ export function seriesTransform(
   hass: ChartContext['hass'],
 ): { entity: ResolvedEntity; points: Point[] } {
   ({ entity, points } = cumulativeSeries(entity, points, range, until, zone, hass));
-  ({ entity, points } = derivativeSeries(entity, points, hass));
+  ({ entity, points } = derivativeSeries(entity, points, hass, until));
   return { entity, points };
 }
 
