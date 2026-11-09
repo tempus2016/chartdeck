@@ -1,3 +1,4 @@
+import { forgetPlotted } from '../chart/export';
 import { historyFrame } from '../chart/frame';
 import { formatNumber, withUnit } from '../format';
 import { localize } from '../localize';
@@ -102,6 +103,8 @@ export function energyTotals(
     aggregate: 'change',
   };
   const frame = historyFrame({ ...ctx, raw }, now);
+  // The chart draws the totals, not these readings: its CSV lists the totals (the card's items).
+  forgetPlotted(ctx.host);
   if (frame.status === 'loading') return { message: localize(ctx.hass, 'chart_loading') };
   if (frame.status === 'error') {
     return { message: localize(ctx.hass, 'chart_error', { error: frame.error ?? '' }), error: true };

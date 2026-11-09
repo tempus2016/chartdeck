@@ -558,6 +558,39 @@ describe('a card drawing the Energy dashboard', () => {
     expect(card.shadowRoot!.textContent).not.toContain('Entity not found');
   });
 
+  it('exports what each chart drew: hourly flows read positive, a pie its totals', async () => {
+    const copied: string[] = [];
+    vi.stubGlobal('navigator', { clipboard: { writeText: async (t: string) => void copied.push(t) } });
+    const csv = async (card: Card) => {
+      (card.shadowRoot!.querySelector('.export-button') as HTMLElement).click();
+      await card.updateComplete;
+      (card.shadowRoot!.querySelector('.export-item[data-action="csv"]') as HTMLElement).click();
+      for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0));
+      return copied.at(-1)!.trim().split('\r\n').slice(1);
+    };
+    const { hass } = hassWith();
+    const column = await mount(
+      { export: true, period: { last: 24, unit: 'hour' }, energy_flows: ['grid_export'] } as Partial<CardConfig>,
+      hass,
+    );
+    const rows = await csv(column);
+    expect(rows.length).toBeGreaterThan(0);
+    // Drawn below the axis, but grid export is energy sent out: positive in the CSV.
+    for (const r of rows) expect(Number(r.split(',')[2])).toBeGreaterThan(0);
+    const pie = await mount(
+      {
+        export: true,
+        style: 'pie',
+        period: { last: 24, unit: 'hour' },
+        energy_flows: ['solar'],
+      } as Partial<CardConfig>,
+      hassWith().hass,
+    );
+    // One row: the pie's total for the flow, not the hourly readings that added up to it.
+    expect((await csv(pie)).map((r) => r.split(',').slice(1).join(','))).toEqual(['sensor.solar,18,kWh']);
+    vi.unstubAllGlobals();
+  });
+
   it('sorts a pie by its totals', async () => {
     const { hass } = hassWith();
     const card = await mount(

@@ -111,6 +111,19 @@ describe('export formats', () => {
     expect(csv).toBe('timestamp,entity,value,unit\r\n1970-01-01T00:00:01.000Z,sensor.in,2,°C\r\n');
   });
 
+  it('lists energy drawn below the axis as positive, as the tooltip reads it', () => {
+    const csv = plottedCsv(
+      [
+        {
+          entity: { entityId: 'sensor.grid_out', unit: 'kWh', config: { energy_below: true } },
+          points: [{ t: 0, v: -1.5 }],
+        },
+      ],
+      [],
+    );
+    expect(csv.split('\r\n')[1]).toBe('1970-01-01T00:00:00.000Z,sensor.grid_out,1.5,kWh');
+  });
+
   it('lists current values for a chart of current values', () => {
     const csv = plottedCsv(
       undefined,

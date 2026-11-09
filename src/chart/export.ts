@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { CardConfig, HomeAssistant } from '../types';
+import { shownValue } from '../history/energy';
 import type { Point } from '../history/types';
 import { embedFonts, withGeneric } from './export-fonts';
 
@@ -23,7 +24,7 @@ export function validateExport(raw: CardConfig): void {
 
 /** One series as last drawn: whose it is and its points. */
 export interface PlottedSeries {
-  entity: Pick<ResolvedEntity, 'entityId' | 'unit'>;
+  entity: Pick<ResolvedEntity, 'entityId' | 'unit'> & { config?: unknown };
   points: Point[];
 }
 
@@ -32,6 +33,14 @@ const plotted = new WeakMap<HTMLElement, PlottedSeries[]>();
 /** Remember what a history chart drew, so the CSV can list it. */
 export function rememberPlotted(host: HTMLElement, series: PlottedSeries[]): void {
   plotted.set(host, series);
+}
+
+/**
+ * Forget what was drawn, so the CSV lists the card's current values: a new config (the style may
+ * no longer draw history), or a chart of totals that read history only to add it up.
+ */
+export function forgetPlotted(host: HTMLElement): void {
+  plotted.delete(host);
 }
 
 /** One CSV field: quoted when it holds a comma, quote or line break. */
@@ -58,7 +67,9 @@ export function plottedCsv(
     for (const s of series) {
       for (const p of s.points) {
         if (p.v === null || p.carried) continue;
-        rows.push([new Date(p.t).toISOString(), s.entity.entityId, p.v, s.entity.unit]);
+        // Energy drawn below the axis (grid export, battery charging) reads positive, as in the tooltip.
+        const v = s.entity.config ? shownValue({ config: s.entity.config }, p.v) : p.v;
+        rows.push([new Date(p.t).toISOString(), s.entity.entityId, v, s.entity.unit]);
       }
     }
   } else {

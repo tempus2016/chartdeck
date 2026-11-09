@@ -3,7 +3,7 @@ import type { PropertyValues } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { attachActions, isInteractive } from './actions';
 import { colorStops, legendItems } from './bands';
-import { exportMenu, exportStyles, placeExport, stopExport, validateExport } from './chart/export';
+import { exportMenu, exportStyles, forgetPlotted, placeExport, stopExport, validateExport } from './chart/export';
 import { normalizeConfig } from './config';
 import { energyChecked, energyConfig } from './history/energy';
 import { energyTotals } from './history/energy-totals';
@@ -109,6 +109,8 @@ export class ChartdeckCard extends LitElement {
   setConfig(config: CardConfig): void {
     const normalized = normalizeConfig(config);
     validateExport(config);
+    // What an earlier config drew is not this one's to export.
+    forgetPlotted(this);
     const style = STYLES[normalized.style];
     // The Energy dashboard source is checked here, then the chart checks it as the statistics it draws.
     const checked = energyChecked(config);
