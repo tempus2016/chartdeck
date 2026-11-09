@@ -285,6 +285,7 @@ describe('line chart editor', () => {
       tooltip: true,
       zoom: false,
       overview: false,
+      forecast_hours: 24,
       zones: false,
       header: 'above',
       compact: false,
@@ -305,6 +306,19 @@ describe('line chart editor', () => {
     expect(events.at(-1)).toEqual({ ...raw, gridlines: { vertical: true }, axis_labels: 'inside', y_min: 0 });
     const list = ed.shadowRoot!.querySelector('cd-entities-editor') as Stub;
     const fields = (list.chartFields as { fields: { name: string }[] }).fields.map((f) => f.name);
-    expect(fields).toEqual(['series_color', 'curve', 'line_width', 'dash', 'on_top', 'dots']);
+    expect(fields).toEqual([
+      'series_color',
+      'curve',
+      'line_width',
+      'dash',
+      'on_top',
+      'dots',
+      'forecast_entity',
+      'forecast_attribute',
+      'forecast_value_key',
+      'forecast_time_key',
+      'forecast_type',
+      'forecast_multiply',
+    ]);
   });
 });

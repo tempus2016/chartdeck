@@ -396,7 +396,21 @@ describe('extremes editor', () => {
     const off = await editor({});
     expect(fieldNames(off.ed)).not.toContain('extremes');
     const on = await editor({ extremes: { min: true } } as Partial<CardConfig>);
-    expect(fieldNames(on.ed)).toEqual(['series_color', 'curve', 'line_width', 'dash', 'on_top', 'dots', 'extremes']);
+    expect(fieldNames(on.ed)).toEqual([
+      'series_color',
+      'curve',
+      'line_width',
+      'dash',
+      'on_top',
+      'dots',
+      'extremes',
+      'forecast_entity',
+      'forecast_attribute',
+      'forecast_value_key',
+      'forecast_time_key',
+      'forecast_type',
+      'forecast_multiply',
+    ]);
     const schema = (
       (on.ed.shadowRoot!.querySelector('cd-entities-editor') as Stub).chartFields as { schema: unknown[] }
     ).schema;
