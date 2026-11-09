@@ -1,6 +1,8 @@
 import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import type { FieldBinding } from '../editor/schemas';
+import { energyValueText } from '../history/energy';
+import type { Grouping } from '../history/group';
 import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext } from '../styles/index';
@@ -164,7 +166,7 @@ function update(ctx: ChartContext, next: Set<string>): void {
 }
 
 /** The header's names as toggles: tap hides or shows, hold (or shift-click) shows only that one. */
-export function legendToggleHeader(legend: LegendItems, ctx: ChartContext): TemplateResult {
+export function legendToggleHeader(legend: LegendItems, ctx: ChartContext, group?: Grouping): TemplateResult {
   const { show } = ctx.config;
   const state = stateFor(ctx);
   const keys = legend.all.filter((s) => !legend.locked.has(s.index)).map((s) => seriesKey(s.entity));
@@ -176,9 +178,11 @@ export function legendToggleHeader(legend: LegendItems, ctx: ChartContext): Temp
   const hint = localize(ctx.hass, 'legend_toggle_hint');
   return html`<div class="series-header legend-toggles">
     ${legend.all.map((s) => {
+      // As in the plain header: an Energy dashboard series reads its total over the span.
+      const value = energyValueText(s.entity, s.points, group, ctx.hass) ?? s.entity.display;
       const body = html`<span class="swatch" style="background:${s.color}"></span>
         ${show.name ? html`<span class="series-name">${s.entity.name}</span>` : nothing}
-        ${show.value ? html`<span class="series-value">${s.entity.display}</span>` : nothing}`;
+        ${show.value && value ? html`<span class="series-value">${value}</span>` : nothing}`;
       if (legend.locked.has(s.index)) {
         return html`<div class="entity series-item" data-index=${s.index} tabindex="0" aria-label=${s.entity.label}>
           ${body}

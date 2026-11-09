@@ -386,8 +386,8 @@ describe('sankey editor', () => {
   it('sets the link colouring in the Chart section, dropping the default', async () => {
     const ed = await editor({ entities: ENTITIES } as Partial<CardConfig>);
     const form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
-    expect((form.schema as { name: string }[]).map((s) => s.name)).toEqual(['link_color']);
-    expect(form.data).toEqual({ link_color: 'auto' });
+    expect((form.schema as { name: string }[]).map((s) => s.name)).toEqual(['source', 'link_color']);
+    expect(form.data).toMatchObject({ source: 'current', link_color: 'auto' });
     const changed: CardConfig[] = [];
     ed.addEventListener('config-changed', (ev) => changed.push((ev as CustomEvent).detail.config));
     form.dispatchEvent(new CustomEvent('value-changed', { detail: { value: { link_color: 'target' } } }));

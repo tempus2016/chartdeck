@@ -26,6 +26,7 @@ import {
 } from '../chart/parts';
 import type { Arc, ColorBy, LegendRow } from '../chart/parts';
 import { isInteractive } from '../actions';
+import { ENERGY_TOTALS_FIELDS, energyTotalsSchema, energyTotalsVariant } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
@@ -164,7 +165,8 @@ const FIELDS: FieldBinding[] = [
 ];
 
 export function pieEditor(ctx: ChartEditorContext) {
-  const schema = cachedSchema('pie', ctx.hass, () => [
+  const schema = cachedSchema(`pie|${energyTotalsVariant(ctx.config)}`, ctx.hass, () => [
+    ...energyTotalsSchema(ctx.hass, ctx.config),
     {
       type: 'grid',
       name: '',
@@ -181,7 +183,7 @@ export function pieEditor(ctx: ChartEditorContext) {
     { name: 'gradient', selector: { boolean: {} } },
     { name: 'show_percent', selector: { boolean: {} } },
   ]);
-  return chartForm(ctx, 'chart', schema, FIELDS);
+  return chartForm(ctx, 'chart', schema, [...ENERGY_TOTALS_FIELDS, ...FIELDS]);
 }
 
 export const pie: ChartStyleModule = {

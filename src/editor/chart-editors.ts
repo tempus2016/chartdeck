@@ -12,6 +12,13 @@ import { COMPARE_FIELDS, compareSchema, compareVariant } from '../chart/compare-
 import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
+import {
+  ENERGY_FLOWS,
+  ENERGY_SPLIT_STYLES,
+  ENERGY_TIME_STYLES,
+  SANKEY_FLOWS,
+  withEnergyDefaults,
+} from '../history/energy';
 import { AGGREGATES, GROUP_UNITS } from '../history/group';
 import { CALENDAR_SPANS, PERIOD_UNITS, PERIOD_UNTIL } from '../history/period';
 import { languageOf, localize } from '../localize';
@@ -41,14 +48,23 @@ export const HISTORY_FIELDS: FieldBinding[] = [
   { name: 'period_until', path: ['period', 'until'], default: 'now' },
   { name: 'period_navigate', path: ['period', 'navigate'], default: false },
   { name: 'source', path: ['source'], default: 'history' },
+  { name: 'energy_flows', path: ['energy_flows'] },
   { name: 'group_by', path: ['group_by'], default: 'none' },
   { name: 'aggregate', path: ['aggregate'], default: 'mean' },
 ];
 
+/** Column and area only (listed after their history fields): energy leaving the house below the axis. */
+export const ENERGY_SPLIT_FIELD: FieldBinding = { name: 'energy_split', path: ['energy_split'], default: true };
+
 /** Which history fields apply to this config; part of a chart editor's schema cache key. */
 export function historyVariant(config: CardConfig | undefined): string {
   const period = config?.period as { calendar?: unknown } | undefined;
-  return `${period?.calendar ? 'calendar' : 'rolling'}${config?.group_by ? '|grouped' : ''}`;
+  // Styles that can draw the Energy dashboard offer it as a source, and its flows once chosen
+  // (and, on column and area, whether export and charging go below the axis).
+  const style = config?.style as never;
+  const chosen = config?.source === 'energy' ? `|energy${ENERGY_SPLIT_STYLES.includes(style) ? '|split' : ''}` : '';
+  const energy = ENERGY_TIME_STYLES.includes(style) ? chosen || '|energy-able' : '';
+  return `${period?.calendar ? 'calendar' : 'rolling'}${config?.group_by ? '|grouped' : ''}${energy}`;
 }
 
 /**
@@ -57,8 +73,10 @@ export function historyVariant(config: CardConfig | undefined): string {
  * `historyVariant(config)`.
  */
 export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
-  const [span, grouped] = historyVariant(config).split('|');
+  const [span, ...flags] = historyVariant(config).split('|');
   const calendar = span === 'calendar';
+  const grouped = flags.includes('grouped');
+  const sources = flags.includes('energy') || flags.includes('energy-able') ? [...SOURCES, 'energy'] : SOURCES;
   return [
     {
       type: 'grid',
@@ -75,7 +93,9 @@ export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
       ],
     },
     { name: 'period_navigate', selector: { boolean: {} } },
-    { name: 'source', selector: choice(hass, 'source', SOURCES) },
+    { name: 'source', selector: choice(hass, 'source', sources) },
+    ...(flags.includes('energy') ? [energyFlowsField(hass, ENERGY_FLOWS)] : []),
+    ...(flags.includes('split') ? [{ name: 'energy_split', selector: { boolean: {} } }] : []),
     {
       type: 'grid',
       name: '',
@@ -85,6 +105,46 @@ export function historySchema(hass?: HomeAssistant, config?: CardConfig) {
       ],
     },
   ];
+}
+
+/** The multi-select of Energy dashboard flows. */
+function energyFlowsField(hass: HomeAssistant | undefined, flows: readonly string[]) {
+  return {
+    name: 'energy_flows',
+    selector: {
+      select: {
+        multiple: true,
+        mode: 'list',
+        options: flows.map((value) => ({ value, label: localize(hass, `energy_flow_${value}`) })),
+      },
+    },
+  };
+}
+
+/**
+ * Pie and Sankey: where the values come from (the entities' current values, or the Energy
+ * dashboard's totals), and for the Energy dashboard, over what span and which flows.
+ */
+export const ENERGY_TOTALS_FIELDS: FieldBinding[] = [
+  { name: 'source', path: ['source'], default: 'current' },
+  ...HISTORY_FIELDS.filter((f) => f.name.startsWith('period_') && f.name !== 'period_navigate'),
+  { name: 'energy_flows', path: ['energy_flows'] },
+];
+
+/** Which totals fields apply; part of the pie's and Sankey's schema cache key. */
+export function energyTotalsVariant(config: CardConfig | undefined): string {
+  if (config?.source !== 'energy') return 'current';
+  return (config.period as { calendar?: unknown } | undefined)?.calendar ? 'calendar' : 'rolling';
+}
+
+export function energyTotalsSchema(hass: HomeAssistant | undefined, config: CardConfig | undefined) {
+  const variant = energyTotalsVariant(config);
+  const source = { name: 'source', selector: choice(hass, 'source', ['current', 'energy']) };
+  if (variant === 'current') return [source];
+  // The span's fields, as every history chart has them, less the previous / next buttons.
+  const span = historySchema(hass, { ...config, source: 'history' } as CardConfig)[0];
+  const flows = config?.style === 'sankey' ? SANKEY_FLOWS : ENERGY_FLOWS;
+  return [source, span, energyFlowsField(hass, flows)];
 }
 
 /** History fields for charts that only read a rolling span (how far back, and from where). */
@@ -279,7 +339,10 @@ export function chartForm(
     .computeLabel=${(s: { name: string }) => localize(ctx.hass, labels[s.name] ?? `editor_${s.name}`)}
     @value-changed=${(ev: CustomEvent) => {
       ev.stopPropagation();
-      const next = applyFormData(ctx.config, fields, (ev.detail?.value ?? {}) as Record<string, unknown>);
+      const next = withEnergyDefaults(
+        ctx.config,
+        applyFormData(ctx.config, fields, (ev.detail?.value ?? {}) as Record<string, unknown>),
+      );
       if (next !== ctx.config) ctx.commit(next);
     }}
   ></ha-form>`;

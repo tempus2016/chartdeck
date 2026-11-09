@@ -58,6 +58,7 @@ import {
 import type { TooltipOptions } from '../chart/tooltip';
 import {
   AXES_FIELDS,
+  ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
@@ -70,6 +71,7 @@ import {
 } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
+import { shownValue } from '../history/energy';
 import type { Aggregate, GroupUnit } from '../history/group';
 import type { Point } from '../history/types';
 import { localize } from '../localize';
@@ -268,7 +270,8 @@ function drawColumns(
           ),
         );
         if (showLabels && width * px >= LABEL_PX) {
-          out.labels.push(valueLabel(ctx, left + width / 2, scales.y(v), v, s.entity.decimals, v < baseline));
+          const shown = shownValue(s.entity, v);
+          out.labels.push(valueLabel(ctx, left + width / 2, scales.y(v), shown, s.entity.decimals, v < baseline));
         }
         const whisker = whiskers?.[k][i];
         if (whisker) out.columns.push(whiskerMark(scales, left + width / 2, width * 0.4, whisker));
@@ -400,7 +403,7 @@ function render(ctx0: ChartContext): TemplateResult {
       tip.text = (s, p) => {
         const layer = p ? layers[s.index][slotOf.get(p.t) ?? -1] : null;
         if (!p || p.v === null || !layer) return '—';
-        return `${withUnit(fmt(p.v, s), s.entity.unit)} · ${Math.round(Math.abs(layer[1] - layer[0]))} %`;
+        return `${withUnit(fmt(shownValue(s.entity, p.v), s), s.entity.unit)} · ${Math.round(Math.abs(layer[1] - layer[0]))} %`;
       };
     }
   }
@@ -456,6 +459,7 @@ const COLUMN_HISTORY_FIELDS: FieldBinding[] = HISTORY_FIELDS.map((f) => {
 
 const COLUMN_FIELDS: FieldBinding[] = [
   ...COLUMN_HISTORY_FIELDS,
+  ENERGY_SPLIT_FIELD,
   { name: 'stack', path: ['stack'], default: 'none' },
   { name: 'color_by', path: ['color_by'], default: 'series' },
   { name: 'range', path: ['range'], default: false },

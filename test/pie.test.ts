@@ -198,6 +198,7 @@ describe('pie editor', () => {
     };
     const names = form.schema.flatMap((f) => (f.schema ? f.schema.map((s) => s.name) : [f.name]));
     expect(names).toEqual([
+      'source',
       'shape',
       'color_by',
       'center',
