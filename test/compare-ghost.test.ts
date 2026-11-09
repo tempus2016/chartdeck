@@ -242,6 +242,34 @@ describe('compare ghosts on the line chart', () => {
     expect(rows[1]).toMatch(/^Yesterday [\d.,]+ Wh$/);
   });
 
+  it("draws a shown series' own earlier span when the names hide another", async () => {
+    localStorage.clear();
+    const hass = hassFor();
+    const plain = hass.callWS as (msg: Record<string, unknown>) => Promise<Record<string, { s: string; lu: number }[]>>;
+    // The other sensor reads 1000 more than the power sensor, so a mix-up shows.
+    hass.callWS = vi.fn(async (msg: Record<string, unknown>) => {
+      const out = await plain(msg);
+      if (out['sensor.other'])
+        out['sensor.other'] = out['sensor.other'].map((r) => ({ ...r, s: String(Number(r.s) + 1000) }));
+      return out;
+    }) as HomeAssistant['callWS'];
+    const card = await mount({ compare: '1d', legend_toggle: true, entities: ['sensor.power', 'sensor.other'] }, hass);
+    const first = card.shadowRoot!.querySelector('button.series-toggle') as HTMLElement;
+    first.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    first.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    for (let i = 0; i < 3; i++) {
+      await card.updateComplete;
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    const area = card.shadowRoot!.querySelector('.plot-area') as HTMLElement;
+    area.getBoundingClientRect = () => ({ left: 0, width: 1000, top: 0, height: 180 }) as DOMRect;
+    area.dispatchEvent(new MouseEvent('pointermove', { clientX: 500, bubbles: true }));
+    await card.updateComplete;
+    const rows = qa(card, '.tooltip-row').map((r) => r.textContent!.replace(/\s+/g, ' ').trim());
+    expect(rows).toEqual(['Other 1,012.0 W', 'Yesterday 1,036.0 W']);
+    localStorage.clear();
+  });
+
   it('colours each series its own and names both when there are several, and hides the key with names', async () => {
     const card = await mount({ compare: '1d', compare_style: 'series', entities: ['sensor.power', 'sensor.other'] });
     const ghosts = qa(card, 'path.ghost-line');

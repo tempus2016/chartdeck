@@ -203,11 +203,13 @@ export function compareGhosts(ctx: ChartContext, frame: HistoryFrame, now = Date
     const loaded = storeFor(ctx, offset.text).get(ctx.hass, requests, load, source, { live: false, statistics });
     if (loaded.status !== 'ready') return;
     const bounds = group ? boundaries(group.unit, start, end, zone) : [];
-    frame.series.forEach((s, i) => {
+    // `s.index` is the series' place among the card's entities; the frame may leave some out
+    // (names that toggle series hide them), so its position in `frame.series` is not.
+    frame.series.forEach((s) => {
       // As the series itself: in the shown unit, then its transform (a running total starts at
       // the earlier span's own start). The entity as configured, not the series' transformed copy.
-      const item = ctx.items[i];
-      let points = convertPoints(loaded.data.get(key(requests[i])) ?? [], item.conversion);
+      const item = ctx.items[s.index];
+      let points = convertPoints(loaded.data.get(key(requests[s.index])) ?? [], item.conversion);
       points = seriesTransform(item, points, { start, end }, until, zone, ctx.hass).points;
       const last = points[points.length - 1];
       if (group) {
