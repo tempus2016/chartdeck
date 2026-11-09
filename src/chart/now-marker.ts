@@ -4,7 +4,7 @@ import type { Range } from '../history/types';
 import { localize } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
-import { annotationsOf, markTimes, timeList } from './annotations';
+import { annotationsOf, labelWidth, markTimes, timeList } from './annotations';
 import { formatTime } from './axes';
 import { formatClockDuration } from './day-clock';
 import { VIEW_W } from './frame';
@@ -112,6 +112,49 @@ export function stopNowMarker(host: HTMLElement): void {
 /** Rough width of the label in px (11 px text with its padding). */
 const labelPx = (text: string) => Math.ceil(text.length * 6.2) + 18;
 
+/** Room kept between the label and a time annotation's label, in px. */
+const LABEL_GAP = 4;
+
+/**
+ * Where the time annotations' labels sit along the top of the plot, in px from its left: each
+ * starts just right of its line, or ends just left of it when it would run off the right edge
+ * (as annotations.ts draws them).
+ */
+export function markLabelBoxes(
+  raw: CardConfig,
+  view: Range,
+  zone: HistoryFrame['zone'],
+  x: (t: number) => number,
+  width: number,
+): [number, number][] {
+  const boxes: [number, number][] = [];
+  for (const a of annotationsOf(raw)) {
+    if (a.type !== 'time' || !a.label) continue;
+    const w = labelWidth(a.label);
+    for (const t of markTimes(timeList(a.times), view, zone)) {
+      const at = (x(t) / VIEW_W) * width;
+      boxes.push(at + 2 + w > width ? [at - 2 - w, at - 2] : [at + 2, at + 2 + w]);
+    }
+  }
+  return boxes;
+}
+
+/**
+ * Which side of the line the label goes: right of it, unless it would run off the plot or touch
+ * a time annotation's label (a countdown's own target is one, right where the count ends), then
+ * left of it. When neither side is clear, it keeps to the side it fits on.
+ */
+export function labelSide(at: number, labelWidthPx: number, width: number, boxes: [number, number][]): 'start' | 'end' {
+  const right: [number, number] = [at + 8, at + 8 + labelWidthPx];
+  const left: [number, number] = [at - 8 - labelWidthPx, at - 8];
+  const clear = ([a, b]: [number, number]) => boxes.every(([c, d]) => b + LABEL_GAP <= c || a >= d + LABEL_GAP);
+  const fitsRight = right[1] <= width;
+  const fitsLeft = left[0] >= 0;
+  if (fitsRight && clear(right)) return 'start';
+  if (fitsLeft && clear(left)) return 'end';
+  return fitsRight ? 'start' : 'end';
+}
+
 /**
  * The marker over a history chart's plot, in HTML so its label keeps its size: nothing unless
  * the card asks for it and the present is in view. Starts the minute timer while it is shown.
@@ -130,7 +173,8 @@ export function nowMarkerLayer(
   const left = scales.x(now) / VIEW_W;
   if (!(left >= 0 && left <= 1)) return nothing;
   const text = nowLabel(mode, ctx.raw, now, frame.zone, ctx.hass);
-  const flip = left * width + labelPx(text) > width;
+  const boxes = text ? markLabelBoxes(ctx.raw, view, frame.zone, scales.x, width) : [];
+  const flip = labelSide(left * width, labelPx(text), width, boxes) === 'end';
   const at = `${Math.round(left * 10000) / 100}%`;
   return html`<div class="now-marker" style="left:${at}" title=${formatTime(now, ctx.hass)}>
     <span class="now-line"></span>

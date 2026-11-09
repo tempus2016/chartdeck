@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import '../src/chartdeck-card';
 import {
+  labelSide,
+  markLabelBoxes,
   nextMark,
   nowInView,
   nowLabel,
@@ -218,6 +220,73 @@ describe('now marker in the editor', () => {
       );
       expect(events.at(-1)!.now_marker).toBe('countdown');
       ed.remove();
+    }
+  });
+});
+
+describe('now marker beside a time annotation', () => {
+  // Today at 11:57 on a 600 px plot, with "Night rate" marked at 21:00.
+  const day = Date.UTC(2026, 10, 9);
+  const view = { start: day, end: day + 24 * H };
+  const raw = { type: 'x', annotations: [{ type: 'time', times: ['21:00'], label: 'Night rate' }] } as CardConfig;
+  const x = (t: number) => ((t - view.start) / (view.end - view.start)) * 1000;
+  const width = 600;
+
+  it('finds where the annotation labels sit', () => {
+    const [box] = markLabelBoxes(raw, view, zone, x, width);
+    expect(box[0]).toBeCloseTo(width * (21 / 24) + 2, 5);
+    expect(markLabelBoxes({ type: 'x' } as CardConfig, view, zone, x, width)).toEqual([]);
+    // One that would run off the right edge ends at its line instead.
+    const late = { type: 'x', annotations: [{ type: 'time', times: ['23:30'], label: 'Night rate' }] } as CardConfig;
+    const [end] = markLabelBoxes(late, view, zone, x, width);
+    expect(end[1]).toBeCloseTo(width * (23.5 / 24) - 2, 5);
+  });
+
+  it('puts the label left of the line when it would touch an annotation label, else right', () => {
+    const at = width * ((11 + 57 / 60) / 24);
+    const boxes = markLabelBoxes(raw, view, zone, x, width);
+    // A pill that would run right up to "Night rate" goes on the left.
+    expect(labelSide(at, boxes[0][0] - at - 8, width, boxes)).toBe('end');
+    // A short label clears it, and stays on the right.
+    expect(labelSide(at, 40, width, boxes)).toBe('start');
+    // Near the right edge it flips, as before; with no room left either, it keeps to where it fits.
+    expect(labelSide(width - 20, 60, width, [])).toBe('end');
+    expect(labelSide(10, 130, width, [[150, 200]])).toBe('start');
+    expect(labelSide(130, 130, width, [[0, 300]])).toBe('start');
+  });
+
+  it('draws the countdown pill clear of its target label on a card', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(Date.UTC(2026, 10, 9, 11, 57)));
+    try {
+      const h = makeHass({ 'sensor.rate': ['24', { friendly_name: 'Rate', unit_of_measurement: 'W' }] }, {
+        config: { time_zone: 'UTC' },
+        locale: { language: 'en', number_format: 'language', time_zone: 'server' },
+      } as Partial<HomeAssistant>);
+      h.callWS = vi.fn(async () => ({
+        'sensor.rate': [{ s: '24', lu: (Date.now() - 30 * H) / 1000 }],
+      })) as HomeAssistant['callWS'];
+      const card = document.createElement('chartdeck-card') as Card;
+      card.setConfig({
+        type: 'custom:chartdeck-card',
+        style: 'line',
+        entities: ['sensor.rate'],
+        period: { calendar: 'day', until: 'end' },
+        now_marker: 'countdown',
+        annotations: [{ type: 'time', times: ['21:00'], label: 'Night rate' }],
+      } as CardConfig);
+      card.hass = h;
+      document.body.appendChild(card);
+      for (let i = 0; i < 3; i++) {
+        await card.updateComplete;
+        await new Promise((r) => setTimeout(r, 0));
+      }
+      const label = q(card, '.now-label')!;
+      expect(label.textContent).toBe('Night rate in 9 h 3 m');
+      expect(label.classList.contains('end')).toBe(true);
+      stopNowMarker(card);
+    } finally {
+      vi.useRealTimers();
     }
   });
 });
