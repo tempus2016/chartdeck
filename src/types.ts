@@ -21,6 +21,7 @@ export type StyleName =
   | 'scatter'
   | 'bubble'
   | 'heatmap'
+  | 'spiral'
   | 'box'
   | 'funnel'
   | 'radar'
@@ -69,6 +70,7 @@ export const STYLE_NAMES: StyleName[] = [
   'scatter',
   'bubble',
   'heatmap',
+  'spiral',
   'box',
   'funnel',
   'radar',
