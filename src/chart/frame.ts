@@ -14,6 +14,7 @@ import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
+import { rememberPlotted } from './export';
 import { CURVES } from './paths';
 import type { Curve } from './paths';
 
@@ -130,6 +131,8 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
       dash: own.dash === true,
     };
   });
+  // What was drawn, for the export menu's CSV.
+  rememberPlotted(ctx.host, series);
   return {
     status: loaded.status,
     error: loaded.error,
