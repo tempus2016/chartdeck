@@ -45,6 +45,7 @@ import { parseGrouping } from '../history/group';
 import type { GroupUnit } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
+import { chartConditions, conditionStatus, conditionalPoints } from '../history/condition';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Range, Source } from '../history/types';
 import { localize } from '../localize';
@@ -105,19 +106,21 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
     live: span.live,
     statistics,
   });
+  // Series with a `when` (their own or the card's) keep only the readings taken while it held.
+  const conditions = chartConditions(ctx, range, span.live);
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string };
     return {
       index,
       entity,
-      points: loaded.data.get(key(requests[index])) ?? [],
+      points: conditionalPoints(entity.config, loaded.data.get(key(requests[index])) ?? [], conditions),
       color: baseColor(own.color ?? SERIES_COLORS[index % SERIES_COLORS.length]),
       curve: 'straight',
       dash: false,
     };
   });
   return {
-    status: loaded.status,
+    status: conditionStatus(loaded.status, conditions),
     error: loaded.error,
     range,
     period,

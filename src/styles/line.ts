@@ -63,6 +63,8 @@ import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from 
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
 import { positivePoints } from '../chart/log-scale';
+import { conditionStrip, conditionStyles, ghostLines } from '../chart/condition-strip';
+import { ghostOn } from '../history/condition';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
@@ -208,7 +210,7 @@ function linePlot(
   return chartArea({
     axes,
     ctx,
-    content: lines,
+    content: svg`${ghostLines(series, scales)}${lines}`,
     label,
     defs,
     overlay: html`${over} ${labels ? pointLabels(frame, series, frame.range, scales, labels, true, ctx) : nothing}
@@ -237,6 +239,7 @@ export const line: ChartStyleModule = {
     ${dataLabelStyles}
     ${extremesStyles}
     ${multiplesStyles}
+    ${conditionStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -288,7 +291,7 @@ export const line: ChartStyleModule = {
     stopSync(host);
   },
   render(ctx) {
-    const frame = historyFrame(ctx);
+    const frame = historyFrame(ctx, Date.now(), { ghost: ghostOn(ctx.raw) });
     // Charts in a sync group share the pointer's time: another chart's shows here too.
     const own = hoverTime(ctx.host);
     const shared = syncChart(ctx, frame, own);
@@ -303,7 +306,14 @@ export const line: ChartStyleModule = {
       // A log axis has no place for zero or below: each small chart draws only the readings above it.
       const panels =
         ctx.raw.y_scale === 'log'
-          ? { ...frame, series: frame.series.map((s) => ({ ...s, points: positivePoints(s.points) })) }
+          ? {
+              ...frame,
+              series: frame.series.map((s) => ({
+                ...s,
+                points: positivePoints(s.points),
+                ...(s.hidden ? { hidden: positivePoints(s.hidden) } : {}),
+              })),
+            }
           : frame;
       // One small chart per series: the period buttons stay above, each chart has its own title.
       return chartFrame(
@@ -318,16 +328,28 @@ export const line: ChartStyleModule = {
     const zoom = zoomView(ctx, frame);
     const view = zoom.range;
     const shown = zoom.zoomed
-      ? frame.series.map((s) => ({ ...s, points: visiblePoints(s.points, view) }))
+      ? frame.series.map((s) => ({
+          ...s,
+          points: visiblePoints(s.points, view),
+          ...(s.hidden ? { hidden: visiblePoints(s.hidden, view) } : {}),
+        }))
       : frame.series;
     // A log axis has no place for zero or below: those readings are gaps in the drawing (the tooltip still reads them).
     const log = ctx.raw.y_scale === 'log';
-    const drawn = log ? shown.map((s) => ({ ...s, points: positivePoints(s.points) })) : shown;
+    const drawn = log
+      ? shown.map((s) => ({
+          ...s,
+          points: positivePoints(s.points),
+          ...(s.hidden ? { hidden: positivePoints(s.hidden) } : {}),
+        }))
+      : shown;
     // Threshold lines widen the value axis, so a target off the readings' range still shows.
     const thresholds = annotationValues(ctx.raw, ctx.hass)
       .filter((v) => !log || v > 0)
       .map((v) => ({ t: view.start, v }));
-    const data = extent([...drawn.map((s) => s.points), thresholds]);
+    // The faint line of hidden readings fits on the axis too, so it never runs off the plot.
+    const ghosts = drawn.flatMap((s) => (s.hidden ? [s.hidden] : []));
+    const data = extent([...drawn.map((s) => s.points), ...ghosts, thresholds]);
     if (log && !data) {
       const empty = html`<div class="chart-message">${localize(ctx.hass, 'chart_log_nothing')}</div>`;
       return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, empty);
@@ -370,13 +392,20 @@ export const line: ChartStyleModule = {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
     });
+    const strip = conditionStrip(
+      ctx,
+      frame,
+      view,
+      scales,
+      zoom.options.overview ? overviewStrip(ctx, zoom, frame.range, overviewLines(frame.series, frame.range)) : nothing,
+    );
     return chartFrame(
       layout,
       header,
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${marks.lines}${lines}${notes.front}`,
+        content: svg`${notes.behind}${ghostLines(drawn, scales)}${marks.lines}${lines}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
@@ -386,9 +415,7 @@ export const line: ChartStyleModule = {
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
-        below: zoom.options.overview
-          ? overviewStrip(ctx, zoom, frame.range, overviewLines(frame.series, frame.range))
-          : nothing,
+        ...strip,
       }),
     );
   },

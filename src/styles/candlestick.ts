@@ -48,6 +48,7 @@ import { AGGREGATES, GROUP_UNITS } from '../history/group';
 import type { Aggregate, GroupUnit } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
+import { chartConditions, conditionStatus, conditionalPoints } from '../history/condition';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -121,10 +122,12 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const statistics = source === 'statistics' ? candleQuery(unit, zone, ctx.hass.config?.time_zone) : undefined;
   const loaded = store.get(ctx.hass, requests, { start, end: span.end }, source, { live: span.live, statistics });
+  // Series with a `when` (their own or the card's) keep only the readings taken while it held.
+  const conditions = chartConditions(ctx, { start, end: span.end }, span.live);
   let candles: (Candle | null)[] = [];
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string };
-    const points = loaded.data.get(key(requests[index])) ?? [];
+    const points = conditionalPoints(entity.config, loaded.data.get(key(requests[index])) ?? [], conditions);
     let grouped: Point[];
     if (index === 0) {
       candles =
@@ -143,7 +146,7 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
     };
   });
   return {
-    status: loaded.status,
+    status: conditionStatus(loaded.status, conditions),
     error: loaded.error,
     range,
     period,

@@ -193,6 +193,9 @@ export interface ChartAreaOptions {
   classes?: string;
   /** Under the plot and its time labels, lined up with the plot (an overview strip). */
   below?: TemplateResult | typeof nothing;
+  /** Extra classes and inline style on the whole frame, for what `below` needs (its height). */
+  wrapClasses?: string;
+  wrapStyle?: string;
 }
 
 /** Every pointer handler the plot area can take. */
@@ -225,6 +228,8 @@ export function chartArea({
   gestures,
   classes = '',
   below = nothing,
+  wrapClasses = '',
+  wrapStyle = '',
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
@@ -251,8 +256,8 @@ export function chartArea({
   const rLabels = r
     ? html`<div class="y-axis right">${outside ? rSizer : nothing}${rightLabels(r, ctx)}</div>`
     : nothing;
-  const wrap = `plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''} ${below === nothing ? '' : 'has-overview'}`;
-  return html`<div class=${wrap}>
+  const wrap = `plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''} ${below === nothing ? '' : 'has-overview'} ${wrapClasses}`;
+  return html`<div class=${wrap} style=${wrapStyle}>
     ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
     <div
       class="plot-area ${hover ? 'hoverable' : ''} ${classes}"

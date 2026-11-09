@@ -36,6 +36,7 @@ import type { Aggregate } from '../history/group';
 import { parsePeriod, stepsFor } from '../history/period';
 import type { Period } from '../history/period';
 import { storeFor } from '../history/store';
+import { chartConditions, conditionStatus, conditionalPoints, validateConditions } from '../history/condition';
 import { zoneFor } from '../history/timezone';
 import type { Point, SeriesRequest } from '../history/types';
 import { localize } from '../localize';
@@ -119,6 +120,7 @@ function aggregateOf(e: ResolvedEntity, raw: CardConfig): Aggregate {
 
 export function validateDayClock(raw: CardConfig): void {
   validateTooltipOptions(raw);
+  validateConditions(raw);
   parsePeriod(raw.period as CardConfig['period']);
   const days = raw.days;
   if (days !== undefined && (typeof days !== 'number' || !Number.isInteger(days) || days < 1 || days > MAX_DAYS)) {
@@ -266,13 +268,18 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const loaded = store.get(hass, requests, { start: bounds[0], end: live ? now : end }, 'history', { live });
   const range = { start: bounds[0], end: until };
+  // Rings with a `when` (their own or the card's) count only the time while it held.
+  const conditions = chartConditions(ctx, { start: bounds[0], end: live ? now : end }, live);
+  const status = conditionStatus(loaded.status, conditions);
   // Days that have begun: the average is per day of those, today counting as one once it starts.
   const daysSoFar = Math.max(1, bounds.slice(0, -1).filter((b) => b < until).length);
   const rings = ctx.items.map((entity, index): Ring => {
     const kind = kinds[index];
     const own = entity.config as typeof entity.config & Own;
     // A missing entity has no history worth drawing: an empty ring and "Entity not found".
-    const points = entity.stateObj ? (loaded.data.get(key(requests[index])) ?? []) : [];
+    const points = entity.stateObj
+      ? conditionalPoints(entity.config, loaded.data.get(key(requests[index])) ?? [], conditions)
+      : [];
     const ring: Ring = {
       index,
       entity,
@@ -333,11 +340,11 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
       }
     }
     if (ring.missing) ring.stat = localize(hass, 'entity_not_found');
-    else if (!ring.hasData && loaded.status === 'ready') ring.stat = localize(hass, 'day_clock_no_data');
+    else if (!ring.hasData && status === 'ready') ring.stat = localize(hass, 'day_clock_no_data');
     return ring;
   });
   return {
-    status: loaded.status,
+    status,
     error: loaded.error,
     rings,
     bounds,
