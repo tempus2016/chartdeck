@@ -14,6 +14,8 @@ import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
+import { allHiddenMessage, legendToggleHeader, legendToggleStyles, withLegend } from './legend-toggle';
+import type { LegendItems } from './legend-toggle';
 import { CURVES } from './paths';
 import type { Curve } from './paths';
 
@@ -51,6 +53,8 @@ export interface HistoryFrame {
   zone: Zone;
   /** Set when readings are grouped: each point is then one group, from `t` to `end`. */
   group?: Grouping;
+  /** Set while the header's names toggle series (`legend_toggle`): every series, hidden ones too. */
+  legend?: LegendItems;
 }
 
 /** Checks for the options every history chart shares. */
@@ -130,18 +134,21 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
       dash: own.dash === true,
     };
   });
-  return {
-    status: loaded.status,
-    error: loaded.error,
-    range,
-    period,
-    source,
-    series,
-    live: span.live,
-    back: span.back,
-    zone,
-    group,
-  };
+  return withLegend(
+    {
+      status: loaded.status,
+      error: loaded.error,
+      range,
+      period,
+      source,
+      series,
+      live: span.live,
+      back: span.back,
+      zone,
+      group,
+    },
+    ctx,
+  );
 }
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
@@ -316,10 +323,14 @@ export function disconnectHistory(host: HTMLElement): void {
   pauseStore(host);
 }
 
-/** The row above the chart: each series' colour, name and current value; tapping one opens it. */
+/**
+ * The row above the chart: each series' colour, name and current value; tapping one opens it,
+ * or hides and shows it when the card's names toggle series.
+ */
 export function seriesHeader(frame: HistoryFrame, ctx: ChartContext): TemplateResult | typeof nothing {
   const { show } = ctx.config;
   if (!show.name && !show.value) return nothing;
+  if (frame.legend) return legendToggleHeader(frame.legend, ctx);
   return html`<div class="series-header">
     ${frame.series.map(
       (s) =>
@@ -340,6 +351,7 @@ export function frameMessage(frame: HistoryFrame, ctx: ChartContext): TemplateRe
       ${localize(ctx.hass, 'chart_error', { error: frame.error ?? '' })}
     </div>`;
   }
+  if (frame.legend && frame.series.length === 0) return allHiddenMessage(ctx);
   if (frame.series.every((s) => s.points.every((p) => p.v === null))) {
     return html`<div class="chart-message">${localize(ctx.hass, 'chart_no_data')}</div>`;
   }
@@ -378,6 +390,7 @@ export function plot(
 /** Shared look for every history chart. */
 export const frameStyles = css`
   ${periodNavStyles}
+  ${legendToggleStyles}
   .series-header {
     display: flex;
     flex-wrap: wrap;
