@@ -63,6 +63,14 @@ import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from 
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
 import { positivePoints } from '../chart/log-scale';
+import {
+  compareGhosts,
+  compareKey,
+  compareStyles,
+  ghostLines,
+  stopCompare,
+  validateCompare,
+} from '../chart/compare-ghost';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
@@ -237,6 +245,7 @@ export const line: ChartStyleModule = {
     ${dataLabelStyles}
     ${extremesStyles}
     ${multiplesStyles}
+    ${compareStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -265,6 +274,7 @@ export const line: ChartStyleModule = {
     validateExtremes(raw);
     validateSyncOptions(raw);
     validateMultiples(raw);
+    validateCompare(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -286,6 +296,7 @@ export const line: ChartStyleModule = {
     stopZoom(host);
     stopAnnotations(host);
     stopSync(host);
+    stopCompare(host);
   },
   render(ctx) {
     const frame = historyFrame(ctx);
@@ -294,7 +305,10 @@ export const line: ChartStyleModule = {
     const shared = syncChart(ctx, frame, own);
     const nav = periodNav(frame, ctx);
     const names = seriesHeader(frame, ctx);
-    const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
+    // Earlier spans drawn faintly behind, moved over this one, named in a key under the header.
+    const ghosts = compareGhosts(ctx, frame);
+    const key = ctx.config.show.name ? compareKey(ctx, ghosts) : nothing;
+    const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}${key}`;
     const message = frameMessage(frame, ctx);
     const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
@@ -323,11 +337,15 @@ export const line: ChartStyleModule = {
     // A log axis has no place for zero or below: those readings are gaps in the drawing (the tooltip still reads them).
     const log = ctx.raw.y_scale === 'log';
     const drawn = log ? shown.map((s) => ({ ...s, points: positivePoints(s.points) })) : shown;
+    const behind = ghosts.map((g) => {
+      const points = zoom.zoomed ? visiblePoints(g.points, view) : g.points;
+      return { ...g, points: log ? positivePoints(points) : points };
+    });
     // Threshold lines widen the value axis, so a target off the readings' range still shows.
     const thresholds = annotationValues(ctx.raw, ctx.hass)
       .filter((v) => !log || v > 0)
       .map((v) => ({ t: view.start, v }));
-    const data = extent([...drawn.map((s) => s.points), thresholds]);
+    const data = extent([...drawn.map((s) => s.points), ...behind.map((s) => s.points), thresholds]);
     if (log && !data) {
       const empty = html`<div class="chart-message">${localize(ctx.hass, 'chart_log_nothing')}</div>`;
       return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, empty);
@@ -376,13 +394,13 @@ export const line: ChartStyleModule = {
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${marks.lines}${lines}${notes.front}`,
+        content: svg`${notes.behind}${ghostLines(behind, scales)}${marks.lines}${lines}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
         ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay}
-        ${tooltip ? tooltipLayer(ctx, shown, scales, own ?? shared, plotWidth(ctx)) : nothing}`,
+        ${tooltip ? tooltipLayer(ctx, [...shown, ...behind], scales, own ?? shared, plotWidth(ctx)) : nothing}`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
