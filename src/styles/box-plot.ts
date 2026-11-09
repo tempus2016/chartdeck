@@ -20,6 +20,7 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, chartWidth, gridStyles, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotAxes } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import { withLegend } from '../chart/legend-toggle';
 import { linear } from '../chart/scale';
 import { dotsPath } from '../chart/series-style';
 import { tooltipEnabled, tooltipStyles, validateTooltipOptions } from '../chart/tooltip';
@@ -429,7 +430,7 @@ export const box: ChartStyleModule = {
     stopPick(host);
   },
   render(ctx) {
-    const frame = boxFrame(ctx);
+    const frame = withLegend(boxFrame(ctx), ctx);
     const nav = periodNav(frame, ctx);
     const names = seriesHeader(frame, ctx);
     const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;

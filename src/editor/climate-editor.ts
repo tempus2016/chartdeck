@@ -75,7 +75,7 @@ export function climateEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     ...axesSchema(ctx.hass),
-    ...layoutSchema(ctx.hass),
+    ...layoutSchema(ctx.hass, false),
   ]);
   return chartForm(ctx, 'chart', schema, CLIMATE_FIELDS);
 }

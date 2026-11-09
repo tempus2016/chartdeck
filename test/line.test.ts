@@ -297,6 +297,7 @@ describe('line chart editor', () => {
       zones: false,
       header: 'above',
       compact: false,
+      legend_toggle: false,
       multiples: false,
       multiples_scale: 'auto',
     });

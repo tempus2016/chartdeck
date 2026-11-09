@@ -1,6 +1,7 @@
 import { css, html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import type { CardConfig } from '../types';
+import { validateLegendToggle } from './legend-toggle';
 
 /** Where a history chart puts its row of names and current values. */
 export const HEADER_PLACES = ['above', 'over', 'hidden'] as const;
@@ -17,6 +18,7 @@ export function validateLayout(raw: CardConfig): void {
   if (raw.header !== undefined && !HEADER_PLACES.includes(raw.header as HeaderPlace)) {
     throw new Error(`"header" must be one of: ${HEADER_PLACES.join(', ')}`);
   }
+  validateLegendToggle(raw);
 }
 
 export function chartLayout(raw: CardConfig): ChartLayout {

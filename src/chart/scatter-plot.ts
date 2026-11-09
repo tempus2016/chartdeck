@@ -567,7 +567,7 @@ export function xyEditor(kind: XYKind) {
           ]),
       ...(byTime ? [] : X_RANGE_SCHEMA),
       ...xyAxesSchema(ctx.hass),
-      ...layoutSchema(ctx.hass),
+      ...layoutSchema(ctx.hass, false),
     ]);
     return chartForm(ctx, 'chart', schema, FIELDS[kind]);
   };

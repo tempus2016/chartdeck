@@ -2,6 +2,7 @@ import { html } from 'lit';
 import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES, Y_SCALES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
+import { LEGEND_TOGGLE_FIELDS, LEGEND_TOGGLE_SCHEMA } from '../chart/legend-toggle';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
 import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
@@ -110,9 +111,11 @@ export function rollingHistorySchema(hass?: HomeAssistant) {
 export const LAYOUT_FIELDS: FieldBinding[] = [
   { name: 'header', path: ['header'], default: 'above' },
   { name: 'compact', path: ['compact'], default: false },
+  ...LEGEND_TOGGLE_FIELDS,
 ];
 
-export function layoutSchema(hass?: HomeAssistant) {
+/** `toggles`: the chart's header names can hide and show series (charts drawn with `seriesHeader`). */
+export function layoutSchema(hass?: HomeAssistant, toggles = true) {
   return [
     {
       type: 'grid',
@@ -122,6 +125,7 @@ export function layoutSchema(hass?: HomeAssistant) {
         { name: 'compact', selector: { boolean: {} } },
       ],
     },
+    ...(toggles ? LEGEND_TOGGLE_SCHEMA : []),
   ];
 }
 

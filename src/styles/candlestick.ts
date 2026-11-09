@@ -19,6 +19,7 @@ import {
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import { withLegend } from '../chart/legend-toggle';
 import { runPath, runs } from '../chart/paths';
 import { linear } from '../chart/scale';
 import {
@@ -375,7 +376,8 @@ export const candlestick: ChartStyleModule = {
     stopHover(host);
   },
   render(ctx) {
-    const frame = candleFrame(ctx);
+    // The candles' own entity is always drawn: hiding it would leave nothing to read the rest against.
+    const frame = withLegend(candleFrame(ctx), ctx, (s) => s.index === 0);
     const nav = periodNav(frame, ctx);
     const names = seriesHeader(frame, ctx);
     const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;

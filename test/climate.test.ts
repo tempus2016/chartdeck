@@ -456,6 +456,7 @@ describe('climate chart editor', () => {
       tooltip: true,
       header: 'above',
       compact: false,
+      legend_toggle: false,
     });
     const names = JSON.stringify(form.schema);
     expect(names).not.toMatch(/"source"|"group_by"|"aggregate"/);
