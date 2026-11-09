@@ -207,6 +207,43 @@ describe('store', () => {
     expect(hass.callWS).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps drawing statistics while they are read again, and through a failed read', async () => {
+    vi.useFakeTimers();
+    const hass = makeHass({});
+    let fail = false;
+    let value = 1;
+    hass.callWS = vi.fn(async () => {
+      if (fail) throw new Error('gone');
+      return { 'sensor.a': [{ start: 0, mean: value }] };
+    }) as HomeAssistant['callWS'];
+    const store = new HistoryStore(() => {});
+    const get = () => store.get(hass, [{ entity: 'sensor.a' }], { start: 0, end: H }, 'statistics');
+    get();
+    await vi.advanceTimersByTimeAsync(0);
+    // Back on the page: read again, the old rows still shown meanwhile.
+    store.pause();
+    value = 2;
+    expect(get()).toMatchObject({ status: 'ready' });
+    expect(get().data.get('sensor.a')![0].v).toBe(1);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(get().data.get('sensor.a')![0].v).toBe(2);
+    // The next period: a read that fails keeps what it had, and tries again a period later.
+    fail = true;
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(get().status).toBe('ready');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(get()).toMatchObject({ status: 'ready' });
+    expect(get().data.get('sensor.a')![0].v).toBe(2);
+    expect(hass.callWS).toHaveBeenCalledTimes(3);
+    fail = false;
+    value = 3;
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    get();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(get().data.get('sensor.a')![0].v).toBe(3);
+    store.dispose();
+  });
+
   it('reloads statistics once a period, on a timer that dispose stops', async () => {
     vi.useFakeTimers();
     const hass = makeHass({});

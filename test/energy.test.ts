@@ -780,3 +780,126 @@ describe('energy in the editor', () => {
     expect(later.at(-1)!.energy_flows).toEqual(['solar', 'gas']);
   });
 });
+
+describe('an energy column chart on a real install', () => {
+  // `recorder/statistics_during_period` for an imported meter on a test install (HA 2026.11):
+  // daily change, with negative sums, then the meter flat at 12.5 kWh since 7 Nov.
+  const DAY = 86_400_000;
+  const DAILY: [day: number, change: number, sum: number][] = [
+    [1, 13.83, -83.71],
+    [2, 13.95, -69.76],
+    [3, 14.18, -55.58],
+    [4, 13.83, -41.75],
+    [5, 13.76, -27.99],
+    [6, 13.88, -14.11],
+    [7, 14.11, 0],
+    [8, 0, 0],
+    [9, 0, 0],
+  ];
+  const at = (day: number) => Date.UTC(2026, 10, day);
+
+  function realHass(locale: 'server' | 'local') {
+    const hass = makeHass(
+      {
+        'sensor.dcp30_energy_kwh': [
+          '12.5',
+          { friendly_name: 'dcp30 energy kwh', unit_of_measurement: 'kWh', state_class: 'total_increasing' },
+        ],
+        'sensor.dcp30_energy_wh': [
+          '12500',
+          { friendly_name: 'dcp30 energy wh', unit_of_measurement: 'Wh', state_class: 'total_increasing' },
+        ],
+      },
+      {
+        config: { time_zone: 'Europe/London' },
+        locale: { language: 'en', number_format: 'language', time_zone: locale },
+      } as Partial<HomeAssistant>,
+    );
+    const asked: Record<string, unknown>[] = [];
+    hass.callWS = vi.fn(async (msg: Record<string, unknown>) => {
+      if (msg.type === 'energy/get_prefs') {
+        return {
+          energy_sources: [
+            { type: 'grid', stat_energy_from: 'sensor.dcp30_energy_kwh', stat_energy_to: null },
+            { type: 'solar', stat_energy_from: 'sensor.dcp30_energy_wh' },
+          ],
+          device_consumption: [{ stat_consumption: 'sensor.dcp30_energy_kwh', name: 'Kettle' }],
+        };
+      }
+      if (msg.type === 'recorder/get_statistics_metadata') return [];
+      asked.push(msg);
+      const from = Date.parse(msg.start_time as string);
+      const to = Date.parse(msg.end_time as string);
+      // Days as HA sends them, or each day's change spread over its hours (what it sends by the hour).
+      const rows =
+        msg.period === 'day'
+          ? DAILY.map(([d, change, sum]) => ({ start: at(d), end: at(d) + DAY, change, sum }))
+          : DAILY.flatMap(([d, change]) =>
+              Array.from({ length: 24 }, (_, h) => ({
+                start: at(d) + h * 3_600_000,
+                end: at(d) + (h + 1) * 3_600_000,
+                change: change / 24,
+              })),
+            );
+      const inRange = rows.filter((r) => r.end > from && r.start < to);
+      return {
+        'sensor.dcp30_energy_kwh': inRange,
+        'sensor.dcp30_energy_wh': inRange.map((r) => ({ ...r, change: 0 })),
+      };
+    }) as HomeAssistant['callWS'];
+    return { hass, asked };
+  }
+
+  async function settle(card: Card) {
+    for (let i = 0; i < 4; i++) {
+      await card.updateComplete;
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    vi.useRealTimers();
+  });
+
+  for (const locale of ['server', 'local'] as const) {
+    it(`draws each day's import as a column, and keeps them when masonry moves the card (${locale} time)`, async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-11-09T12:00:00Z'));
+      const { hass, asked } = realHass(locale);
+      const card = document.createElement('chartdeck-card') as Card;
+      card.setConfig({
+        type: 'custom:chartdeck-card',
+        style: 'column',
+        source: 'energy',
+        energy_flows: ['grid_import', 'solar'],
+      } as CardConfig);
+      card.hass = hass;
+      document.body.appendChild(card);
+      await settle(card);
+      const root = card.shadowRoot!;
+      expect(root.querySelector('.series-value')!.textContent).toBe('83.7 kWh');
+      const heights = () =>
+        [...root.querySelectorAll('.col[data-series="0"]')].map((c) =>
+          Number(/height:([\d.]+)%/.exec(c.getAttribute('style')!)![1]),
+        );
+      // Mon 2 Nov to Mon 9 Nov on a 0–20 axis: each day's change, then the flat meter's nothing.
+      const expected = [13.95, 14.18, 13.83, 13.76, 13.88, 14.11, 0, 0].map((v) => (v / 20) * 100);
+      expect(heights()).toHaveLength(8);
+      heights().forEach((h, i) => expect(h).toBeCloseTo(expected[i], 1));
+      const drawn = root.querySelector('.col');
+      // A masonry view moves its cards about as it lays them out: the card leaves the page and
+      // comes straight back. Its statistics are read again, but what it drew stays drawn (the
+      // same columns, so they don't grow in from nothing again) rather than "Loading…".
+      card.remove();
+      document.body.appendChild(card);
+      await card.updateComplete;
+      expect(root.querySelector('.chart-message')).toBeNull();
+      expect(root.querySelector('.col')).toBe(drawn);
+      await settle(card);
+      expect(asked).toHaveLength(2);
+      expect(root.querySelector('.col')).toBe(drawn);
+      heights().forEach((h, i) => expect(h).toBeCloseTo(expected[i], 1));
+    });
+  }
+});
