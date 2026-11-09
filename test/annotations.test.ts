@@ -349,6 +349,8 @@ describe('annotations in the editor', () => {
       type: 'line',
       value: '21',
       dash: true,
+      history: false,
+      zone: 'none',
       label: undefined,
       color: undefined,
     });
