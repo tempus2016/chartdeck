@@ -49,6 +49,7 @@ export type StyleName =
   | 'climate'
   | 'wind_rose'
   | 'day_clock'
+  | 'cycle_plot'
   | 'trend';
 export const STYLE_NAMES: StyleName[] = [
   'bar',
@@ -99,6 +100,7 @@ export const STYLE_NAMES: StyleName[] = [
   'climate',
   'wind_rose',
   'day_clock',
+  'cycle_plot',
   'trend',
 ];
 export type SortMode = 'none' | 'ascending' | 'descending';

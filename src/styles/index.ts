@@ -48,6 +48,7 @@ import { timeline } from './timeline';
 import { climate } from './climate';
 import { windRoseStyle } from './wind-rose';
 import { day_clock } from './day-clock';
+import { cyclePlot } from './cycle-plot';
 import { trend } from './trend';
 
 export interface RenderContext {
@@ -188,5 +189,6 @@ export const STYLES: Record<StyleName, StyleModule> = {
   climate,
   wind_rose: windRoseStyle,
   day_clock,
+  cycle_plot: cyclePlot,
   trend,
 };
