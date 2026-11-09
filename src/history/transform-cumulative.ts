@@ -123,6 +123,10 @@ export function resetTimes(reset: CumulativeReset, first: number, until: number,
 /**
  * A meter's running total: what it added since the first reading, back to zero at each of
  * `resets`. A rise is counted at the reading that shows it, as grouping's `change` does.
+ * What a meter rose across a gap counts (it kept counting while unavailable), except when the
+ * reading after the gap is `carried`: a series shown only while a condition holds (`when`)
+ * restarts with the value in force at that moment, and what the meter added while the condition
+ * didn't hold is not part of its total.
  */
 export function meterTotal(points: Point[], resets: number[], kind: 'increasing' | 'total'): Point[] {
   const steps = kind === 'increasing' ? increments(points) : changes(points);
@@ -135,7 +139,8 @@ export function meterTotal(points: Point[], resets: number[], kind: 'increasing'
       total = 0;
       r++;
     }
-    const step = steps[i];
+    const restart = p.carried === true && i > 0 && points[i - 1].v === null;
+    const step = restart && steps[i] !== null ? 0 : steps[i];
     if (step === null) {
       out.push({ t: p.t, v: null });
       return;
@@ -229,7 +234,7 @@ export function cumulativeSeries(
   if (own.transform !== 'cumulative' || points.length === 0) return { entity, points };
   const reset = (own.transform_reset as CumulativeReset | undefined) ?? 'none';
   const day = typeof own.transform_reset_day === 'number' ? own.transform_reset_day : 1;
-  const plain = points.map((p) => ({ t: p.t, v: p.v }));
+  const plain = points.map((p): Point => (p.carried ? { t: p.t, v: p.v, carried: true } : { t: p.t, v: p.v }));
   const resets = resetTimes(reset, plain[0].t, until, zone, day);
   const kind = meterKind(entity);
   if (kind) {

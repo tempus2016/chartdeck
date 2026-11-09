@@ -73,6 +73,18 @@ describe('meter totals', () => {
     ]);
   });
 
+  it('leaves out what the meter rose while a condition hid it', () => {
+    // Shown only while a condition held: hidden from 1 h to 2 h, back from 2 h with the value then.
+    const points: Point[] = [...pts([0, 10], [1, 12], [1, null]), { t: 2 * H, v: 20, carried: true }, ...pts([3, 21])];
+    expect(values(meterTotal(points, [], 'increasing'))).toEqual([
+      [0, 0],
+      [1, 2],
+      [1, null],
+      [2, 2],
+      [3, 3],
+    ]);
+  });
+
   it('lets a total (net) meter go down', () => {
     const out = meterTotal(pts([0, 10], [1, 12], [2, 9]), [], 'total');
     expect(values(out)).toEqual([
