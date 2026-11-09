@@ -25,7 +25,7 @@ import {
   wallSpans,
 } from '../chart/day-clock';
 import type { AverageRun, Bucket, Interval, Slot } from '../chart/day-clock';
-import { SERIES_COLORS, disconnectHistory, frameStyles, periodNav } from '../chart/frame';
+import { SERIES_COLORS, disconnectHistory, frameStyles, periodNav, seriesTransform } from '../chart/frame';
 import type { HistoryFrame } from '../chart/frame';
 import { TOUCH_LINGER_MS, tooltipEnabled, tooltipStyles, validateTooltipOptions } from '../chart/tooltip';
 import { dayClockEditor, dayClockEntityFields } from '../editor/day-clock-editor';
@@ -113,6 +113,8 @@ function attributeOf(e: ResolvedEntity, kind: 'state' | 'numeric'): string | und
 /** The bars' aggregate: the card's, else change for meters, else a time-weighted mean. */
 function aggregateOf(e: ResolvedEntity, raw: CardConfig): Aggregate {
   if (raw.aggregate !== undefined) return raw.aggregate as Aggregate;
+  // A transformed series (running total, rate of change) is a level to average, not a meter.
+  if ((e.config as { transform?: string }).transform !== undefined) return 'mean';
   const sc = e.stateObj?.attributes?.state_class;
   return sc === 'total_increasing' || sc === 'total' ? 'change' : 'mean';
 }
@@ -310,7 +312,10 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
       ring.stat = parts.join(' · ');
     } else {
       const numbers: Point[] = points.map((p) => ({ ...p, v: toReading(p.s), s: undefined }));
-      ring.slots = foldSlots(numbers, bounds, bucket, ring.aggregate, until, zone.timeZone);
+      // The entity's history transform (running total, rate of change), before folding into the day.
+      const shown = seriesTransform(entity, numbers, range, until, zone, hass);
+      ring.entity = shown.entity;
+      ring.slots = foldSlots(shown.points, bounds, bucket, ring.aggregate, until, zone.timeZone);
       const additive = isAdditive(ring.aggregate);
       ring.heights = barHeights(ring.slots, additive);
       ring.hasData = ring.slots.length > 0;
@@ -320,7 +325,7 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
         if (additive) {
           const total = valueText(
             ring.slots.reduce((a, s) => a + s.v, 0),
-            entity,
+            ring.entity,
             hass,
           );
           ring.stat = localize(hass, 'day_clock_busiest', {
@@ -328,7 +333,7 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
             time,
           });
         } else {
-          ring.stat = localize(hass, 'day_clock_peak', { value: valueText(top.v, entity, hass), time });
+          ring.stat = localize(hass, 'day_clock_peak', { value: valueText(top.v, ring.entity, hass), time });
         }
       }
     }
