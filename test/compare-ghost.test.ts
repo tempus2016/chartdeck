@@ -224,6 +224,24 @@ describe('compare ghosts on the line chart', () => {
     expect(rows).toEqual(['Power 12.0 W', 'Yesterday 36.0 W', 'Last week 180.0 W']);
   });
 
+  it("draws the earlier span in the series' shown unit and with its transform", async () => {
+    const tip = async (card: Card) => {
+      const area = card.shadowRoot!.querySelector('.plot-area') as HTMLElement;
+      area.getBoundingClientRect = () => ({ left: 0, width: 1000, top: 0, height: 180 }) as DOMRect;
+      area.dispatchEvent(new MouseEvent('pointermove', { clientX: 500, bubbles: true }));
+      await card.updateComplete;
+      return qa(card, '.tooltip-row').map((r) => r.textContent!.replace(/\s+/g, ' ').trim());
+    };
+    const converted = await mount({ compare: '1d', entities: [{ entity: 'sensor.power', unit: 'kW', decimals: 3 }] });
+    expect(await tip(converted)).toEqual(['Power 0.012 kW', 'Yesterday 0.036 kW']);
+    const total = await mount({ compare: '1d', entities: [{ entity: 'sensor.power', transform: 'cumulative' }] });
+    const rows = await tip(total);
+    // A running total of W is in Wh, the earlier span's too, not its raw readings in W.
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatch(/ Wh$/);
+    expect(rows[1]).toMatch(/^Yesterday [\d.,]+ Wh$/);
+  });
+
   it('colours each series its own and names both when there are several, and hides the key with names', async () => {
     const card = await mount({ compare: '1d', compare_style: 'series', entities: ['sensor.power', 'sensor.other'] });
     const ghosts = qa(card, 'path.ghost-line');

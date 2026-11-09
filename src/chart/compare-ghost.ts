@@ -10,7 +10,9 @@ import type { Point } from '../history/types';
 import { localize } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
+import { convertPoints } from '../units';
 import { downsample } from './downsample';
+import { seriesTransform } from './frame';
 import type { ChartSeries, HistoryFrame } from './frame';
 import type { PlotScales } from './grid';
 import { runPath, runs } from './paths';
@@ -202,7 +204,11 @@ export function compareGhosts(ctx: ChartContext, frame: HistoryFrame, now = Date
     if (loaded.status !== 'ready') return;
     const bounds = group ? boundaries(group.unit, start, end, zone) : [];
     frame.series.forEach((s, i) => {
-      let points = loaded.data.get(key(requests[i])) ?? [];
+      // As the series itself: in the shown unit, then its transform (a running total starts at
+      // the earlier span's own start). The entity as configured, not the series' transformed copy.
+      const item = ctx.items[i];
+      let points = convertPoints(loaded.data.get(key(requests[i])) ?? [], item.conversion);
+      points = seriesTransform(item, points, { start, end }, until, zone, ctx.hass).points;
       const last = points[points.length - 1];
       if (group) {
         points =
