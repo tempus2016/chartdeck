@@ -38,6 +38,23 @@ export function readingsOf(points: Point[], weighted: boolean, until: number): R
   return out;
 }
 
+/**
+ * The readings a strip plot or beeswarm draws as dots: one per reading taken in the period (not
+ * the value carried in, nor the copy at the right edge). A sensor that held one value for the
+ * whole span has none: Home Assistant's history then holds only the state it started the span
+ * with, carried in to its start. That sensor still read that value the whole time, as the line
+ * chart's flat line shows, so with `history` set its row gets that one reading, and `held` is
+ * its value, rather than reading as "No readings". Statistics always have a row per period, so
+ * a carried-in row there is the period before and is never held.
+ */
+export function dotReadings(points: Point[], history: boolean, until: number): { readings: Reading[]; held?: number } {
+  const all = readingsOf(points, history, until);
+  const readings = all.filter((r) => r.real).map((r) => ({ ...r, w: 1 }));
+  if (readings.length || !history) return { readings };
+  const carried = all.find((r) => !r.real);
+  return carried ? { readings: [{ ...carried, w: 1, real: true }], held: carried.v } : { readings };
+}
+
 /** Readings sorted by value. */
 export function byValue(readings: Reading[]): Reading[] {
   return [...readings].sort((a, b) => a.v - b.v);

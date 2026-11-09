@@ -541,6 +541,8 @@
   "swarm_events": "{n}-mal an",
   "swarm_shown": "Angezeigte Punkte",
   "swarm_none": "Keine Messwerte",
+  "swarm_no_change": "Keine Änderung: {value}",
+  "swarm_held": "Im ganzen Zeitraum gleich",
   "swarm_earliest_latest": "Frühester – spätester",
   "swarm_lowest_highest": "Niedrigster – höchster",
   "editor_style_strip_plot": "Streudiagramm in Reihen",

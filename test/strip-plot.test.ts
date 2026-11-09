@@ -96,6 +96,29 @@ afterEach(() => {
 });
 
 describe('strip plot chart', () => {
+  it('shows a sensor that held one value all day as that value, not as no readings', async () => {
+    // History of a sensor that hasn't changed for over a day: only the state it started the span with.
+    const flat = { 'sensor.hall': [{ s: '21.4', lu: (now - 30 * H) / 1000 }], 'sensor.gone': [] };
+    const card = await mount({ period: { last: 24, unit: 'hour' } } as Partial<CardConfig>, hassWith(flat));
+    expect(qa(card, '.cat-label').map(text)).toEqual(['Hall No change: 21.4 °C', 'Gone No readings']);
+    const strips = qa(card, 'g.strip');
+    expect(strips).toHaveLength(1);
+    // One dot, with no marker line over it (the value is its own median).
+    expect(dotCount(strips[0])).toBe(1);
+    expect(strips[0].querySelectorAll('.strip-marker')).toHaveLength(0);
+    // The axis runs around the value, not 0 to 1.
+    const ticks = qa(card, '.axis-label').map((e) => Number(text(e)));
+    expect(Math.min(...ticks)).toBeLessThanOrEqual(21.4);
+    expect(Math.max(...ticks)).toBeGreaterThanOrEqual(21.4);
+    expect(Math.min(...ticks)).toBeGreaterThan(15);
+    const area = q(card, '.plot-area')!;
+    area.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 300, height: 112, right: 300, bottom: 112 }) as DOMRect;
+    area.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 50, clientY: 20 }));
+    await card.updateComplete;
+    expect(qa(card, '.band-tooltip .tooltip-row').map(text)).toEqual(['Held all period 21.4 °C']);
+  });
+
   it('draws a dot per reading in each entity row, with a line at the median', async () => {
     const card = await mount({});
     const strips = qa(card, 'g.strip');

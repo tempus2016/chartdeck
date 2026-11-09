@@ -541,6 +541,8 @@
   "swarm_events": "{n} times on",
   "swarm_shown": "Dots shown",
   "swarm_none": "No readings",
+  "swarm_no_change": "No change: {value}",
+  "swarm_held": "Held all period",
   "swarm_earliest_latest": "Earliest – latest",
   "swarm_lowest_highest": "Lowest – highest",
   "editor_style_strip_plot": "Strip plot",

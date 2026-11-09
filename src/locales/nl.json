@@ -541,6 +541,8 @@
   "swarm_events": "{n} keer aan",
   "swarm_shown": "Getoonde punten",
   "swarm_none": "Geen metingen",
+  "swarm_no_change": "Geen verandering: {value}",
+  "swarm_held": "De hele periode gelijk",
   "swarm_earliest_latest": "Vroegste – laatste",
   "swarm_lowest_highest": "Laagste – hoogste",
   "editor_style_strip_plot": "Stripdiagram",

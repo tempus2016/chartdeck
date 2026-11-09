@@ -541,6 +541,8 @@
   "swarm_events": "{n} veces encendido",
   "swarm_shown": "Puntos mostrados",
   "swarm_none": "Sin lecturas",
+  "swarm_no_change": "Sin cambios: {value}",
+  "swarm_held": "Igual todo el periodo",
   "swarm_earliest_latest": "Más antigua – más reciente",
   "swarm_lowest_highest": "Mínimo – máximo",
   "editor_style_strip_plot": "Gráfico de franjas",

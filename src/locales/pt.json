@@ -541,6 +541,8 @@
   "swarm_events": "{n} vezes ligado",
   "swarm_shown": "Pontos mostrados",
   "swarm_none": "Sem leituras",
+  "swarm_no_change": "Sem alterações: {value}",
+  "swarm_held": "Igual todo o período",
   "swarm_earliest_latest": "Mais antiga – mais recente",
   "swarm_lowest_highest": "Mínimo – máximo",
   "editor_style_strip_plot": "Gráfico de faixas",

@@ -15,7 +15,7 @@ import {
   validateCategoryOptions,
 } from '../chart/category-plot';
 import type { Category, CategoryGeometry, ValueScale } from '../chart/category-plot';
-import { readingsOf, sampleReadings, summarize } from '../chart/density';
+import { dotReadings, sampleReadings, summarize } from '../chart/density';
 import type { Reading, Summary } from '../chart/density';
 import {
   disconnectHistory,
@@ -94,22 +94,22 @@ interface Row {
   shown: Reading[];
   summary?: Summary;
   total: number;
+  /** The value the sensor held all period, when it took no reading in it (see `dotReadings`). */
+  held?: number;
 }
 
 function rowsOf(frame: HistoryFrame, now: number): Row[] {
   const until = Math.min(frame.range.end, now);
   return frame.series.map((series) => {
-    // One dot per reading taken in the period: not the value carried in, nor the copy at the right edge.
-    // (Read as history first, which knows to drop that copy, then each counted once.)
-    const readings = readingsOf(series.points, frame.source === 'history' && !frame.group, until)
-      .filter((r) => r.real)
-      .map((r) => ({ ...r, w: 1 }));
+    // One dot per reading taken in the period, or the one value a sensor held all period.
+    const { readings, held } = dotReadings(series.points, frame.source === 'history' && !frame.group, until);
     return {
       series,
       shown: sampleReadings(readings, MAX_STRIP_DOTS),
       // Each reading counts once, as each is one dot: the marker sits among the dots it sums up.
       summary: summarize(readings),
-      total: readings.length,
+      total: held === undefined ? readings.length : 0,
+      ...(held === undefined ? {} : { held }),
     };
   });
 }
@@ -125,6 +125,7 @@ function fmt(row: Row, v: number, hass: HomeAssistant | undefined): string {
 
 /** The line under a row's name: its marker's value, or how many readings it has. */
 function detail(row: Row, marker: StripMarker, hass: HomeAssistant | undefined): string {
+  if (row.held !== undefined) return localize(hass, 'swarm_no_change', { value: fmt(row, row.held, hass) });
   if (row.total === 0) return localize(hass, 'swarm_none');
   const v = markerValue(row, marker);
   if (v === undefined) return localize(hass, 'swarm_readings', { n: formatNumber(row.total, 0, hass) });
@@ -141,7 +142,8 @@ function drawRow(row: Row, i: number, g: CategoryGeometry, o: StripOptions): SVG
     g.bandPx,
   );
   const pts = row.shown.map((r, k) => g.at(r.v, i, offsets[k]));
-  const v = markerValue(row, o.marker);
+  // A value held all period is its own median and mean: a line there would only hide its dot.
+  const v = row.held === undefined ? markerValue(row, o.marker) : undefined;
   const half = Math.max(o.jitter, 0.3) / 2 + 0.06;
   const marker =
     v === undefined
@@ -163,6 +165,7 @@ function tooltipRows(row: Row, hass: HomeAssistant | undefined): [string, string
   const s = row.summary;
   if (!s) return [];
   const f = (v: number) => fmt(row, v, hass);
+  if (row.held !== undefined) return [[localize(hass, 'swarm_held'), f(row.held)]];
   return [
     [localize(hass, 'dist_count'), formatNumber(row.total, 0, hass)],
     ...(row.shown.length < row.total
@@ -322,7 +325,7 @@ export const stripPlot: ChartStyleModule = {
         label,
         hover: tooltip,
         overlay:
-          hovered && hovered.total > 0 && at !== undefined
+          hovered && hovered.summary && at !== undefined
             ? bandTooltip(
                 geometry,
                 at,

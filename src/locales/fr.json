@@ -541,6 +541,8 @@
   "swarm_events": "{n} fois actif",
   "swarm_shown": "Points affichés",
   "swarm_none": "Aucun relevé",
+  "swarm_no_change": "Aucun changement : {value}",
+  "swarm_held": "Stable sur toute la période",
   "swarm_earliest_latest": "Plus ancien – plus récent",
   "swarm_lowest_highest": "Plus bas – plus haut",
   "editor_style_strip_plot": "Nuage de points en bandes",

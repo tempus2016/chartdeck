@@ -168,6 +168,26 @@ afterEach(() => {
 });
 
 describe('beeswarm chart', () => {
+  it('shows a sensor that held one value all day as one dot at that value, not as no readings', async () => {
+    const flat = { 'sensor.hall': [{ s: '21.4', lu: (now - 30 * H) / 1000 }], 'sensor.gone': [] };
+    const card = await mount({ period: { last: 24, unit: 'hour' } } as Partial<CardConfig>, hassWith(flat));
+    expect(qa(card, '.cat-label').map(text)).toEqual(['Hall No change: 21.4 °C', 'Gone No readings']);
+    const swarms = qa(card, 'g.swarm');
+    expect(swarms).toHaveLength(1);
+    expect(dotCount(swarms[0])).toBe(1);
+    const ticks = qa(card, '.axis-label').map((e) => Number(text(e)));
+    expect(Math.min(...ticks)).toBeLessThanOrEqual(21.4);
+    expect(Math.max(...ticks)).toBeGreaterThanOrEqual(21.4);
+    expect(Math.min(...ticks)).toBeGreaterThan(15);
+    // By time of day it was read at no particular time: the row says so, with no dot.
+    const clock = await mount(
+      { period: { last: 24, unit: 'hour' }, place_by: 'time_of_day' } as Partial<CardConfig>,
+      hassWith(flat),
+    );
+    expect(qa(clock, 'g.swarm')).toHaveLength(0);
+    expect(text(q(clock, '.cat-label')!)).toBe('Hall No change: 21.4 °C');
+  });
+
   it('packs every reading of each entity in its own row, counting them', async () => {
     const card = await mount({});
     const swarms = qa(card, 'g.swarm');
