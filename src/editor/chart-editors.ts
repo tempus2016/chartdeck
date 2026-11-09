@@ -5,6 +5,7 @@ import { HEADER_PLACES } from '../chart/layout';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
 import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
+import { ANOMALY_FIELDS, anomalySchema, anomalyVariant } from '../chart/anomaly';
 import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
@@ -289,6 +290,7 @@ const LINE_FIELDS: FieldBinding[] = [
   ...ZOOM_FIELDS,
   ...ANNOTATION_FIELDS,
   ...EXTREMES_FIELDS,
+  ...ANOMALY_FIELDS,
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
   ...MULTIPLES_FIELDS,
@@ -296,7 +298,7 @@ const LINE_FIELDS: FieldBinding[] = [
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema(
-    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}`,
+    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${anomalyVariant(ctx.config)}`,
     ctx.hass,
     () => [
       ...historySchema(ctx.hass, ctx.config),
@@ -323,6 +325,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...ZOOM_SCHEMA,
       ...ANNOTATION_SCHEMA,
       ...extremesSchema(ctx.hass),
+      ...anomalySchema(ctx.config),
       ...SYNC_SCHEMA,
       ...layoutSchema(ctx.hass),
       ...multiplesSchema(ctx.hass, ctx.config),

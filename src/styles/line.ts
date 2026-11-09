@@ -63,6 +63,7 @@ import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from 
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
 import { positivePoints } from '../chart/log-scale';
+import { anomalyLayer, anomalyStyles, validateAnomalies } from '../chart/anomaly';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
@@ -237,6 +238,7 @@ export const line: ChartStyleModule = {
     ${dataLabelStyles}
     ${extremesStyles}
     ${multiplesStyles}
+    ${anomalyStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -265,6 +267,7 @@ export const line: ChartStyleModule = {
     validateExtremes(raw);
     validateSyncOptions(raw);
     validateMultiples(raw);
+    validateAnomalies(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -366,6 +369,16 @@ export const line: ChartStyleModule = {
       until: Math.min(view.end, Date.now()),
       obstacles: layout.header === 'over' ? [overHeaderBox(frame, layout.compact, width)] : [],
     });
+    // Readings far from their neighbours' mean, with the band of normal behind the lines.
+    const anomalies = anomalyLayer({
+      ctx,
+      series: drawn,
+      scales,
+      range: view,
+      width,
+      height: plotHeight(layout.compact, axes.options),
+      obstacles: layout.header === 'over' ? [overHeaderBox(frame, layout.compact, width)] : [],
+    });
     const label = localize(ctx.hass, 'chart_aria', {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
@@ -376,12 +389,12 @@ export const line: ChartStyleModule = {
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${marks.lines}${lines}${notes.front}`,
+        content: svg`${notes.behind}${anomalies.behind}${marks.lines}${lines}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
-        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay}
+        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay}
         ${tooltip ? tooltipLayer(ctx, shown, scales, own ?? shared, plotWidth(ctx)) : nothing}`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
