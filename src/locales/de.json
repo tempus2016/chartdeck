@@ -822,6 +822,7 @@
   "sankey_flow": "{from} zu {to} {value}",
   "sankey_no_flows": "Gib jeder Entität in ihren Optionen ein „Fließt von“ und ein „Fließt zu“.",
   "sankey_nothing": "Derzeit fließt nichts.",
+  "energy_nothing_flowed": "In diesem Zeitraum ist nichts geflossen.",
   "editor_style_chord": "Sehnendiagramm (Flüsse im Kreis)",
   "editor_chord_pad": "Abstand zwischen Knoten",
   "editor_chord_ribbon_opacity": "Deckkraft der Bänder",

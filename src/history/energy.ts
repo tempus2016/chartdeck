@@ -269,6 +269,14 @@ export function shownValue(entity: { config: unknown }, v: number): number {
   return marks(entity).energy_below ? -v : v;
 }
 
+/**
+ * Whether a pie's or Sankey's entities are Energy dashboard totals over the card's period, so an
+ * empty chart says nothing flowed in that period rather than "right now".
+ */
+export function isEnergyTotals(items: readonly { config: unknown }[]): boolean {
+  return items.some((e) => marks(e).energy_flow !== undefined);
+}
+
 /** Whether this entity is a long-term statistic with no entity behind it (never "not found"). */
 export function isStatistic(entity: { config: unknown }): boolean {
   return marks(entity).statistic === true;

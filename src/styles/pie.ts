@@ -30,6 +30,8 @@ import { ENERGY_TOTALS_FIELDS, energyTotalsSchema, energyTotalsVariant } from '.
 import type { FieldBinding } from '../editor/schemas';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
+import { isEnergyTotals } from '../history/energy';
+import { localize } from '../localize';
 
 export const SHAPES = ['donut', 'pie'] as const;
 export const PIE_CENTER = ['total', 'none'] as const;
@@ -89,6 +91,10 @@ function render(ctx: ChartContext) {
   const width = donut ? THICKNESS : OUTER;
   const inner = donut ? (OUTER - THICKNESS) / OUTER : 0;
   const drawn = sliceAt.filter(Boolean).length;
+  // Energy dashboard totals with nothing in them: an empty ring would read as no data at all.
+  if (drawn === 0 && isEnergyTotals(items)) {
+    return html`<div class="chart-message">${localize(ctx.hass, 'energy_nothing_flowed')}</div>`;
+  }
 
   const defs = o.gradient
     ? svg`<defs>${items.map((_, i) => (sliceAt[i] ? gradient(`cd-pie-${i}`, colors[i], inner) : nothing))}</defs>`

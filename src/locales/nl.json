@@ -822,6 +822,7 @@
   "sankey_flow": "{from} naar {to} {value}",
   "sankey_no_flows": "Geef elke entiteit in de opties een \"Stroomt van\" en een \"Stroomt naar\".",
   "sankey_nothing": "Er stroomt nu niets.",
+  "energy_nothing_flowed": "Er stroomde niets in deze periode.",
   "editor_style_chord": "Koorden (stromen in een cirkel)",
   "editor_chord_pad": "Ruimte tussen knooppunten",
   "editor_chord_ribbon_opacity": "Dekking van de linten",

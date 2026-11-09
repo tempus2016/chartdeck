@@ -902,4 +902,25 @@ describe('an energy column chart on a real install', () => {
       heights().forEach((h, i) => expect(h).toBeCloseTo(expected[i], 1));
     });
   }
+
+  it('says nothing flowed in the period when the day’s totals are all zero, in a Sankey and a pie', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-09T12:00:00Z'));
+    const { hass } = realHass('server');
+    for (const style of ['sankey', 'pie']) {
+      const card = document.createElement('chartdeck-card') as Card;
+      // Today: the meter has stood still since 7 Nov.
+      card.setConfig({
+        type: 'custom:chartdeck-card',
+        style,
+        source: 'energy',
+        period: { calendar: 'day' },
+      } as CardConfig);
+      card.hass = hass;
+      document.body.appendChild(card);
+      await settle(card);
+      const text = card.shadowRoot!.querySelector('.chart-message')?.textContent?.trim();
+      expect(text, style).toBe('Nothing flowed in this period.');
+    }
+  });
 });

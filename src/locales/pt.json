@@ -822,6 +822,7 @@
   "sankey_flow": "{from} para {to} {value}",
   "sankey_no_flows": "Defina para cada entidade um \"Flui de\" e um \"Flui para\" nas suas opções.",
   "sankey_nothing": "Nada está a fluir neste momento.",
+  "energy_nothing_flowed": "Nada fluiu neste período.",
   "editor_style_chord": "Cordas (fluxos em círculo)",
   "editor_chord_pad": "Espaço entre nós",
   "editor_chord_ribbon_opacity": "Opacidade das fitas",

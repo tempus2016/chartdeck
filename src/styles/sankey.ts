@@ -17,6 +17,7 @@ import {
 } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
+import { isEnergyTotals } from '../history/energy';
 import { localize } from '../localize';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, EntityConfig, HomeAssistant } from '../types';
@@ -244,7 +245,9 @@ function render(ctx: ChartContext): TemplateResult {
   const { show } = ctx.config;
   const d = drawSankey(flows, width, { name: show.name, value: show.value, format });
   const { layout } = d;
-  if (!layout.links.length) return message('sankey_nothing', ctx.hass);
+  // Energy dashboard totals are over the card's period, not what flows at this moment.
+  if (!layout.links.length)
+    return message(isEnergyTotals(ctx.items) ? 'energy_nothing_flowed' : 'sankey_nothing', ctx.hass);
   const colors = sankeyColors(flows, linkColor(ctx.raw), (i) => {
     const c = (ctx.items[i].config as FlowEntity).color;
     return typeof c === 'string' && c ? c : undefined;

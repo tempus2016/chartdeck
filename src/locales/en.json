@@ -822,6 +822,7 @@
   "sankey_flow": "{from} to {to} {value}",
   "sankey_no_flows": "Give each entity a \"Flows from\" and a \"Flows to\" in its options.",
   "sankey_nothing": "Nothing is flowing right now.",
+  "energy_nothing_flowed": "Nothing flowed in this period.",
   "editor_style_chord": "Chord (flows round a circle)",
   "editor_chord_pad": "Gap between nodes",
   "editor_chord_ribbon_opacity": "Ribbon opacity",
