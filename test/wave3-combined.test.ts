@@ -81,7 +81,8 @@ describe('unit conversion, a condition and a running total on one series', () =>
     // 2 h): 106 kWh, shown as Wh because the readings were converted to W before the total.
     const text = header(card);
     expect(text).toContain('Wh');
-    expect(digits(text)).toBe(106_000);
+    // The last reading counts on to now, so a slow run adds a few Wh: allow 10 s of 3000 W.
+    expect(Math.abs(digits(text) - 106_000)).toBeLessThanOrEqual(10);
   });
 
   it('totals every reading without the condition', async () => {
