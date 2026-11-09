@@ -34,7 +34,7 @@ import { GROUP_LEVELS } from '../chart/hierarchy';
 import { LanguageController } from '../language-controller';
 
 /** Styles whose `group_by` groups entities by place rather than readings by time. */
-const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar'];
+const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar', 'marimekko'];
 /** Styles with the gauge options (angles, centre text, tick labels). */
 const GAUGE_STYLES: StyleName[] = ['ring', 'arc', 'needle'];
 

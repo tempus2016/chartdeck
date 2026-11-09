@@ -25,6 +25,7 @@ import { funnel } from './funnel';
 import { radar } from './radar';
 import { polarArea } from './polar-area';
 import { treemap } from './treemap';
+import { marimekko } from './marimekko';
 import { icicle, sunburst } from './sunburst';
 import { groupedBars } from './grouped-bars';
 import { bullet } from './bullet';
@@ -159,6 +160,7 @@ export const STYLES: Record<StyleName, StyleModule> = {
   radar,
   polar_area: polarArea,
   treemap,
+  marimekko,
   sunburst,
   icicle,
   grouped_bars: groupedBars,

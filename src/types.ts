@@ -25,6 +25,7 @@ export type StyleName =
   | 'radar'
   | 'polar_area'
   | 'treemap'
+  | 'marimekko'
   | 'sunburst'
   | 'icicle'
   | 'grouped_bars'
@@ -70,6 +71,7 @@ export const STYLE_NAMES: StyleName[] = [
   'radar',
   'polar_area',
   'treemap',
+  'marimekko',
   'sunburst',
   'icicle',
   'grouped_bars',
