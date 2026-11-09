@@ -41,6 +41,7 @@ export type StyleName =
   | 'violin'
   | 'beeswarm'
   | 'sankey'
+  | 'chord'
   | 'timeline'
   | 'climate'
   | 'wind_rose'
@@ -87,6 +88,7 @@ export const STYLE_NAMES: StyleName[] = [
   'violin',
   'beeswarm',
   'sankey',
+  'chord',
   'timeline',
   'climate',
   'wind_rose',

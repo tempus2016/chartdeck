@@ -40,6 +40,7 @@ import { candlestick } from './candlestick';
 import { violin } from './violin';
 import { beeswarm } from './beeswarm';
 import { sankey } from './sankey';
+import { chord } from './chord';
 import { timeline } from './timeline';
 import { climate } from './climate';
 import { windRoseStyle } from './wind-rose';
@@ -176,6 +177,7 @@ export const STYLES: Record<StyleName, StyleModule> = {
   violin,
   beeswarm,
   sankey,
+  chord,
   timeline,
   climate,
   wind_rose: windRoseStyle,
