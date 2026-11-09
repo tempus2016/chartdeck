@@ -292,6 +292,30 @@ describe('forecast on the line chart', () => {
     expect(early[1]).toBe('Solar forecast —');
   });
 
+  it("converts the forecast to the series' shown unit", async () => {
+    const card = await mount(
+      {
+        entities: [
+          {
+            entity: 'sensor.solar',
+            unit: 'kW',
+            forecast: { entity: 'sensor.solcast', attribute: 'detailedForecast', multiply: 1000 },
+          },
+        ],
+      } as Partial<CardConfig>,
+      hassFor({ detailedForecast: detailed }),
+    );
+    const area = card.shadowRoot!.querySelector('.plot-area') as HTMLElement;
+    area.getBoundingClientRect = () => ({ left: 0, width: 1000, top: 0, height: 180 }) as DOMRect;
+    area.dispatchEvent(new MouseEvent('pointermove', { clientX: 800, bubbles: true }));
+    await card.updateComplete;
+    const rows = qa(card, '.tooltip-row').map((r) => r.textContent!.replace(/\s+/g, ' ').trim());
+    // multiply makes the forecast W, as the sensor reports; the series shows kW, so does its forecast.
+    const match = rows[1].match(/^Solar forecast ([\d.]+) kW$/);
+    expect(match).not.toBeNull();
+    expect(Number(match![1])).toBeLessThan(3);
+  });
+
   it('subscribes to a weather entity forecast through the websocket', async () => {
     let push: ((m: unknown) => void) | undefined;
     const subscribeMessage = vi.fn(async (cb: (m: unknown) => void) => {

@@ -6,6 +6,7 @@ import { languageOf, localize } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { FieldBinding } from '../editor/schemas';
+import { convertPoints } from '../units';
 import { downsample } from './downsample';
 import { VIEW_W } from './frame';
 import type { ChartSeries, HistoryFrame } from './frame';
@@ -306,7 +307,12 @@ export function forecastLayer(ctx: ChartContext, frame: HistoryFrame, now = Date
     if (!f.attribute && f.entity.startsWith('weather.')) wanted.add(`${f.entity}|${f.type ?? 'hourly'}`);
     // Weather temperatures come under `temperature`, so that is the first guess for them.
     const valueKey = f.value_key ?? (f.entity.startsWith('weather.') ? 'temperature' : undefined);
-    const points = parseForecast(forecastItems(ctx, f), valueKey, f.time_key, f.multiply ?? 1);
+    // A forecast (after `multiply`) is in the sensor's own unit, like the line it carries on; a
+    // series shown in another unit (W shown as kW) converts its forecast the same way.
+    const points = convertPoints(
+      parseForecast(forecastItems(ctx, f), valueKey, f.time_key, f.multiply ?? 1),
+      s.entity.conversion,
+    );
     if (points.length > 0) parsed.push({ s, points });
   }
   closeFeeds(ctx.host, wanted);
