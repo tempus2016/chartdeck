@@ -11,7 +11,7 @@ export const CONDITION_STYLES = [
   'area',
   'column',
   'combined',
-  'range-area',
+  'range_area',
   'sparkline',
   'streamgraph',
   'beeswarm',
@@ -27,6 +27,9 @@ export const CONDITION_STYLES = [
   'candlestick',
   'day_clock',
   'wind_rose',
+  'spiral',
+  'strip_plot',
+  'cycle_plot',
 ];
 
 /** Charts that can also draw the hidden readings faintly and the strip under the plot. */

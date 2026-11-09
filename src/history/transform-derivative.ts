@@ -67,6 +67,9 @@ export const DERIVATIVE_STYLES = [
   'box',
   'candlestick',
   'day_clock',
+  'spiral',
+  'strip_plot',
+  'cycle_plot',
 ];
 
 interface DerivativeConfig {
