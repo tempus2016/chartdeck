@@ -32,6 +32,7 @@ import './entities-editor';
 import './limit-field';
 import { GROUP_LEVELS } from '../chart/hierarchy';
 import { LanguageController } from '../language-controller';
+import { withCumulativeFields } from '../history/transform-cumulative';
 
 /** Styles whose `group_by` groups entities by place rather than readings by time. */
 const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar', 'marimekko'];
@@ -213,6 +214,13 @@ export class ChartdeckCardEditor extends LitElement {
     return module && isChart(module) && this._config ? module.entityFields?.(this.hass, this._config) : undefined;
   }
 
+  /** The history transforms each entity can take, on charts that draw history as numbers. */
+  private _transformFields() {
+    if (!this._config) return undefined;
+    const style = this._config.style ?? 'bar';
+    return withCumulativeFields(style, this.hass, this._config, undefined);
+  }
+
   /** Entity list, pickers and per-entity overrides, then the rules that add more. */
   protected renderEntities(): unknown {
     return html`<cd-entities-editor
@@ -220,6 +228,7 @@ export class ChartdeckCardEditor extends LitElement {
         .entities=${this._config?.entities ?? []}
         .unit=${this._config?.unit}
         .chartFields=${this._chartFields()}
+        .transformFields=${this._transformFields()}
         @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
       ></cd-entities-editor>
       ${this._ruleForm('include')} ${this._ruleForm('exclude')}`;

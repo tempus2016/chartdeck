@@ -13,6 +13,7 @@ import {
   frameStyles,
   periodNav,
   seriesHeader,
+  seriesTransform,
   validateHistoryOptions,
 } from '../chart/frame';
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
@@ -127,16 +128,20 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
     const own = entity.config as typeof entity.config & { color?: string };
     const points = convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion);
     let grouped: Point[];
+    // The entity's history transform (running total, rate of change), before the readings are grouped.
+    const shown = seriesTransform(entity, points, range, until, zone, ctx.hass);
     if (index === 0) {
       candles =
-        source === 'statistics' ? statisticsCandles(points, bounds, until) : historyCandles(points, bounds, until);
+        source === 'statistics'
+          ? statisticsCandles(shown.points, bounds, until)
+          : historyCandles(shown.points, bounds, until);
       grouped = candles.map((c, i) => ({ t: bounds[i], end: bounds[i + 1], v: c ? c.close : null }));
     } else {
-      grouped = underValues(points, bounds, aggregate, source, until);
+      grouped = underValues(shown.points, bounds, aggregate, source, until);
     }
     return {
       index,
-      entity,
+      entity: shown.entity,
       points: grouped,
       color: baseColor(own.color ?? (index === 0 ? SERIES_COLORS[0] : 'grey')),
       curve: 'smooth',
