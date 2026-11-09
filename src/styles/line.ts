@@ -61,6 +61,7 @@ import {
 } from '../chart/extremes';
 import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
+import { nowMarkerLayer, nowMarkerStyles, stopNowMarker, validateNowMarker } from '../chart/now-marker';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
 import { positivePoints } from '../chart/log-scale';
 import { lineEditor } from '../editor/chart-editors';
@@ -237,6 +238,7 @@ export const line: ChartStyleModule = {
     ${dataLabelStyles}
     ${extremesStyles}
     ${multiplesStyles}
+    ${nowMarkerStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -265,6 +267,7 @@ export const line: ChartStyleModule = {
     validateExtremes(raw);
     validateSyncOptions(raw);
     validateMultiples(raw);
+    validateNowMarker(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -286,6 +289,7 @@ export const line: ChartStyleModule = {
     stopZoom(host);
     stopAnnotations(host);
     stopSync(host);
+    stopNowMarker(host);
   },
   render(ctx) {
     const frame = historyFrame(ctx);
@@ -381,7 +385,7 @@ export const line: ChartStyleModule = {
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
-        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay}
+        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${nowMarkerLayer(ctx, frame, view, scales, width)}
         ${tooltip ? tooltipLayer(ctx, shown, scales, own ?? shared, plotWidth(ctx)) : nothing}`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,

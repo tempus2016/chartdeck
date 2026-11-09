@@ -285,6 +285,7 @@ describe('line chart editor', () => {
       tooltip: true,
       zoom: false,
       overview: false,
+      now_marker: 'off',
       zones: false,
       header: 'above',
       compact: false,

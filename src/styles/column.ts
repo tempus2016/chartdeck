@@ -1,4 +1,6 @@
 import { css, html, nothing, svg } from 'lit';
+import { nowMarkerLayer, nowMarkerStyles, stopNowMarker, validateNowMarker } from '../chart/now-marker';
+import { NOW_MARKER_FIELDS, nowMarkerSchema } from '../editor/now-marker-editor';
 import type { TemplateResult } from 'lit';
 import { baseColor, bandFor } from '../bands';
 import { formatDateTime, formatTime, timeLabel, timeZoneOf, validateAxisOptions } from '../chart/axes';
@@ -77,6 +79,7 @@ const isColumnGroup = (v: unknown) => COLUMN_GROUPS.includes(v as (typeof COLUMN
 
 /** Check the column chart's options, with its own grouping choices taken out first. */
 function validate(raw: CardConfig): void {
+  validateNowMarker(raw);
   if (raw.group_by !== undefined && !isColumnGroup(raw.group_by)) {
     throw new Error(`"group_by" must be one of: ${COLUMN_GROUPS.join(', ')}`);
   }
@@ -378,6 +381,7 @@ function render(ctx0: ChartContext): TemplateResult {
       overlay: html`<div class="columns" style="--r:${radius}px">${highlight}${drawn.columns}${drawn.targets}</div>
         <div class="point-labels">${drawn.labels}</div>
         ${layout.header === 'over' ? headerOver(header) : nothing}
+        ${nowMarkerLayer(ctx, frame, xRange, scales, plotWidth(ctx))}
         ${tooltip ? tooltipLayer(ctx, shown, scales, hovered, plotWidth(ctx), tip) : nothing}`,
       hover: tooltip
         ? hoverHandlers(
@@ -406,6 +410,7 @@ const COLUMN_FIELDS: FieldBinding[] = [
   { name: 'column_labels', path: ['labels'], default: false },
   { name: 'rounded', path: ['rounded'], default: true },
   ...AXES_FIELDS,
+  ...NOW_MARKER_FIELDS,
   ...LAYOUT_FIELDS,
 ];
 
@@ -452,6 +457,7 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     ...axesSchema(ctx.hass),
+    ...nowMarkerSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
   ]);
   return chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS);
@@ -531,6 +537,7 @@ export const columnChart: ChartStyleModule = {
     ${tooltipStyles}
     ${layoutStyles}
     ${columnStyles}
+    ${nowMarkerStyles}
   `,
   thumbnail: () => svg`
     <path d="M7 36 V22 a2 2 0 0 1 2 -2 h4 a2 2 0 0 1 2 2 V36 Z" fill="var(--primary-color, #03a9f4)" />
@@ -549,6 +556,7 @@ export const columnChart: ChartStyleModule = {
     disconnectHistory(host);
     stopChartWidth(host);
     stopHover(host);
+    stopNowMarker(host);
   },
   render,
 };
