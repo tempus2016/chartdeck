@@ -125,7 +125,7 @@ export class ChartdeckCard extends LitElement {
     if (!config?.show.legend || this._count() === 0) return [];
     const decimals = first?.decimals ?? 1;
     return legendItems(
-      resolveBands(config.legendBands, this.hass),
+      resolveBands(config.legendBands, this.hass, first?.unit),
       (n) => formatNumber(n, decimals, this.hass),
       first?.unit ?? '',
     );

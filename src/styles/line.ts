@@ -45,6 +45,7 @@ import {
 import {
   annotationEntities,
   annotationLayers,
+  annotationUnit,
   annotationStyles,
   annotationValues,
   stopAnnotations,
@@ -324,7 +325,7 @@ export const line: ChartStyleModule = {
     const log = ctx.raw.y_scale === 'log';
     const drawn = log ? shown.map((s) => ({ ...s, points: positivePoints(s.points) })) : shown;
     // Threshold lines widen the value axis, so a target off the readings' range still shows.
-    const thresholds = annotationValues(ctx.raw, ctx.hass)
+    const thresholds = annotationValues(ctx.raw, ctx.hass, annotationUnit(frame))
       .filter((v) => !log || v > 0)
       .map((v) => ({ t: view.start, v }));
     const data = extent([...drawn.map((s) => s.points), thresholds]);

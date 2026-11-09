@@ -9,6 +9,7 @@ import type { Range } from '../history/types';
 import { localize } from '../localize';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig, HomeAssistant, ResolvedBand } from '../types';
+import { conversion } from '../units';
 import { formatDateTime } from './axes';
 import { VIEW_H, VIEW_W } from './frame';
 import type { ChartSeries, HistoryFrame } from './frame';
@@ -151,21 +152,35 @@ export function annotationEntities(raw: CardConfig): string[] {
   return [...ids];
 }
 
-/** A number, or an entity's state as one; undefined while it has none (unavailable, missing). */
-export function resolveValue(v: number | string | undefined, hass: HomeAssistant): number | undefined {
+/**
+ * A number, or an entity's state as one; undefined while it has none (unavailable, missing). An
+ * entity's state is converted from its own unit to `unit` (the chart's, from its first series)
+ * when the card knows the pair, so a °F input_number marks the right place on a °C chart. A
+ * number written in the config is taken to be in the chart's unit already.
+ */
+export function resolveValue(v: number | string | undefined, hass: HomeAssistant, unit?: string): number | undefined {
   if (v === undefined) return undefined;
   if (isNumber(v)) return v;
   const own = toReading(v);
   if (own !== null) return own;
-  const reading = toReading(hass.states[v.trim()]?.state);
-  return reading ?? undefined;
+  const state = hass.states[v.trim()];
+  const reading = toReading(state?.state);
+  if (reading === null) return undefined;
+  const from = state?.attributes?.unit_of_measurement;
+  const c = conversion(typeof from === 'string' ? from : undefined, unit);
+  return c ? c.apply(reading) : reading;
 }
 
-/** Values the value axis should reach, so a threshold line is always on show. */
-export function annotationValues(raw: CardConfig, hass: HomeAssistant): number[] {
+/** The unit an annotation's value is in: the first series' shown unit. */
+export function annotationUnit(frame: Pick<HistoryFrame, 'series'>): string | undefined {
+  return frame.series[0]?.entity.unit || undefined;
+}
+
+/** Values the value axis should reach, so a threshold line is always on show (in `unit`, see `resolveValue`). */
+export function annotationValues(raw: CardConfig, hass: HomeAssistant, unit?: string): number[] {
   return annotationsOf(raw)
     .filter((a) => a.type === 'line')
-    .map((a) => resolveValue(a.value, hass))
+    .map((a) => resolveValue(a.value, hass, unit))
     .filter(isNumber);
 }
 
@@ -426,6 +441,7 @@ export function annotationLayers(
   const [lo, hi] = scales.domain;
   const states = stateHistory(ctx, range, frame.live);
   const until = Math.min(range.end, Date.now());
+  const unit = annotationUnit(frame);
 
   const pending: { t: number; label: string; color: string }[] = [];
   const marks = (a: Annotation, color: string, times: number[], kind: string) => {
@@ -441,7 +457,7 @@ export function annotationLayers(
   for (const a of list) {
     const color = baseColor(a.color ?? DEFAULT_COLOR[a.type]);
     if (a.type === 'line') {
-      const v = resolveValue(a.value, ctx.hass);
+      const v = resolveValue(a.value, ctx.hass, unit);
       if (v === undefined || v < lo || v > hi) continue;
       const y = scales.y(v);
       front.push(
@@ -458,8 +474,8 @@ export function annotationLayers(
         );
       }
     } else if (a.type === 'band') {
-      const from = a.from === undefined ? lo : resolveValue(a.from, ctx.hass);
-      const to = a.to === undefined ? hi : resolveValue(a.to, ctx.hass);
+      const from = a.from === undefined ? lo : resolveValue(a.from, ctx.hass, unit);
+      const to = a.to === undefined ? hi : resolveValue(a.to, ctx.hass, unit);
       if (from === undefined || to === undefined) continue;
       const bottom = Math.max(lo, Math.min(from, to));
       const top = Math.min(hi, Math.max(from, to));
