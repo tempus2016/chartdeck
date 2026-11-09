@@ -8,11 +8,21 @@ import type { Zone } from '../history/timezone';
 import type { Range } from '../history/types';
 import { localize } from '../localize';
 import type { ChartContext } from '../styles/index';
-import type { CardConfig, HomeAssistant, ResolvedBand } from '../types';
+import type { Band, CardConfig, HomeAssistant, ResolvedBand } from '../types';
 import { formatDateTime } from './axes';
 import { VIEW_H, VIEW_W } from './frame';
 import type { ChartSeries, HistoryFrame } from './frame';
 import type { PlotScales } from './grid';
+import {
+  checkThresholdHistory,
+  historyEntity,
+  stepValues,
+  steppedThreshold,
+  stopThresholdHistory,
+  thresholdSteps,
+  zoneBands,
+} from './threshold-history';
+import type { ThresholdZone } from './threshold-history';
 
 /** What an annotation marks. */
 export const ANNOTATION_TYPES = ['line', 'band', 'time', 'state', 'point'] as const;
@@ -34,6 +44,12 @@ export interface Annotation {
   value?: number | string;
   /** line: dashed (the default) or solid. */
   dash?: boolean;
+  /** line: follow the value entity's history as a stepped line, not just its current state. */
+  history?: boolean;
+  /** line: shade the side above or below the line (see threshold-history.ts). */
+  zone?: ThresholdZone;
+  /** line with a zone: colour the zone by the line's value at each step, from these bands. */
+  severity?: Band[];
   /** band: its bottom and top; either may be left out to run to the chart's edge. */
   from?: number | string;
   to?: number | string;
@@ -129,6 +145,7 @@ export function validateAnnotations(raw: CardConfig): void {
     }
     if (a.type === 'state' && a.entity === undefined)
       throw new Error(`"${where('entity')}" is needed for a state mark`);
+    checkThresholdHistory(a, where);
     if (a.at !== undefined && !POINT_AT.includes(a.at as PointAt)) {
       throw new Error(`"${where('at')}" must be one of: ${POINT_AT.join(', ')}`);
     }
@@ -161,12 +178,21 @@ export function resolveValue(v: number | string | undefined, hass: HomeAssistant
   return reading ?? undefined;
 }
 
-/** Values the value axis should reach, so a threshold line is always on show. */
-export function annotationValues(raw: CardConfig, hass: HomeAssistant): number[] {
-  return annotationsOf(raw)
+/**
+ * Values the value axis should reach, so a threshold line is always on show. Given the chart and
+ * its frame, a line that follows its entity's history reaches every value it stepped through.
+ */
+export function annotationValues(
+  raw: CardConfig,
+  hass: HomeAssistant,
+  ctx?: ChartContext,
+  frame?: HistoryFrame,
+): number[] {
+  const values = annotationsOf(raw)
     .filter((a) => a.type === 'line')
     .map((a) => resolveValue(a.value, hass))
     .filter(isNumber);
+  return ctx && frame ? [...values, ...stepValues(thresholdSteps(ctx, frame), frame.range)] : values;
 }
 
 /**
@@ -279,6 +305,7 @@ export function stopAnnotations(host: HTMLElement): void {
   const c = caches.get(host);
   if (c) c.generation++;
   caches.delete(host);
+  stopThresholdHistory(host);
 }
 
 /**
@@ -425,6 +452,7 @@ export function annotationLayers(
   const x = (t: number) => scales.x(t);
   const [lo, hi] = scales.domain;
   const states = stateHistory(ctx, range, frame.live);
+  const steps = thresholdSteps(ctx, frame);
   const until = Math.min(range.end, Date.now());
 
   const pending: { t: number; label: string; color: string }[] = [];
@@ -440,7 +468,22 @@ export function annotationLayers(
 
   for (const a of list) {
     const color = baseColor(a.color ?? DEFAULT_COLOR[a.type]);
-    if (a.type === 'line') {
+    const stepped = a.type === 'line' ? steps.get(historyEntity(a) ?? '') : undefined;
+    const step = stepped && steppedThreshold(stepped, scales, color, a.dash !== false, a.zone, zoneBands(a, ctx.hass));
+    if (step) {
+      // A line through the entity's history: stepped, with its label where it ends.
+      if (step.zone) behind.push(step.zone);
+      front.push(step.line);
+      if (a.label) {
+        labels.push(
+          html`<span
+            class="annotation-label threshold ${step.top < 0.12 ? 'below' : ''}"
+            style="top:${pct(step.top)};--cd-annotation:${color}"
+            >${a.label}</span
+          >`,
+        );
+      }
+    } else if (a.type === 'line') {
       const v = resolveValue(a.value, ctx.hass);
       if (v === undefined || v < lo || v > hi) continue;
       const y = scales.y(v);
@@ -551,6 +594,12 @@ export const annotationStyles = css`
   }
   .plot .threshold.dashed {
     stroke-dasharray: 6 4;
+  }
+  .plot .threshold.stepped {
+    stroke-linejoin: round;
+  }
+  .plot .threshold-zone {
+    opacity: 0.1;
   }
   .plot .mark-line {
     stroke-width: 1;
