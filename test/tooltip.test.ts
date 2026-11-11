@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../src/chartdeck-card';
 import { nearestIndex, snapTime, TOUCH_LINGER_MS, tooltipSide } from '../src/chart/tooltip';
 import type { CardConfig, HomeAssistant } from '../src/types';
@@ -40,7 +40,10 @@ describe('nearest reading', () => {
 });
 
 type Card = HTMLElement & { setConfig(c: CardConfig): void; hass?: HomeAssistant; updateComplete: Promise<boolean> };
-const now = Date.now();
+// The chart's span ends at the moment it renders, and the fixture is relative to the moment the
+// file loads. On a busy machine seconds pass between the two, so a reading 12 h old lands just
+// short of half way. Pin the clock; only Date is faked, timers stay real.
+const now = new Date(2026, 10, 7, 15, 0, 0).getTime();
 const H = 3_600_000;
 const sec = (ago: number) => (now - ago) / 1000;
 
@@ -88,6 +91,11 @@ function point(el: Element, type: string, frac: number, pointerType = 'mouse') {
   el.dispatchEvent(ev);
 }
 
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(now);
+});
+
 afterEach(() => {
   document.body.innerHTML = '';
   vi.useRealTimers();
@@ -119,7 +127,7 @@ describe('hover tooltip', () => {
 
   it('stays up for a moment after a finger lifts, then goes', async () => {
     const card = await mount();
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'], now });
     const area = q(card, '.plot-area')!;
     point(area, 'pointerdown', 0.2, 'touch');
     point(area, 'pointerleave', 0.2, 'touch');

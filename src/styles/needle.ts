@@ -15,6 +15,7 @@ import {
 } from '../gauge';
 import type { Box } from '../gauge';
 import { arcPath, needlePath, polar } from '../geometry';
+import { ghostFor, ghostMarks, ghostStyles } from '../gauge-ghost';
 import { fitStatusText } from '../status-text';
 import type { ResolvedBand } from '../types';
 import type { ValueStyleModule } from './index';
@@ -85,6 +86,7 @@ export const needle: ValueStyleModule = {
   height: 140,
   minColumnWidth: 134,
   styles: css`
+    ${ghostStyles}
     /* A definite width that shrinks with a narrow tile (the svg inside is sized in %). */
     .needle-gauge {
       display: flex;
@@ -173,7 +175,7 @@ export const needle: ValueStyleModule = {
       white-space: nowrap;
     }
   `,
-  render(e, { show, hass }) {
+  render(e, { show, hass, requestUpdate }) {
     const options = e.config.gauge;
     const angles = gaugeAngles(DEFAULT_ANGLES, options);
     const at = (t: number) => angleAt(angles, t);
@@ -196,6 +198,14 @@ export const needle: ValueStyleModule = {
       ? values.map((v) => tickmark(at((v - e.min) / range)))
       : Array.from({ length: 11 }, (_, i) => tickmark(at(i / 10)));
     const step = tickStep(range);
+    // The last day's (or week's) range inside the band arc, under the ticks.
+    const ghost = ghostMarks(
+      ghostFor(hass, e.entityId, e.config.attribute, options?.ghost, requestUpdate),
+      e,
+      options?.ghost,
+      { cx: CX, cy: CY, r: 40.5, width: 6, tick: [36, 44], at },
+      hass,
+    );
     const hasTarget = show.target && e.targetPosition !== null;
     const labelR = hasTarget ? LABEL_R_TARGET : LABEL_R;
     const fitted = customAngles(options) || values.length > 0;
@@ -237,7 +247,7 @@ export const needle: ValueStyleModule = {
         style=${style ?? nothing}
         aria-hidden="true"
       >
-        ${arcs} ${ticks} ${labels} ${mark}
+        ${arcs} ${ghost} ${ticks} ${labels} ${mark}
         ${
           e.available
             ? svg`<g class="needle" style="transform: rotate(${num(at(e.position))}deg)"><path d=${needlePath(CX, CY, 42, 3)}></path></g>`

@@ -1,12 +1,26 @@
 import { css, html, nothing, svg } from 'lit';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
+import { isInteractive } from '../actions';
 import { baseColor } from '../bands';
 import { parsePeriod, periodRange, setSteps, stepsFor } from '../history/period';
 import type { Period } from '../history/period';
+import { belowAxis, energyValueText } from '../history/energy';
+import type { EnergyMarks } from '../history/energy';
 import { key } from '../history/fetch';
 import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQueryFor } from '../history/group';
 import type { Aggregate, Grouping } from '../history/group';
 import { pauseStore, storeFor } from '../history/store';
+import { cumulativeSeries, validateCumulative } from '../history/transform-cumulative';
+import { derivativeSeries, validateDerivative } from '../history/transform-derivative';
+import {
+  conditionOf,
+  conditionStatus,
+  conditionalPoints,
+  loadConditions,
+  pauseConditions,
+  validateConditions,
+} from '../history/condition';
+import type { Conditions } from '../history/condition';
 import { boundaries, startOf, wallTime, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -14,6 +28,10 @@ import { localize } from '../localize';
 import type { ResolvedEntity } from '../resolve';
 import type { ChartContext } from '../styles/index';
 import type { CardConfig } from '../types';
+import { convertPoints } from '../units';
+import { allHiddenMessage, legendToggleHeader, legendToggleStyles, withLegend } from './legend-toggle';
+import type { LegendItems } from './legend-toggle';
+import { rememberPlotted } from './export';
 import { CURVES } from './paths';
 import type { Curve } from './paths';
 
@@ -34,6 +52,13 @@ export interface ChartSeries {
   color: string;
   curve: Curve;
   dash: boolean;
+  /** The readings as loaded, before grouping (trimmed to the range), for spreads within a group. */
+  readings?: Point[];
+  /**
+   * A series with a `when`, when the chart asks for it (`FrameOptions.ghost`): every reading,
+   * kept or not, prepared like `points`, for the faint line behind it.
+   */
+  hidden?: Point[];
 }
 
 export interface HistoryFrame {
@@ -51,12 +76,19 @@ export interface HistoryFrame {
   zone: Zone;
   /** Set when readings are grouped: each point is then one group, from `t` to `end`. */
   group?: Grouping;
+  /** The conditions' states (the card or a series has a `when`), for the strip under the plot. */
+  conditions?: Conditions;
+  /** Set while the header's names toggle series (`legend_toggle`): every series, hidden ones too. */
+  legend?: LegendItems;
 }
 
 /** Checks for the options every history chart shares. */
 export function validateHistoryOptions(raw: CardConfig): void {
   parsePeriod(raw.period as CardConfig['period']);
   parseGrouping(raw);
+  validateCumulative(raw);
+  validateDerivative(raw);
+  validateConditions(raw);
   if (raw.source !== undefined && !SOURCES.includes(raw.source as Source)) {
     throw new Error(`"source" must be one of: ${SOURCES.join(', ')}`);
   }
@@ -80,6 +112,30 @@ export interface FrameOptions {
   aggregate?: (entity: ResolvedEntity) => Aggregate | undefined;
   /** Keep each state's words (`Point.s`) instead of reading numbers, for charts of states like "on" or "heat". */
   text?: boolean;
+  /** Grouped statistics: load hourly rows and group them here, so each group keeps its rows. */
+  hourly?: boolean;
+  /** Also keep every reading of a series with a `when` (`ChartSeries.hidden`), for the faint line behind it. */
+  ghost?: boolean;
+}
+
+/**
+ * One series' readings with its entity's history transform applied (`transform: cumulative`, a
+ * running total; `transform: derivative`, a rate of change), and the entity with its value and
+ * unit to match. Readings that are already in the shown unit go in (unit conversion comes first);
+ * an entity without a transform comes back as it was. Every chart that draws history as numbers
+ * calls this: the frame here, and box plot, candlestick and the 24-hour clock, which load their own.
+ */
+export function seriesTransform(
+  entity: ResolvedEntity,
+  points: Point[],
+  range: Range,
+  until: number,
+  zone: Zone,
+  hass: ChartContext['hass'],
+): { entity: ResolvedEntity; points: Point[] } {
+  ({ entity, points } = cumulativeSeries(entity, points, range, until, zone, hass));
+  ({ entity, points } = derivativeSeries(entity, points, hass, until));
+  return { entity, points };
 }
 
 /** Load (or reuse) the card's history and pair it with its entities. */
@@ -97,51 +153,85 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     ...(options.text ? { text: true } : {}),
   }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
-  const statistics =
+  let statistics =
     group && source === 'statistics'
       ? statisticsQueryFor(group, zone, ctx.hass.config?.time_zone, options.range === true)
       : undefined;
+  if (statistics && options.hourly) statistics = { ...statistics, period: 'hour' };
   // Statistics groups load from one row early: the row before a group gives its `first`.
   const load = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
   const loaded = store.get(ctx.hass, requests, load, source, { live: span.live, statistics });
+  // Series with a `when` keep only the readings taken while their condition held.
+  const conditions = loadConditions(
+    ctx.host,
+    ctx.hass,
+    ctx.items.map((e) => e.config),
+    load,
+    span.live,
+    ctx.requestUpdate,
+    ctx.raw,
+  );
   const bounds = group ? boundaries(group.unit, range.start, range.end, zone) : [];
   const cardCurve = (ctx.raw.curve as Curve | undefined) ?? 'smooth';
   // Readings stop at the present, even when the span runs on to the end of today.
   const until = Math.min(range.end, now);
-  const series = ctx.items.map((entity, index): ChartSeries => {
-    const own = entity.config as typeof entity.config & { color?: string; curve?: Curve; dash?: boolean };
-    let points = loaded.data.get(key(requests[index])) ?? [];
+  // Grouped, or carried on to the right edge: a sensor holds its last reading until it changes.
+  const prepare = (entity: ResolvedEntity, points: Point[]): Point[] => {
     const last = points[points.length - 1];
     if (group) {
-      points =
-        source === 'statistics'
-          ? groupStatistics(points, bounds, group.aggregate, until, options.range === true)
-          : groupHistory(points, bounds, options.aggregate?.(entity) ?? group.aggregate, until, options.range === true);
-    } else if (source === 'history' && last && last.v !== null && last.t < until) {
-      // A sensor holds its last reading until it changes, so carry it on to the right edge.
-      points = [...points, { t: until, v: last.v }];
+      return source === 'statistics'
+        ? groupStatistics(points, bounds, group.aggregate, until, options.range === true)
+        : groupHistory(points, bounds, options.aggregate?.(entity) ?? group.aggregate, until, options.range === true);
     }
-    return {
+    if (source === 'history' && last && last.v !== null && last.t < until) return [...points, { t: until, v: last.v }];
+    return points;
+  };
+  // Per series, in this order: readings in the shown unit (unit conversion), then only those taken
+  // while its condition held (`when`), then its transform (running total, rate of change).
+  const transform = (entity: ResolvedEntity, points: Point[]) =>
+    options.text ? { entity, points } : seriesTransform(entity, points, range, until, zone, ctx.hass);
+  const series = ctx.items.map((loadedEntity, index): ChartSeries => {
+    const own = loadedEntity.config as typeof loadedEntity.config & { color?: string; curve?: Curve; dash?: boolean };
+    const all = convertPoints(loaded.data.get(key(requests[index])) ?? [], loadedEntity.conversion);
+    const { entity, points: readings } = transform(
+      loadedEntity,
+      conditionalPoints(loadedEntity.config, all, conditions),
+    );
+    // Energy leaving the house (source: energy, split) is drawn below the axis.
+    const below = (entity.config as EnergyMarks).energy_below ? belowAxis : (points: Point[]) => points;
+    const out: ChartSeries = {
       index,
       entity,
-      points,
+      points: below(prepare(entity, readings)),
       color: baseColor(own.color ?? SERIES_COLORS[index % SERIES_COLORS.length]),
       curve: own.curve ?? cardCurve,
       dash: own.dash === true,
+      readings,
     };
+    if (options.ghost && conditions && conditionOf(loadedEntity.config, ctx.raw)) {
+      out.hidden = below(prepare(entity, transform(loadedEntity, all).points));
+    }
+    return out;
   });
-  return {
-    status: loaded.status,
-    error: loaded.error,
-    range,
-    period,
-    source,
-    series,
-    live: span.live,
-    back: span.back,
-    zone,
-    group,
-  };
+  const frame = withLegend(
+    {
+      status: conditionStatus(loaded.status, conditions),
+      error: loaded.error,
+      range,
+      period,
+      source,
+      series,
+      live: span.live,
+      back: span.back,
+      zone,
+      group,
+      ...(conditions ? { conditions } : {}),
+    },
+    ctx,
+  );
+  // What was drawn, for the export menu's CSV: the series on show (names can hide some).
+  rememberPlotted(ctx.host, frame.series);
+  return frame;
 }
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
@@ -314,21 +404,35 @@ const periodNavStyles = css`
 /** Pause a card's history when it leaves the page; it carries on (or reloads) when it returns. */
 export function disconnectHistory(host: HTMLElement): void {
   pauseStore(host);
+  pauseConditions(host);
 }
 
-/** The row above the chart: each series' colour, name and current value; tapping one opens it. */
+/**
+ * The row above the chart: each series' colour, name and current value; tapping one opens it,
+ * or hides and shows it when the card's names toggle series. An Energy dashboard series shows
+ * its total over the span instead (see `energyValueText`).
+ */
 export function seriesHeader(frame: HistoryFrame, ctx: ChartContext): TemplateResult | typeof nothing {
   const { show } = ctx.config;
   if (!show.name && !show.value) return nothing;
+  if (frame.legend) return legendToggleHeader(frame.legend, ctx, frame.group);
   return html`<div class="series-header">
-    ${frame.series.map(
-      (s) =>
-        html`<div class="entity series-item" data-index=${s.index} tabindex="0" aria-label=${s.entity.label}>
-          <span class="swatch" style="background:${s.color}"></span>
-          ${show.name ? html`<span class="series-name">${s.entity.name}</span>` : nothing}
-          ${show.value ? html`<span class="series-value">${s.entity.display}</span>` : nothing}
-        </div>`,
-    )}
+    ${frame.series.map((s) => {
+      const value = energyValueText(s.entity, s.points, frame.group, ctx.hass) ?? s.entity.display;
+      const label = value ? `${s.entity.name}, ${value}` : s.entity.name;
+      // A series with no action (a statistic with no entity to open) isn't a button.
+      const acts = isInteractive(s.entity.config);
+      return html`<div
+        class="entity series-item ${acts ? '' : 'inert'}"
+        data-index=${s.index}
+        tabindex=${acts ? '0' : nothing}
+        aria-label=${label}
+      >
+        <span class="swatch" style="background:${s.color}"></span>
+        ${show.name ? html`<span class="series-name">${s.entity.name}</span>` : nothing}
+        ${show.value && value ? html`<span class="series-value">${value}</span>` : nothing}
+      </div>`;
+    })}
   </div>`;
 }
 
@@ -340,6 +444,7 @@ export function frameMessage(frame: HistoryFrame, ctx: ChartContext): TemplateRe
       ${localize(ctx.hass, 'chart_error', { error: frame.error ?? '' })}
     </div>`;
   }
+  if (frame.legend && frame.series.length === 0) return allHiddenMessage(ctx);
   if (frame.series.every((s) => s.points.every((p) => p.v === null))) {
     return html`<div class="chart-message">${localize(ctx.hass, 'chart_no_data')}</div>`;
   }
@@ -378,6 +483,7 @@ export function plot(
 /** Shared look for every history chart. */
 export const frameStyles = css`
   ${periodNavStyles}
+  ${legendToggleStyles}
   .series-header {
     display: flex;
     flex-wrap: wrap;
@@ -391,6 +497,9 @@ export const frameStyles = css`
     min-width: 0;
     cursor: pointer;
     border-radius: 4px;
+  }
+  .series-item.inert {
+    cursor: default;
   }
   .series-item:focus-visible {
     outline: 2px solid var(--primary-color);

@@ -144,11 +144,12 @@ function streamLabels(
   const px = (v: number) => (v / (hi - lo)) * plotPx;
   const texts = new Map<number, string>();
   const spots: LabelSpot[] = [];
-  for (const s of frame.series) {
-    const layer = layers[s.index];
+  // Layers and values follow the drawn series' order; `s.index` names the entity (one may be hidden).
+  for (const [pos, s] of frame.series.entries()) {
+    const layer = layers[pos];
     const { at, thickness } = widest(layer);
     if (px(thickness) < LABEL_MIN_PX) continue;
-    const v = values[s.index][at];
+    const v = values[pos][at];
     const amount = share
       ? `${formatNumber(layer.upper[at] - layer.lower[at], 0, ctx.hass)} %`
       : v === null
@@ -169,7 +170,7 @@ function streamLabels(
     ${spots.map((spot) => {
       const left = placed.get(spot.key);
       if (left === undefined) return nothing;
-      const s = frame.series[spot.key];
+      const s = frame.series.find((x) => x.index === spot.key)!;
       return html`<span
         class="stream-label ${onFillText(colorName(s))}"
         style="left:${pct(plotW ? left / plotW : 0)};top:${pct(spot.y / plotPx)}"
@@ -422,7 +423,7 @@ export const streamgraph: ChartStyleModule = {
             const s = frame.series[i];
             return svg`<path
               class="stream entity"
-              data-index=${i}
+              data-index=${s.index}
               aria-label=${s.entity.label}
               d=${layerPath(edged(layers[i]), edgeX, scales, curve)}
               fill=${s.color}

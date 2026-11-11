@@ -7,9 +7,17 @@ import { chartWidth, stopChartWidth } from '../chart/grid';
 import { acceptFlows, findCycle, fitText, linkPath, sankeyLayout, spreadLabels, textWidth } from '../chart/sankey';
 import type { Flow, SankeyLayout, SankeyLink, SankeyNode } from '../chart/sankey';
 import { tooltipStyles } from '../chart/tooltip';
-import { cachedSchema, chartForm, choice } from '../editor/chart-editors';
+import {
+  ENERGY_TOTALS_FIELDS,
+  cachedSchema,
+  chartForm,
+  choice,
+  energyTotalsSchema,
+  energyTotalsVariant,
+} from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
+import { isEnergyTotals } from '../history/energy';
 import { localize } from '../localize';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, EntityConfig, HomeAssistant } from '../types';
@@ -237,7 +245,9 @@ function render(ctx: ChartContext): TemplateResult {
   const { show } = ctx.config;
   const d = drawSankey(flows, width, { name: show.name, value: show.value, format });
   const { layout } = d;
-  if (!layout.links.length) return message('sankey_nothing', ctx.hass);
+  // Energy dashboard totals are over the card's period, not what flows at this moment.
+  if (!layout.links.length)
+    return message(isEnergyTotals(ctx.items) ? 'energy_nothing_flowed' : 'sankey_nothing', ctx.hass);
   const colors = sankeyColors(flows, linkColor(ctx.raw), (i) => {
     const c = (ctx.items[i].config as FlowEntity).color;
     return typeof c === 'string' && c ? c : undefined;
@@ -294,10 +304,11 @@ function render(ctx: ChartContext): TemplateResult {
 const FIELDS: FieldBinding[] = [{ name: 'link_color', path: ['link_color'], default: 'auto' }];
 
 export function sankeyEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema('sankey', ctx.hass, () => [
+  const schema = cachedSchema(`sankey|${energyTotalsVariant(ctx.config)}`, ctx.hass, () => [
+    ...energyTotalsSchema(ctx.hass, ctx.config),
     { name: 'link_color', selector: choice(ctx.hass, 'link_color', LINK_COLORS) },
   ]);
-  return chartForm(ctx, 'chart', schema, FIELDS);
+  return chartForm(ctx, 'chart', schema, [...ENERGY_TOTALS_FIELDS, ...FIELDS]);
 }
 
 const ENTITY_FIELDS: FieldBinding[] = [

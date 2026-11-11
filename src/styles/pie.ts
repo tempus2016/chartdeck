@@ -26,9 +26,12 @@ import {
 } from '../chart/parts';
 import type { Arc, ColorBy, LegendRow } from '../chart/parts';
 import { isInteractive } from '../actions';
+import { ENERGY_TOTALS_FIELDS, energyTotalsSchema, energyTotalsVariant } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig } from '../types';
+import { isEnergyTotals } from '../history/energy';
+import { localize } from '../localize';
 
 export const SHAPES = ['donut', 'pie'] as const;
 export const PIE_CENTER = ['total', 'none'] as const;
@@ -88,6 +91,10 @@ function render(ctx: ChartContext) {
   const width = donut ? THICKNESS : OUTER;
   const inner = donut ? (OUTER - THICKNESS) / OUTER : 0;
   const drawn = sliceAt.filter(Boolean).length;
+  // Energy dashboard totals with nothing in them: an empty ring would read as no data at all.
+  if (drawn === 0 && isEnergyTotals(items)) {
+    return html`<div class="chart-message">${localize(ctx.hass, 'energy_nothing_flowed')}</div>`;
+  }
 
   const defs = o.gradient
     ? svg`<defs>${items.map((_, i) => (sliceAt[i] ? gradient(`cd-pie-${i}`, colors[i], inner) : nothing))}</defs>`
@@ -164,7 +171,8 @@ const FIELDS: FieldBinding[] = [
 ];
 
 export function pieEditor(ctx: ChartEditorContext) {
-  const schema = cachedSchema('pie', ctx.hass, () => [
+  const schema = cachedSchema(`pie|${energyTotalsVariant(ctx.config)}`, ctx.hass, () => [
+    ...energyTotalsSchema(ctx.hass, ctx.config),
     {
       type: 'grid',
       name: '',
@@ -181,7 +189,7 @@ export function pieEditor(ctx: ChartEditorContext) {
     { name: 'gradient', selector: { boolean: {} } },
     { name: 'show_percent', selector: { boolean: {} } },
   ]);
-  return chartForm(ctx, 'chart', schema, FIELDS);
+  return chartForm(ctx, 'chart', schema, [...ENERGY_TOTALS_FIELDS, ...FIELDS]);
 }
 
 export const pie: ChartStyleModule = {

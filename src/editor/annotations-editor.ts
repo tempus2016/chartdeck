@@ -1,16 +1,18 @@
-import { html } from 'lit';
+import { html, nothing } from 'lit';
 import type { TemplateResult } from 'lit';
 import { ANNOTATION_TYPES, POINT_AT, timeList } from '../chart/annotations';
+import { THRESHOLD_ZONES } from '../chart/threshold-history';
 import type { Annotation, AnnotationType } from '../chart/annotations';
 import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
-import type { CardConfig, HomeAssistant } from '../types';
+import type { Band, CardConfig, HomeAssistant } from '../types';
+import './bands-editor';
 
 const DELETE_ICON = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
 
 /** The fields each kind of annotation has, after its kind; label and colour come last. */
 const FIELDS: Record<AnnotationType, string[]> = {
-  line: ['value', 'dash'],
+  line: ['value', 'dash', 'history', 'zone'],
   band: ['from', 'to'],
   time: ['times'],
   state: ['entity', 'state', 'shade'],
@@ -18,7 +20,7 @@ const FIELDS: Record<AnnotationType, string[]> = {
 };
 
 /** A field's default: setting it back removes the key. */
-const DEFAULTS: Record<string, unknown> = { dash: true, shade: false, at: 'max' };
+const DEFAULTS: Record<string, unknown> = { dash: true, shade: false, at: 'max', history: false, zone: 'none' };
 
 function select(hass: HomeAssistant | undefined, prefix: string, values: readonly string[]) {
   return {
@@ -47,6 +49,8 @@ export function annotationSchema(type: AnnotationType, hass: HomeAssistant | und
     shade: { boolean: {} },
     dash: { boolean: {} },
     at: select(hass, 'at', POINT_AT),
+    history: { boolean: {} },
+    zone: select(hass, 'zone', ['none', ...THRESHOLD_ZONES]),
   };
   schema = [
     { name: 'type', selector: select(hass, 'type', ANNOTATION_TYPES) },
@@ -93,7 +97,17 @@ export function annotationFromData(data: Record<string, unknown>, before: Annota
     if (name === 'times') v = timeList(v as string);
     out[name === 'series' ? 'entity' : name] = v;
   }
+  // The zone's bands have their own editor under the form: keep them while the kind stays.
+  if (type === before.type && before.severity !== undefined) out.severity = before.severity;
   return out as unknown as Annotation;
+}
+
+/** A line with its zone's bands set, or removed when there are none. */
+export function withSeverity(a: Annotation, bands: Band[] | undefined): Annotation {
+  const next = { ...a };
+  if (bands && bands.length) next.severity = bands;
+  else delete next.severity;
+  return next;
 }
 
 /** The card config with its annotation list replaced (and the key gone once it is empty). */
@@ -143,6 +157,10 @@ export function annotationsEditor(ctx: ChartEditorContext): TemplateResult {
         padding: 8px 0;
         border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));
       }
+      .annotation-bands-title {
+        margin: 8px 0 0;
+        color: var(--secondary-text-color);
+      }
       .annotation-add {
         display: flex;
         flex-wrap: wrap;
@@ -170,17 +188,34 @@ export function annotationsEditor(ctx: ChartEditorContext): TemplateResult {
       ${list.map(
         (a, i) =>
           html`<div class="annotation" data-index=${i}>
-            <ha-form
-              data-section="annotation"
-              .hass=${ctx.hass}
-              .data=${annotationData(a)}
-              .schema=${annotationSchema(ANNOTATION_TYPES.includes(a.type) ? a.type : 'line', ctx.hass, entities)}
-              .computeLabel=${(s: { name: string }) => t(`editor_annotation_${s.name}`)}
-              @value-changed=${(ev: CustomEvent) => {
-                ev.stopPropagation();
-                replace(i, annotationFromData((ev.detail?.value ?? {}) as Record<string, unknown>, a));
-              }}
-            ></ha-form>
+            <div class="annotation-fields">
+              <ha-form
+                data-section="annotation"
+                .hass=${ctx.hass}
+                .data=${annotationData(a)}
+                .schema=${annotationSchema(ANNOTATION_TYPES.includes(a.type) ? a.type : 'line', ctx.hass, entities)}
+                .computeLabel=${(s: { name: string }) => t(`editor_annotation_${s.name}`)}
+                @value-changed=${(ev: CustomEvent) => {
+                  ev.stopPropagation();
+                  replace(i, annotationFromData((ev.detail?.value ?? {}) as Record<string, unknown>, a));
+                }}
+              ></ha-form>
+              ${
+                a.type === 'line' && a.zone !== undefined
+                  ? html`<div class="annotation-bands">
+                      <div class="annotation-bands-title">${t('editor_annotation_severity')}</div>
+                      <cd-bands-editor
+                        .hass=${ctx.hass}
+                        .bands=${a.severity}
+                        @value-changed=${(ev: CustomEvent) => {
+                          ev.stopPropagation();
+                          replace(i, withSeverity(a, ev.detail?.value as Band[] | undefined));
+                        }}
+                      ></cd-bands-editor>
+                    </div>`
+                  : nothing
+              }
+            </div>
             <ha-icon-button
               class="remove"
               .path=${DELETE_ICON}

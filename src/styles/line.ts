@@ -45,6 +45,7 @@ import {
 import {
   annotationEntities,
   annotationLayers,
+  annotationUnit,
   annotationStyles,
   annotationValues,
   stopAnnotations,
@@ -61,8 +62,31 @@ import {
 } from '../chart/extremes';
 import { dataLabelStyles, dataLabels, labelOptions, validateLabelOptions } from '../chart/data-labels';
 import { stopSync, syncChart, validateSyncOptions } from '../chart/sync';
+import { nowMarkerLayer, nowMarkerStyles, stopNowMarker, validateNowMarker } from '../chart/now-marker';
 import { multiplesGrid, multiplesOptions, multiplesStyles, validateMultiples } from '../chart/multiples';
 import { positivePoints } from '../chart/log-scale';
+import { conditionStrip, conditionStyles, ghostLines } from '../chart/condition-strip';
+import { ghostOn } from '../history/condition';
+import {
+  forecastEntities,
+  forecastLabel,
+  forecastLayer,
+  forecastLines,
+  forecastStyles,
+  forecastTooltipSeries,
+  stopForecast,
+  validateForecast,
+  withForecastFields,
+} from '../chart/forecast';
+import { anomalyLayer, anomalyStyles, validateAnomalies } from '../chart/anomaly';
+import {
+  compareGhosts,
+  compareKey,
+  compareStyles,
+  ghostLines as compareLines,
+  stopCompare,
+  validateCompare,
+} from '../chart/compare-ghost';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
@@ -208,7 +232,7 @@ function linePlot(
   return chartArea({
     axes,
     ctx,
-    content: lines,
+    content: svg`${ghostLines(series, scales)}${lines}`,
     label,
     defs,
     overlay: html`${over} ${labels ? pointLabels(frame, series, frame.range, scales, labels, true, ctx) : nothing}
@@ -237,6 +261,11 @@ export const line: ChartStyleModule = {
     ${dataLabelStyles}
     ${extremesStyles}
     ${multiplesStyles}
+    ${conditionStyles}
+    ${forecastStyles}
+    ${anomalyStyles}
+    ${compareStyles}
+    ${nowMarkerStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -265,6 +294,10 @@ export const line: ChartStyleModule = {
     validateExtremes(raw);
     validateSyncOptions(raw);
     validateMultiples(raw);
+    validateForecast(raw);
+    validateAnomalies(raw);
+    validateCompare(raw);
+    validateNowMarker(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -274,11 +307,12 @@ export const line: ChartStyleModule = {
     const schema = entitySeriesSchema(hass);
     const fields = entitySeriesFields(config.dots === true);
     // While the card marks highs, lows or averages, each series can opt out.
-    return extremesOn(extremesOptions(config))
+    const own = extremesOn(extremesOptions(config))
       ? { schema: withEntityExtremes(schema, hass), fields: withEntityExtremesFields(fields) }
       : { schema, fields };
+    return withForecastFields(hass, own);
   },
-  watch: annotationEntities,
+  watch: (raw) => [...annotationEntities(raw), ...forecastEntities(raw)],
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);
@@ -286,15 +320,23 @@ export const line: ChartStyleModule = {
     stopZoom(host);
     stopAnnotations(host);
     stopSync(host);
+    stopForecast(host);
+    stopCompare(host);
+    stopNowMarker(host);
   },
   render(ctx) {
-    const frame = historyFrame(ctx);
+    // Forecasts carry series on past now, stretching the span to show them.
+    const ahead = forecastLayer(ctx, historyFrame(ctx, Date.now(), { ghost: ghostOn(ctx.raw) }));
+    const frame = ahead.frame;
     // Charts in a sync group share the pointer's time: another chart's shows here too.
     const own = hoverTime(ctx.host);
     const shared = syncChart(ctx, frame, own);
     const nav = periodNav(frame, ctx);
     const names = seriesHeader(frame, ctx);
-    const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
+    // Earlier spans drawn faintly behind, moved over this one, named in a key under the header.
+    const ghosts = compareGhosts(ctx, frame);
+    const key = ctx.config.show.name ? compareKey(ctx, ghosts) : nothing;
+    const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}${key}`;
     const message = frameMessage(frame, ctx);
     const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
@@ -303,7 +345,14 @@ export const line: ChartStyleModule = {
       // A log axis has no place for zero or below: each small chart draws only the readings above it.
       const panels =
         ctx.raw.y_scale === 'log'
-          ? { ...frame, series: frame.series.map((s) => ({ ...s, points: positivePoints(s.points) })) }
+          ? {
+              ...frame,
+              series: frame.series.map((s) => ({
+                ...s,
+                points: positivePoints(s.points),
+                ...(s.hidden ? { hidden: positivePoints(s.hidden) } : {}),
+              })),
+            }
           : frame;
       // One small chart per series: the period buttons stay above, each chart has its own title.
       return chartFrame(
@@ -317,17 +366,45 @@ export const line: ChartStyleModule = {
     // Zoomed, the chart draws the readings in its window (and one either side), fitted to them.
     const zoom = zoomView(ctx, frame);
     const view = zoom.range;
-    const shown = zoom.zoomed
-      ? frame.series.map((s) => ({ ...s, points: visiblePoints(s.points, view) }))
-      : frame.series;
-    // A log axis has no place for zero or below: those readings are gaps in the drawing (the tooltip still reads them).
     const log = ctx.raw.y_scale === 'log';
-    const drawn = log ? shown.map((s) => ({ ...s, points: positivePoints(s.points) })) : shown;
+    const shown = zoom.zoomed
+      ? frame.series.map((s) => ({
+          ...s,
+          points: visiblePoints(s.points, view),
+          ...(s.hidden ? { hidden: visiblePoints(s.hidden, view) } : {}),
+        }))
+      : frame.series;
+    const forecasts = ahead.series.map((s) => ({
+      ...s,
+      points: (log ? positivePoints : (p: typeof s.points) => p)(
+        zoom.zoomed ? visiblePoints(s.points, view) : s.points,
+      ),
+    }));
+    // A log axis has no place for zero or below: those readings are gaps in the drawing (the tooltip still reads them).
+    const drawn = log
+      ? shown.map((s) => ({
+          ...s,
+          points: positivePoints(s.points),
+          ...(s.hidden ? { hidden: positivePoints(s.hidden) } : {}),
+        }))
+      : shown;
+    const behind = ghosts.map((g) => {
+      const points = zoom.zoomed ? visiblePoints(g.points, view) : g.points;
+      return { ...g, points: log ? positivePoints(points) : points };
+    });
     // Threshold lines widen the value axis, so a target off the readings' range still shows.
-    const thresholds = annotationValues(ctx.raw, ctx.hass)
+    const thresholds = annotationValues(ctx.raw, ctx.hass, annotationUnit(frame), ctx, frame)
       .filter((v) => !log || v > 0)
       .map((v) => ({ t: view.start, v }));
-    const data = extent([...drawn.map((s) => s.points), thresholds]);
+    // The faint line of hidden readings fits on the axis too, so it never runs off the plot.
+    const hidden = drawn.flatMap((s) => (s.hidden ? [s.hidden] : []));
+    const data = extent([
+      ...drawn.map((s) => s.points),
+      ...hidden,
+      ...behind.map((s) => s.points),
+      ...forecasts.map((s) => s.points),
+      thresholds,
+    ]);
     if (log && !data) {
       const empty = html`<div class="chart-message">${localize(ctx.hass, 'chart_log_nothing')}</div>`;
       return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, empty);
@@ -348,7 +425,7 @@ export const line: ChartStyleModule = {
       ? hoverHandlers(
           ctx,
           view,
-          shown.map((s) => s.points),
+          [...shown, ...forecasts].map((s) => s.points),
         )
       : undefined;
     const notes = annotationLayers(ctx, frame, scales, plotWidth(ctx));
@@ -366,29 +443,56 @@ export const line: ChartStyleModule = {
       until: Math.min(view.end, Date.now()),
       obstacles: layout.header === 'over' ? [overHeaderBox(frame, layout.compact, width)] : [],
     });
+    // Readings far from their neighbours' mean, with the band of normal behind the lines.
+    const anomalies = anomalyLayer({
+      ctx,
+      series: drawn,
+      scales,
+      range: view,
+      width,
+      height: plotHeight(layout.compact, axes.options),
+      obstacles: layout.header === 'over' ? [overHeaderBox(frame, layout.compact, width)] : [],
+    });
     const label = localize(ctx.hass, 'chart_aria', {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
     });
+    const strip = conditionStrip(
+      ctx,
+      frame,
+      view,
+      scales,
+      zoom.options.overview ? overviewStrip(ctx, zoom, frame.range, overviewLines(frame.series, frame.range)) : nothing,
+    );
     return chartFrame(
       layout,
       header,
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${marks.lines}${lines}${notes.front}`,
+        content: svg`${notes.behind}${compareLines(behind, scales)}${ghostLines(drawn, scales)}${anomalies.behind}${marks.lines}${forecastLines(forecasts, scales)}${lines}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
-        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay}
-        ${tooltip ? tooltipLayer(ctx, shown, scales, own ?? shared, plotWidth(ctx)) : nothing}`,
+        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay}
+        ${nowMarkerLayer(ctx, frame, view, scales, width)}
+        ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing}
+        ${
+          tooltip
+            ? tooltipLayer(
+                ctx,
+                [...shown, ...behind, ...forecastTooltipSeries(ctx, forecasts, view.start)],
+                scales,
+                own ?? shared,
+                plotWidth(ctx),
+              )
+            : nothing
+        }`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
-        below: zoom.options.overview
-          ? overviewStrip(ctx, zoom, frame.range, overviewLines(frame.series, frame.range))
-          : nothing,
+        ...strip,
       }),
     );
   },

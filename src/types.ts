@@ -5,6 +5,7 @@ export type StyleName =
   | 'thin'
   | 'segmented'
   | 'tank'
+  | 'battery'
   | 'ring'
   | 'needle'
   | 'arc'
@@ -20,11 +21,13 @@ export type StyleName =
   | 'scatter'
   | 'bubble'
   | 'heatmap'
+  | 'spiral'
   | 'box'
   | 'funnel'
   | 'radar'
   | 'polar_area'
   | 'treemap'
+  | 'marimekko'
   | 'sunburst'
   | 'icicle'
   | 'grouped_bars'
@@ -39,17 +42,21 @@ export type StyleName =
   | 'candlestick'
   | 'violin'
   | 'beeswarm'
+  | 'strip_plot'
   | 'sankey'
+  | 'chord'
   | 'timeline'
   | 'climate'
   | 'wind_rose'
   | 'day_clock'
+  | 'cycle_plot'
   | 'trend';
 export const STYLE_NAMES: StyleName[] = [
   'bar',
   'thin',
   'segmented',
   'tank',
+  'battery',
   'ring',
   'needle',
   'arc',
@@ -65,11 +72,13 @@ export const STYLE_NAMES: StyleName[] = [
   'scatter',
   'bubble',
   'heatmap',
+  'spiral',
   'box',
   'funnel',
   'radar',
   'polar_area',
   'treemap',
+  'marimekko',
   'sunburst',
   'icicle',
   'grouped_bars',
@@ -84,11 +93,14 @@ export const STYLE_NAMES: StyleName[] = [
   'candlestick',
   'violin',
   'beeswarm',
+  'strip_plot',
   'sankey',
+  'chord',
   'timeline',
   'climate',
   'wind_rose',
   'day_clock',
+  'cycle_plot',
   'trend',
 ];
 export type SortMode = 'none' | 'ascending' | 'descending';

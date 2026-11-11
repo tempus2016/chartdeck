@@ -24,7 +24,11 @@ import {
 } from './schemas';
 import type { FieldBinding } from './schemas';
 
+/** The export menu's switch, in the Display section of chart styles. */
+const EXPORT_FIELDS: FieldBinding[] = [{ name: 'export', path: ['export'], default: false }];
+
 import { thumbnail } from './thumbnails';
+import { cardConditionFields, conditionFields } from './condition-fields';
 import { STYLES, STYLE_GROUPS, isChart } from '../styles/index';
 import { sensorUnit } from './entities-editor';
 import './bands-editor';
@@ -32,9 +36,11 @@ import './entities-editor';
 import './limit-field';
 import { GROUP_LEVELS } from '../chart/hierarchy';
 import { LanguageController } from '../language-controller';
+import { withCumulativeFields } from '../history/transform-cumulative';
+import { withDerivativeFields } from '../history/transform-derivative';
 
 /** Styles whose `group_by` groups entities by place rather than readings by time. */
-const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar'];
+const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar', 'marimekko'];
 /** Styles with the gauge options (angles, centre text, tick labels). */
 const GAUGE_STYLES: StyleName[] = ['ring', 'arc', 'needle'];
 
@@ -213,6 +219,18 @@ export class ChartdeckCardEditor extends LitElement {
     return module && isChart(module) && this._config ? module.entityFields?.(this.hass, this._config) : undefined;
   }
 
+  /** The history transforms each entity can take, on charts that draw history as numbers. */
+  private _transformFields() {
+    if (!this._config) return undefined;
+    const style = this._config.style ?? 'bar';
+    return withDerivativeFields(
+      style,
+      this.hass,
+      this._config,
+      withCumulativeFields(style, this.hass, this._config, undefined),
+    );
+  }
+
   /** Entity list, pickers and per-entity overrides, then the rules that add more. */
   protected renderEntities(): unknown {
     return html`<cd-entities-editor
@@ -220,6 +238,8 @@ export class ChartdeckCardEditor extends LitElement {
         .entities=${this._config?.entities ?? []}
         .unit=${this._config?.unit}
         .chartFields=${this._chartFields()}
+        .transformFields=${this._transformFields()}
+        .conditionFields=${conditionFields(this._config?.style)}
         @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
       ></cd-entities-editor>
       ${this._ruleForm('include')} ${this._ruleForm('exclude')}`;
@@ -314,6 +334,9 @@ export class ChartdeckCardEditor extends LitElement {
     const places = levels.length > 0 && levels.every((l) => (GROUP_LEVELS as readonly unknown[]).includes(l));
     if (levels.length > 0 && places !== HIERARCHY_STYLES.includes(style))
       next = setOption(next, ['group_by'], undefined);
+    // The battery grid reads best with the emptiest first, so picking it sorts lowest first
+    // unless a sort is already set (YAML without one keeps the order listed, like every style).
+    if (style === 'battery' && next.sort === undefined) next = setOption(next, ['sort'], 'ascending');
     this._commit(next);
   }
 
@@ -356,14 +379,19 @@ export class ChartdeckCardEditor extends LitElement {
   protected renderChart(): TemplateResult | typeof nothing {
     const module = STYLES[(this._config?.style ?? 'bar') as StyleName];
     if (!module || !isChart(module) || !module.editor || !this._config) return nothing;
+    // History charts: the card's `when`, for every series without its own, in a form of its own.
+    const when = cardConditionFields(this._config.style);
     return this._panel(
       'chart',
-      module.editor({ hass: this.hass, config: this._config, commit: (config) => this._commit(config) }),
+      html`${module.editor({ hass: this.hass, config: this._config, commit: (config) => this._commit(config) })}
+      ${when ? this._form('card-condition', when.schema, when.fields) : nothing}`,
     );
   }
 
   protected renderDisplay(): TemplateResult {
-    return html`${this._toggles(DISPLAY_TOGGLE_FIELDS)}
+    // Charts can carry the export menu (save a picture, copy the values or the YAML).
+    const chart = isChart(STYLES[(this._config?.style ?? 'bar') as StyleName] ?? STYLES.bar);
+    return html`${this._toggles(chart ? [...DISPLAY_TOGGLE_FIELDS, ...EXPORT_FIELDS] : DISPLAY_TOGGLE_FIELDS)}
     ${this._form('display', displaySchema(this.hass), DISPLAY_FIELDS)}`;
   }
 

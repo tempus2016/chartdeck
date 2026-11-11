@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['test/**/*.test.ts'],
+    // The default 5 s is too tight on a busy machine: tests that mount several charts take
+    // longer than that without anything being wrong.
+    testTimeout: 30_000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

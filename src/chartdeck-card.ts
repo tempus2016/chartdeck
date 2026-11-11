@@ -3,7 +3,11 @@ import type { PropertyValues } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { attachActions, isInteractive } from './actions';
 import { colorStops, legendItems } from './bands';
+import { exportMenu, exportStyles, forgetPlotted, placeExport, stopExport, validateExport } from './chart/export';
 import { normalizeConfig } from './config';
+import { energyChecked, energyConfig } from './history/energy';
+import { energyTotals } from './history/energy-totals';
+import { pauseStore } from './history/store';
 import './editor/chartdeck-card-editor';
 import { formatNumber } from './format';
 import { localize } from './localize';
@@ -15,6 +19,8 @@ import { shared } from './styles/shared';
 import type { CardConfig, HomeAssistant, NormalizedConfig, StyleName } from './types';
 import { VERSION } from './version';
 import { LanguageController } from './language-controller';
+// The badge (custom:chartdeck-badge) ships in the same file and registers itself.
+import './badge';
 
 console.info(`%c CHARTDECK %c ${VERSION} `, 'color:#fff;background:#3b8bff;font-weight:700', 'color:#3b8bff');
 
@@ -63,7 +69,7 @@ export class ChartdeckCard extends LitElement {
     _config: { state: true },
   };
 
-  static styles = [shared, ...Object.values(STYLES).map((s) => s.styles)];
+  static styles = [shared, exportStyles, ...Object.values(STYLES).map((s) => s.styles)];
 
   declare hass?: HomeAssistant;
   /** Set by Home Assistant on the editor's preview card, which it rebuilds on every change. */
@@ -102,8 +108,13 @@ export class ChartdeckCard extends LitElement {
 
   setConfig(config: CardConfig): void {
     const normalized = normalizeConfig(config);
+    validateExport(config);
+    // What an earlier config drew is not this one's to export.
+    forgetPlotted(this);
     const style = STYLES[normalized.style];
-    if (isChart(style)) style.validate?.(config);
+    // The Energy dashboard source is checked here, then the chart checks it as the statistics it draws.
+    const checked = energyChecked(config);
+    if (isChart(style)) style.validate?.(checked);
     this._watched = watchedEntityIds(normalized);
     if (isChart(style)) for (const id of style.watch?.(config) ?? []) this._watched.add(id);
     // A different chart style may hold subscriptions the new one doesn't know about.
@@ -125,7 +136,7 @@ export class ChartdeckCard extends LitElement {
     if (!config?.show.legend || this._count() === 0) return [];
     const decimals = first?.decimals ?? 1;
     return legendItems(
-      resolveBands(config.legendBands, this.hass),
+      resolveBands(config.legendBands, this.hass, first?.unit),
       (n) => formatNumber(n, decimals, this.hass),
       first?.unit ?? '',
     );
@@ -228,6 +239,7 @@ export class ChartdeckCard extends LitElement {
   protected updated(): void {
     this._scheduleReady();
     this._syncActions();
+    placeExport(this);
   }
 
   connectedCallback(): void {
@@ -250,11 +262,14 @@ export class ChartdeckCard extends LitElement {
   private _disconnectStyle(): void {
     const style = this._config ? STYLES[this._config.style] : undefined;
     if (style && isChart(style)) style.disconnect?.(this);
+    // A pie or Sankey of energy totals loads statistics too (no-op for any other card).
+    pauseStore(this);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._disconnectStyle();
+    stopExport(this);
     for (const detach of this._detachers.values()) detach();
     this._detachers.clear();
   }
@@ -279,6 +294,9 @@ export class ChartdeckCard extends LitElement {
     }
   }
 
+  /** A value style's data arrived: draw again. */
+  private _redraw = (): void => this.requestUpdate();
+
   private _renderEntity(e: ResolvedEntity, index: number, style: ValueStyleModule, hass: HomeAssistant) {
     const config = this._config!;
     const interactive = isInteractive(e.config);
@@ -299,14 +317,16 @@ export class ChartdeckCard extends LitElement {
       tabindex=${interactive ? 0 : nothing}
       style=${vars}
     >
-      ${style.render(e, { show: config.show, hass })}
+      ${style.render(e, { show: config.show, hass, requestUpdate: this._redraw })}
     </div>`;
   }
 
   render() {
-    const config = this._config;
-    if (!config) return nothing;
+    if (!this._config) return nothing;
     const hass = this.hass;
+    // `source: energy`: the entities come from the Energy dashboard's settings, once they load.
+    const energy = energyConfig(this._config, hass, () => this.requestUpdate());
+    const config = energy.config;
     const style = this._style;
     let body;
     let first: ResolvedEntity | undefined;
@@ -314,7 +334,10 @@ export class ChartdeckCard extends LitElement {
     let valueCh: number | undefined;
     const resolved = hass ? resolveEntities(config, hass) : [];
     this._matched = hass ? matchedIds(config, hass) : [];
-    if (config.entities.length === 0 && !config.include) {
+    if (energy.message) {
+      this._items = [];
+      body = html`<div class="hint">${energy.message}</div>`;
+    } else if (config.entities.length === 0 && !config.include) {
       this._items = [];
       body = html`<div class="hint">${localize(hass, 'no_entities')}</div>`;
     } else if (!hass) {
@@ -339,16 +362,24 @@ export class ChartdeckCard extends LitElement {
       const values = this._items.filter((e) => e.available).map((e) => e.display.length);
       valueCh = values.length ? Math.max(...values) : undefined;
       if (isChart(style)) {
-        body = html`<div class="chart">
-          ${style.render({
-            items: this._items,
-            config,
-            raw: config.cardOptions as CardConfig,
-            hass,
-            requestUpdate: () => this.requestUpdate(),
-            host: this,
-          })}
-        </div>`;
+        const ctx = {
+          items: this._items,
+          config,
+          raw: config.cardOptions as CardConfig,
+          hass,
+          requestUpdate: () => this.requestUpdate(),
+          host: this,
+        };
+        // A pie or Sankey of the Energy dashboard draws each flow's total over its period.
+        const totals = energy.totals ? energyTotals(ctx) : undefined;
+        if (totals?.message !== undefined) {
+          body = html`<div class="chart">
+            <div class="chart-message ${totals.error ? 'error' : ''}">${totals.message}</div>
+          </div>`;
+        } else {
+          if (totals) this._items = totals.items;
+          body = html`<div class="chart">${style.render({ ...ctx, items: this._items })}</div>`;
+        }
       } else {
         const tiles = style.layout === 'tiles';
         const grid = columnsTemplate(style, config.columns);
@@ -365,7 +396,19 @@ export class ChartdeckCard extends LitElement {
       }
     }
     const legend = this._legend(first);
+    const menu =
+      isChart(style) && hass
+        ? exportMenu({
+            host: this,
+            hass,
+            raw: config.cardOptions as CardConfig,
+            items: this._items,
+            content: () => this.shadowRoot?.querySelector<HTMLElement>('.content') ?? null,
+            requestUpdate: () => this.requestUpdate(),
+          })
+        : nothing;
     return html`<ha-card .header=${config.title}>
+      ${menu}
       <div
         class="content style-${this._styleName}"
         style=${valueCh === undefined ? nothing : `--cd-value-ch: ${valueCh}`}

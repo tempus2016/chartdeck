@@ -50,6 +50,8 @@ export class CdEntitiesEditor extends LitElement {
     entities: { attribute: false },
     unit: { attribute: false },
     chartFields: { attribute: false },
+    transformFields: { attribute: false },
+    conditionFields: { attribute: false },
     _expanded: { state: true },
   };
 
@@ -113,6 +115,10 @@ export class CdEntitiesEditor extends LitElement {
   declare unit?: string;
   /** The chart style's own per-entity options, when the card is a chart that has any. */
   declare chartFields?: EntityFields;
+  /** History charts: the per-entity transforms (running total, rate of change), in a form of their own. */
+  declare transformFields?: EntityFields;
+  /** History charts: when each series is shown (its `when`), in a form of its own. */
+  declare conditionFields?: EntityFields;
   /** Indexes of rows whose overrides are open. */
   declare _expanded: Set<number>;
 
@@ -208,10 +214,26 @@ export class CdEntitiesEditor extends LitElement {
     };
     return html`<div class="overrides">
       ${this._form('entity-attribute', index, own, entityAttributeSchema(own.entity), ENTITY_ATTRIBUTE_FIELDS)}
-      ${this._form('entity-text', index, own, entityTextSchema(), ENTITY_TEXT_FIELDS)}
+      ${this._form(
+        'entity-text',
+        index,
+        own,
+        entityTextSchema(sensorUnit(this.hass, own.entity, own.attribute)),
+        ENTITY_TEXT_FIELDS,
+      )}
       ${
         this.chartFields
           ? this._form('entity-chart', index, own, this.chartFields.schema, this.chartFields.fields)
+          : nothing
+      }
+      ${
+        this.transformFields
+          ? this._form('entity-transform', index, own, this.transformFields.schema, this.transformFields.fields)
+          : nothing
+      }
+      ${
+        this.conditionFields
+          ? this._form('entity-condition', index, own, this.conditionFields.schema, this.conditionFields.fields)
           : nothing
       }
       <ha-icon-picker

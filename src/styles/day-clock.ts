@@ -25,7 +25,7 @@ import {
   wallSpans,
 } from '../chart/day-clock';
 import type { AverageRun, Bucket, Interval, Slot } from '../chart/day-clock';
-import { SERIES_COLORS, disconnectHistory, frameStyles, periodNav } from '../chart/frame';
+import { SERIES_COLORS, disconnectHistory, frameStyles, periodNav, seriesTransform } from '../chart/frame';
 import type { HistoryFrame } from '../chart/frame';
 import { TOUCH_LINGER_MS, tooltipEnabled, tooltipStyles, validateTooltipOptions } from '../chart/tooltip';
 import { dayClockEditor, dayClockEntityFields } from '../editor/day-clock-editor';
@@ -36,6 +36,8 @@ import type { Aggregate } from '../history/group';
 import { parsePeriod, stepsFor } from '../history/period';
 import type { Period } from '../history/period';
 import { storeFor } from '../history/store';
+import { convertPoints } from '../units';
+import { chartConditions, conditionStatus, conditionalPoints, validateConditions } from '../history/condition';
 import { zoneFor } from '../history/timezone';
 import type { Point, SeriesRequest } from '../history/types';
 import { localize } from '../localize';
@@ -113,12 +115,15 @@ function attributeOf(e: ResolvedEntity, kind: 'state' | 'numeric'): string | und
 /** The bars' aggregate: the card's, else change for meters, else a time-weighted mean. */
 function aggregateOf(e: ResolvedEntity, raw: CardConfig): Aggregate {
   if (raw.aggregate !== undefined) return raw.aggregate as Aggregate;
+  // A transformed series (running total, rate of change) is a level to average, not a meter.
+  if ((e.config as { transform?: string }).transform !== undefined) return 'mean';
   const sc = e.stateObj?.attributes?.state_class;
   return sc === 'total_increasing' || sc === 'total' ? 'change' : 'mean';
 }
 
 export function validateDayClock(raw: CardConfig): void {
   validateTooltipOptions(raw);
+  validateConditions(raw);
   parsePeriod(raw.period as CardConfig['period']);
   const days = raw.days;
   if (days !== undefined && (typeof days !== 'number' || !Number.isInteger(days) || days < 1 || days > MAX_DAYS)) {
@@ -266,13 +271,18 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const loaded = store.get(hass, requests, { start: bounds[0], end: live ? now : end }, 'history', { live });
   const range = { start: bounds[0], end: until };
+  // Rings with a `when` (their own or the card's) count only the time while it held.
+  const conditions = chartConditions(ctx, { start: bounds[0], end: live ? now : end }, live);
+  const status = conditionStatus(loaded.status, conditions);
   // Days that have begun: the average is per day of those, today counting as one once it starts.
   const daysSoFar = Math.max(1, bounds.slice(0, -1).filter((b) => b < until).length);
   const rings = ctx.items.map((entity, index): Ring => {
     const kind = kinds[index];
     const own = entity.config as typeof entity.config & Own;
     // A missing entity has no history worth drawing: an empty ring and "Entity not found".
-    const points = entity.stateObj ? (loaded.data.get(key(requests[index])) ?? []) : [];
+    const points = entity.stateObj
+      ? conditionalPoints(entity.config, loaded.data.get(key(requests[index])) ?? [], conditions)
+      : [];
     const ring: Ring = {
       index,
       entity,
@@ -309,8 +319,15 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
       if (ring.count > 0) parts.push(daily(timesText(hass, ring.count)));
       ring.stat = parts.join(' · ');
     } else {
-      const numbers: Point[] = points.map((p) => ({ ...p, v: toReading(p.s), s: undefined }));
-      ring.slots = foldSlots(numbers, bounds, bucket, ring.aggregate, until, zone.timeZone);
+      // Loaded as words (a ring may be a state ring), read as numbers here, then in the shown unit.
+      const numbers: Point[] = convertPoints(
+        points.map((p) => ({ ...p, v: toReading(p.s), s: undefined })),
+        entity.conversion,
+      );
+      // The entity's history transform (running total, rate of change), before folding into the day.
+      const shown = seriesTransform(entity, numbers, range, until, zone, hass);
+      ring.entity = shown.entity;
+      ring.slots = foldSlots(shown.points, bounds, bucket, ring.aggregate, until, zone.timeZone);
       const additive = isAdditive(ring.aggregate);
       ring.heights = barHeights(ring.slots, additive);
       ring.hasData = ring.slots.length > 0;
@@ -320,7 +337,7 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
         if (additive) {
           const total = valueText(
             ring.slots.reduce((a, s) => a + s.v, 0),
-            entity,
+            ring.entity,
             hass,
           );
           ring.stat = localize(hass, 'day_clock_busiest', {
@@ -328,16 +345,16 @@ export function dayClock(ctx: ChartContext, now = Date.now()): Clock {
             time,
           });
         } else {
-          ring.stat = localize(hass, 'day_clock_peak', { value: valueText(top.v, entity, hass), time });
+          ring.stat = localize(hass, 'day_clock_peak', { value: valueText(top.v, ring.entity, hass), time });
         }
       }
     }
     if (ring.missing) ring.stat = localize(hass, 'entity_not_found');
-    else if (!ring.hasData && loaded.status === 'ready') ring.stat = localize(hass, 'day_clock_no_data');
+    else if (!ring.hasData && status === 'ready') ring.stat = localize(hass, 'day_clock_no_data');
     return ring;
   });
   return {
-    status: loaded.status,
+    status,
     error: loaded.error,
     rings,
     bounds,

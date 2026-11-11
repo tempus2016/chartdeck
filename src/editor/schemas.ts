@@ -2,6 +2,8 @@ import { languageOf, localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import { setOption } from './edit';
 import { MAX_LINE_WIDTH, MIN_LINE_WIDTH } from '../chart/series-style';
+import { GHOST_SPANS } from '../gauge';
+import { convertibleUnits } from '../units';
 
 /** One ha-form field and where it lives in the card config. */
 export interface FieldBinding {
@@ -49,6 +51,7 @@ export const GAUGE_FIELDS: FieldBinding[] = [
   { name: 'center', path: ['center'], default: 'value' },
   { name: 'center_text', path: ['center_text'] },
   { name: 'tick_labels', path: ['tick_labels'], default: false },
+  { name: 'ghost', path: ['ghost'], default: 'off' },
 ];
 
 const gaugeSchemas = new Map<string, unknown[]>();
@@ -86,6 +89,15 @@ export function gaugeSchema(hass: HomeAssistant | undefined, style: string, cent
       },
       ...(text ? [{ name: 'center_text', selector: { text: {} } }] : []),
       ...(style === 'needle' ? [{ name: 'tick_labels', selector: { boolean: {} } }] : []),
+      {
+        name: 'ghost',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: GHOST_SPANS.map((value) => ({ value, label: localize(hass, `editor_ghost_${value}`) })),
+          },
+        },
+      },
     ];
     gaugeSchemas.set(key, schema);
   }
@@ -213,8 +225,32 @@ export function actionsSchema() {
   return ACTIONS_SCHEMA;
 }
 
-export function entityTextSchema() {
-  return ENTITY_TEXT_SCHEMA;
+const unitSchemas = new Map<string, unknown[]>();
+
+/**
+ * Name, unit and decimals. When the sensor's unit is one the card converts (W, °F, m/s…), the unit
+ * offers the units it converts to; any other text can still be typed and is shown as written.
+ */
+export function entityTextSchema(sensorUnit?: string) {
+  const units = convertibleUnits(sensorUnit);
+  if (units.length === 0) return ENTITY_TEXT_SCHEMA;
+  const key = units[0];
+  let schema = unitSchemas.get(key);
+  if (!schema) {
+    const grid = ENTITY_TEXT_SCHEMA[0];
+    schema = [
+      {
+        ...grid,
+        schema: grid.schema.map((field) =>
+          field.name === 'unit'
+            ? { name: 'unit', selector: { select: { mode: 'dropdown', custom_value: true, options: units } } }
+            : field,
+        ),
+      },
+    ];
+    unitSchemas.set(key, schema);
+  }
+  return schema;
 }
 
 export function entityActionsSchema() {

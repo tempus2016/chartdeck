@@ -16,7 +16,7 @@ import {
   validateCategoryOptions,
 } from '../chart/category-plot';
 import type { Category, CategoryGeometry, ValueScale } from '../chart/category-plot';
-import { readingsOf, sampleReadings, summarize } from '../chart/density';
+import { dotReadings, sampleReadings, summarize } from '../chart/density';
 import type { Reading } from '../chart/density';
 import {
   disconnectHistory,
@@ -109,6 +109,8 @@ interface Row {
   values: number[];
   total: number;
   events: boolean;
+  /** The value the sensor held all period, when it took no reading in it (see `dotReadings`). */
+  held?: number;
 }
 
 function rowsOf(frame: ReturnType<typeof historyFrame>, o: SwarmOptions, now: number): Row[] {
@@ -116,24 +118,32 @@ function rowsOf(frame: ReturnType<typeof historyFrame>, o: SwarmOptions, now: nu
   return frame.series.map((series) => {
     const events = o.placeBy === 'time_of_day' && ON_OFF.test(series.entity.entityId);
     let readings: Reading[];
+    let held: number | undefined;
     if (events) {
       readings = onEvents(series.points).map((p) => ({ t: p.t, v: 1, w: 1, real: true }));
     } else {
-      // Dots are readings taken in the period: not the value carried in, nor the edge copy.
-      readings = readingsOf(series.points, frame.source === 'history' && !frame.group, until).filter((r) => r.real);
+      // Dots are readings taken in the period, or the one value a sensor held all period.
+      ({ readings, held } = dotReadings(series.points, frame.source === 'history' && !frame.group, until));
+      // Held all period, it was read at no time of day: no dot on a clock axis.
+      if (held !== undefined && o.placeBy === 'time_of_day') readings = [];
     }
     const shown = sampleReadings(readings, MAX_DOTS);
     return {
       series,
       positions: shown.map((r) => (o.placeBy === 'time_of_day' ? hourOfDay(r.t, frame.zone.timeZone) : r.v)),
       values: shown.map((r) => r.v),
-      total: readings.length,
+      total: held === undefined ? readings.length : 0,
       events,
+      ...(held === undefined ? {} : { held }),
     };
   });
 }
 
 function detail(row: Row, hass: HomeAssistant | undefined): string {
+  if (row.held !== undefined) {
+    const value = withUnit(formatNumber(row.held, row.series.entity.decimals, hass), row.series.entity.unit);
+    return localize(hass, 'swarm_no_change', { value });
+  }
   if (row.total === 0) return localize(hass, 'swarm_none');
   const n = formatNumber(row.total, 0, hass);
   const count = localize(hass, row.events ? 'swarm_events' : 'swarm_readings', { n });
@@ -172,6 +182,7 @@ function tooltipRows(row: Row, scale: ValueScale, clock: boolean, hass: HomeAssi
   if (!s) return [];
   const f = (v: number) =>
     clock ? scale.format(v) : withUnit(formatNumber(v, row.series.entity.decimals, hass), row.series.entity.unit);
+  if (row.held !== undefined) return [[localize(hass, 'swarm_held'), f(row.held)]];
   return [
     [localize(hass, 'dist_count'), formatNumber(row.total, 0, hass)],
     ...(row.positions.length < row.total
@@ -323,7 +334,7 @@ export const beeswarm: ChartStyleModule = {
         label,
         hover: tooltip,
         overlay:
-          hovered && hovered.total > 0 && at !== undefined
+          hovered && hovered.positions.length > 0 && at !== undefined
             ? bandTooltip(
                 geometry,
                 at,

@@ -20,6 +20,8 @@ import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } fro
 import { runPath, runs } from '../chart/paths';
 import type { Curve, XY } from '../chart/paths';
 import { extent } from '../chart/scale';
+import { conditionStrip, conditionStyles, ghostLines } from '../chart/condition-strip';
+import { ghostOn } from '../history/condition';
 import { MAX_DOTS, dotSize, dotsPath, drawOrder, seriesStyle, validateSeriesStyle } from '../chart/series-style';
 import { STACK_MODES, align, stackExtent, stackValues, totals, validateStack } from '../chart/stack';
 import type { Layer, StackMode } from '../chart/stack';
@@ -37,6 +39,7 @@ import {
 import type { TooltipOptions } from '../chart/tooltip';
 import {
   AXES_FIELDS,
+  ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
@@ -52,6 +55,7 @@ import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { CURVES } from '../chart/paths';
 import { localize } from '../localize';
+import { shownValue } from '../history/energy';
 import type { Point } from '../history/types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant } from '../types';
@@ -215,26 +219,29 @@ export function drawArea(
 }
 
 function render(ctx: ChartContext): TemplateResult {
-  const frame: HistoryFrame = historyFrame(ctx);
+  const mode = (ctx.raw.stack as StackMode | undefined) ?? 'none';
+  // The faint line of hidden readings: unstacked only (a hidden reading has no place in a pile).
+  const frame: HistoryFrame = historyFrame(ctx, Date.now(), { ghost: mode === 'none' && ghostOn(ctx.raw) });
   const nav = periodNav(frame, ctx);
   const names = seriesHeader(frame, ctx);
   const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
   const message = frameMessage(frame, ctx);
   const layout = chartLayout(ctx.raw);
   if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
-  const mode = (ctx.raw.stack as StackMode | undefined) ?? 'none';
   const thinned = frame.series.map((s) => ({ ...s, points: downsample(s.points, MAX_POINTS) }));
   let shown: ChartSeries[] = thinned;
   let drawn: AreaDrawing[];
   let axes;
   const tip: TooltipOptions = {};
+  let ghosts: SVGTemplateResult | typeof nothing = nothing;
   if (mode === 'none') {
-    const data = extent(thinned.map((s) => s.points));
+    const data = extent([...thinned.map((s) => s.points), ...thinned.flatMap((s) => (s.hidden ? [s.hidden] : []))]);
     axes = plotAxes({ ...ctx, raw: zeroFloor(data, ctx.raw) }, frame.range, data);
     const scales = axes.scales;
     // Listed order, last on top, with any series marked "on top" drawn after the rest.
     const ordered = drawOrder(thinned, (s) => seriesStyle(s.entity.config, ctx.raw).onTop);
     drawn = ordered.map((s) => drawArea(s, s.points, scales, ctx.raw, { range: frame.range }));
+    ghosts = ghostLines(thinned, scales);
   } else {
     // Every series read at every moment any of them changed, then piled up.
     const aligned = align(thinned.map((s) => s.points));
@@ -266,7 +273,7 @@ function render(ctx: ChartContext): TemplateResult {
         const layer = p ? layers[s.index][index.get(p) ?? -1] : null;
         if (!p || p.v === null || !layer) return '—';
         const share = Math.round(Math.abs(layer[1] - layer[0]));
-        return `${withUnit(formatNumber(p.v, s.entity.decimals, ctx.hass), s.entity.unit)} · ${share} %`;
+        return `${withUnit(formatNumber(shownValue(s.entity, p.v), s.entity.decimals, ctx.hass), s.entity.unit)} · ${share} %`;
       };
     }
   }
@@ -281,7 +288,7 @@ function render(ctx: ChartContext): TemplateResult {
     chartArea({
       axes,
       ctx,
-      content: svg`${drawn.map((d) => d.body)}`,
+      content: svg`${ghosts}${drawn.map((d) => d.body)}`,
       defs: svg`${drawn.map((d) => d.defs)}`,
       label,
       overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
@@ -293,12 +300,14 @@ function render(ctx: ChartContext): TemplateResult {
             shown.map((s) => s.points),
           )
         : undefined,
+      ...conditionStrip(ctx, frame, frame.range, axes.scales),
     }),
   );
 }
 
 const AREA_FIELDS: FieldBinding[] = [
   ...HISTORY_FIELDS,
+  ENERGY_SPLIT_FIELD,
   { name: 'curve', path: ['curve'], default: 'smooth' },
   { name: 'stack', path: ['stack'], default: 'none' },
   { name: 'line_width', path: ['line_width'], default: AREA_LINE_WIDTH },
@@ -388,6 +397,7 @@ export const area: ChartStyleModule = {
     ${tooltipStyles}
     ${layoutStyles}
     ${areaStyles}
+    ${conditionStyles}
   `,
   thumbnail: () => svg`
     <defs>

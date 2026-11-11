@@ -1,4 +1,6 @@
 import { css, html, nothing, svg } from 'lit';
+import { nowMarkerLayer, nowMarkerStyles, stopNowMarker, validateNowMarker } from '../chart/now-marker';
+import { NOW_MARKER_FIELDS, nowMarkerSchema } from '../editor/now-marker-editor';
 import type { TemplateResult } from 'lit';
 import { baseColor, bandFor } from '../bands';
 import { formatDateTime, formatTime, timeLabel, timeZoneOf, validateAxisOptions } from '../chart/axes';
@@ -15,6 +17,16 @@ import {
   zeroBased,
 } from '../chart/columns';
 import type { ColumnTable } from '../chart/columns';
+import {
+  ERROR_BARS,
+  errorBarStyles,
+  errorBarsOf,
+  fitsAggregate,
+  validateErrorBars,
+  whiskerMark,
+  whiskersFor,
+} from '../chart/error-bars';
+import type { Whisker } from '../chart/error-bars';
 import {
   VIEW_H,
   VIEW_W,
@@ -46,6 +58,7 @@ import {
 import type { TooltipOptions } from '../chart/tooltip';
 import {
   AXES_FIELDS,
+  ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
@@ -58,7 +71,8 @@ import {
 } from '../editor/chart-editors';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
-import type { GroupUnit } from '../history/group';
+import { shownValue } from '../history/energy';
+import type { Aggregate, GroupUnit } from '../history/group';
 import type { Point } from '../history/types';
 import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
@@ -77,6 +91,7 @@ const isColumnGroup = (v: unknown) => COLUMN_GROUPS.includes(v as (typeof COLUMN
 
 /** Check the column chart's options, with its own grouping choices taken out first. */
 function validate(raw: CardConfig): void {
+  validateNowMarker(raw);
   if (raw.group_by !== undefined && !isColumnGroup(raw.group_by)) {
     throw new Error(`"group_by" must be one of: ${COLUMN_GROUPS.join(', ')}`);
   }
@@ -91,6 +106,7 @@ function validate(raw: CardConfig): void {
   validateTooltipOptions(raw);
   validateLayout(raw);
   validateStack(raw);
+  validateErrorBars(raw);
   for (const k of ['range', 'rounded', 'labels']) {
     if (raw[k] !== undefined && typeof raw[k] !== 'boolean') throw new Error(`"${k}" must be true or false`);
   }
@@ -177,6 +193,7 @@ function drawColumns(
   scales: PlotScales,
   mode: StackMode,
   layers: Layer[][] | undefined,
+  whiskers?: (Whisker | null)[][],
 ): Drawn {
   const raw = ctx.raw;
   const series = frame.series;
@@ -253,8 +270,11 @@ function drawColumns(
           ),
         );
         if (showLabels && width * px >= LABEL_PX) {
-          out.labels.push(valueLabel(ctx, left + width / 2, scales.y(v), v, s.entity.decimals, v < baseline));
+          const shown = shownValue(s.entity, v);
+          out.labels.push(valueLabel(ctx, left + width / 2, scales.y(v), shown, s.entity.decimals, v < baseline));
         }
+        const whisker = whiskers?.[k][i];
+        if (whisker) out.columns.push(whiskerMark(scales, left + width / 2, width * 0.4, whisker));
       }
       if (showTargets && s.entity.target !== null) out.targets.push(targetMark(scales, left, width, s.entity.target));
     });
@@ -267,7 +287,22 @@ function render(ctx0: ChartContext): TemplateResult {
   const ctx = { ...ctx0, raw: columnRaw(ctx0.raw, ctx0.items) };
   const raw = ctx.raw;
   const range = raw.range === true;
-  const frame = historyFrame(ctx, Date.now(), { range });
+  // Error bars: on side-by-side grouped columns whose aggregate they fit (see error-bars.ts).
+  const errorMode = errorBarsOf(raw);
+  const errorBars =
+    errorMode &&
+    !range &&
+    (raw.stack ?? 'none') === 'none' &&
+    raw.group_by !== undefined &&
+    fitsAggregate(errorMode, raw.aggregate as Aggregate)
+      ? errorMode
+      : undefined;
+  const now = Date.now();
+  const frame = historyFrame(ctx, now, {
+    // Statistics only give a group's lows and highs, and keep its hourly rows, when asked.
+    range: range || errorBars === 'min_max',
+    hourly: errorBars !== undefined && raw.source === 'statistics',
+  });
   const nav = periodNav(frame, ctx);
   const names = seriesHeader(frame, ctx);
   const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
@@ -285,12 +320,26 @@ function render(ctx0: ChartContext): TemplateResult {
   const xRange =
     group && table.ends.length ? { ...frame.range, end: Math.max(frame.range.end, ...table.ends) } : frame.range;
   const layers = mode === 'none' ? undefined : stackValues(table.values, mode);
+  const whiskers =
+    errorBars && group
+      ? frame.series.map((s) =>
+          whiskersFor(
+            s.readings ?? [],
+            table.times,
+            table.ends,
+            errorBars,
+            frame.source === 'statistics',
+            Math.min(frame.range.end, now),
+          ),
+        )
+      : undefined;
+  const reach = (whiskers ?? []).flat().flatMap((w) => (w ? [w.lo, w.hi] : []));
   const targets = frame.series.map((s) => s.entity.target).filter((t): t is number => t !== null);
   let data: [number, number] | undefined;
   if (layers) data = stackExtent(layers);
   else if (range)
     data = spread([...table.lows.flat(), ...table.highs.flat(), ...table.values.flat(), ...targets], false);
-  else data = spread([...table.values.flat(), ...(ctx.config.show.target ? targets : [])]);
+  else data = spread([...table.values.flat(), ...reach, ...(ctx.config.show.target ? targets : [])]);
   let fixed = raw;
   if (mode === 'percent') fixed = { y_min: data![0] < 0 ? -100 : 0, y_max: data![1] > 0 ? 100 : 0, ...raw };
   else if (!range && data) fixed = zeroBased(data, raw);
@@ -311,7 +360,7 @@ function render(ctx0: ChartContext): TemplateResult {
       label: (c) => timeLabel(table.times[slotOf.get(c)!], unit, span, ctx.hass),
     };
   }
-  const drawn = drawColumns(ctx, frame, table, scales, mode, layers);
+  const drawn = drawColumns(ctx, frame, table, scales, mode, layers, whiskers);
   // The tooltip reads each series at the middle of each slot.
   const shown: ChartSeries[] = frame.series.map((s, k) => ({
     ...s,
@@ -336,6 +385,18 @@ function render(ctx0: ChartContext): TemplateResult {
       return withUnit(`${fmt(lo, s)} – ${fmt(hi, s)}`, s.entity.unit);
     };
   }
+  if (whiskers) {
+    // Whiskers follow the drawn series' order; a series' index is its place among the card's
+    // entities, which differs once names hide some (legend_toggle).
+    const whiskersOf = new Map(frame.series.map((s, k) => [s.index, whiskers[k]]));
+    tip.text = (s, p) => {
+      if (!p || p.v === null) return '—';
+      const w = whiskersOf.get(s.index)?.[slotOf.get(p.t) ?? -1];
+      const value = withUnit(fmt(p.v, s), s.entity.unit);
+      if (!w) return value;
+      return localize(ctx.hass, 'error_bars_tooltip', { value, low: fmt(w.lo, s), high: fmt(w.hi, s) });
+    };
+  }
   if (layers) {
     const sums = totals(table.values);
     const unit = sharedUnit(shown);
@@ -345,7 +406,7 @@ function render(ctx0: ChartContext): TemplateResult {
       tip.text = (s, p) => {
         const layer = p ? layers[s.index][slotOf.get(p.t) ?? -1] : null;
         if (!p || p.v === null || !layer) return '—';
-        return `${withUnit(fmt(p.v, s), s.entity.unit)} · ${Math.round(Math.abs(layer[1] - layer[0]))} %`;
+        return `${withUnit(fmt(shownValue(s.entity, p.v), s), s.entity.unit)} · ${Math.round(Math.abs(layer[1] - layer[0]))} %`;
       };
     }
   }
@@ -378,6 +439,7 @@ function render(ctx0: ChartContext): TemplateResult {
       overlay: html`<div class="columns" style="--r:${radius}px">${highlight}${drawn.columns}${drawn.targets}</div>
         <div class="point-labels">${drawn.labels}</div>
         ${layout.header === 'over' ? headerOver(header) : nothing}
+        ${nowMarkerLayer(ctx, frame, xRange, scales, plotWidth(ctx))}
         ${tooltip ? tooltipLayer(ctx, shown, scales, hovered, plotWidth(ctx), tip) : nothing}`,
       hover: tooltip
         ? hoverHandlers(
@@ -400,12 +462,15 @@ const COLUMN_HISTORY_FIELDS: FieldBinding[] = HISTORY_FIELDS.map((f) => {
 
 const COLUMN_FIELDS: FieldBinding[] = [
   ...COLUMN_HISTORY_FIELDS,
+  ENERGY_SPLIT_FIELD,
   { name: 'stack', path: ['stack'], default: 'none' },
   { name: 'color_by', path: ['color_by'], default: 'series' },
   { name: 'range', path: ['range'], default: false },
   { name: 'column_labels', path: ['labels'], default: false },
   { name: 'rounded', path: ['rounded'], default: true },
+  { name: 'error_bars', path: ['error_bars'], default: 'none' },
   ...AXES_FIELDS,
+  ...NOW_MARKER_FIELDS,
   ...LAYOUT_FIELDS,
 ];
 
@@ -451,7 +516,10 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
         { name: 'rounded', selector: { boolean: {} } },
       ],
     },
+    // Whiskers need groups to spread within.
+    ...(ungrouped ? [] : [{ name: 'error_bars', selector: choice(ctx.hass, 'error_bars', ERROR_BARS) }]),
     ...axesSchema(ctx.hass),
+    ...nowMarkerSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
   ]);
   return chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS);
@@ -531,6 +599,8 @@ export const columnChart: ChartStyleModule = {
     ${tooltipStyles}
     ${layoutStyles}
     ${columnStyles}
+    ${errorBarStyles}
+    ${nowMarkerStyles}
   `,
   thumbnail: () => svg`
     <path d="M7 36 V22 a2 2 0 0 1 2 -2 h4 a2 2 0 0 1 2 2 V36 Z" fill="var(--primary-color, #03a9f4)" />
@@ -549,6 +619,7 @@ export const columnChart: ChartStyleModule = {
     disconnectHistory(host);
     stopChartWidth(host);
     stopHover(host);
+    stopNowMarker(host);
   },
   render,
 };

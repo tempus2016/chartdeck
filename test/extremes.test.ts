@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../src/chartdeck-card';
 import {
   LABEL_H,
@@ -233,7 +233,9 @@ describe('extremes options', () => {
 
 type Card = HTMLElement & { setConfig(c: CardConfig): void; hass?: HomeAssistant; updateComplete: Promise<boolean> };
 
-const now = Date.now();
+// The fixture is relative to the moment the file loads and the average is weighted by time up to the moment it renders, so seconds
+// passing between the two move it. Pin the clock; only Date is faked, timers stay real.
+const now = new Date(2026, 10, 7, 15, 0, 0).getTime();
 const sec = (msAgo: number) => (now - msAgo) / 1000;
 const history = {
   'sensor.in': [
@@ -276,8 +278,14 @@ async function mount(config: Partial<CardConfig>) {
 const qa = (card: Card, sel: string) => [...card.shadowRoot!.querySelectorAll(sel)];
 const texts = (card: Card, sel: string) => qa(card, sel).map((e) => e.textContent!.replace(/\s+/g, ' ').trim());
 
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(now);
+});
+
 afterEach(() => {
   document.body.innerHTML = '';
+  vi.useRealTimers();
 });
 
 describe('line chart with extremes', () => {
@@ -396,7 +404,21 @@ describe('extremes editor', () => {
     const off = await editor({});
     expect(fieldNames(off.ed)).not.toContain('extremes');
     const on = await editor({ extremes: { min: true } } as Partial<CardConfig>);
-    expect(fieldNames(on.ed)).toEqual(['series_color', 'curve', 'line_width', 'dash', 'on_top', 'dots', 'extremes']);
+    expect(fieldNames(on.ed)).toEqual([
+      'series_color',
+      'curve',
+      'line_width',
+      'dash',
+      'on_top',
+      'dots',
+      'extremes',
+      'forecast_entity',
+      'forecast_attribute',
+      'forecast_value_key',
+      'forecast_time_key',
+      'forecast_type',
+      'forecast_multiply',
+    ]);
     const schema = (
       (on.ed.shadowRoot!.querySelector('cd-entities-editor') as Stub).chartFields as { schema: unknown[] }
     ).schema;

@@ -149,7 +149,18 @@ const LABEL_GAP = 8;
 const DOT_R = 6;
 export const labelWidth = (text: string) => Math.ceil(text.length * 6.2) + 12;
 
-const overlaps = (a: Box, b: Box) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+export const overlaps = (a: Box, b: Box) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+
+/** The box a label placed by `placeLabels` covers, in px on a plot `width` × `height`. */
+export function labelBox(label: LabelSpec, placed: PlacedLabel, width: number, height: number): Box {
+  const w = labelWidth(label.text);
+  const px = label.x * width;
+  const py = label.y * height;
+  const left = placed.align === 'start' ? 0 : placed.align === 'end' ? width - w : px - w / 2;
+  const gap = LABEL_GAP + placed.tier * (LABEL_H + 2);
+  const t = placed.side === 'above' ? py - gap - LABEL_H : py + gap;
+  return { l: left, r: left + w, t, b: t + LABEL_H };
+}
 
 /**
  * Where each label goes on a plot `width` × `height` px. Each is centred over its dot, or held
@@ -175,15 +186,9 @@ export function placeLabels(
   return labels.map((label) => {
     const w = labelWidth(label.text);
     const px = label.x * width;
-    const py = label.y * height;
     const align = px - w / 2 < 0 ? 'start' : px + w / 2 > width ? 'end' : 'center';
-    const left = align === 'start' ? 0 : align === 'end' ? width - w : px - w / 2;
     // Each side has a near spot and, on a crowded plot, one a label's height further out.
-    const box = (side: 'above' | 'below', tier = 0): Box => {
-      const gap = LABEL_GAP + tier * (LABEL_H + 2);
-      const t = side === 'above' ? py - gap - LABEL_H : py + gap;
-      return { l: left, r: left + w, t, b: t + LABEL_H };
-    };
+    const box = (side: 'above' | 'below', tier = 0): Box => labelBox(label, { side, align, tier }, width, height);
     const inside = (b: Box) => b.t >= 0 && b.b <= height;
     const clear = (b: Box) => inside(b) && !taken.some((p) => overlaps(p, b));
     const other: 'above' | 'below' = label.prefer === 'above' ? 'below' : 'above';

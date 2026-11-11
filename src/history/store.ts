@@ -35,7 +35,8 @@ export interface GetOptions {
  * statistics columns), or reaches outside what it has (a start earlier than it loaded from, or a
  * past span it loaded being left for a later one). A live range keeps up by itself: new states
  * from `hass` are appended and points older than the range are dropped, so a rolling chart never
- * refetches. Statistics have no live feed, so a live range reloads them once a period, on a timer.
+ * refetches. Statistics have no live feed, so a live range reloads them once a period, on a timer,
+ * and when the card comes back to the page; it keeps drawing the rows it has while they reload.
  * A past range gets neither: nothing new can happen in it.
  */
 export class HistoryStore {
@@ -52,6 +53,8 @@ export class HistoryStore {
   private generation = 0;
   /** When the card left the page; a long absence means missed states, so reload. */
   private pausedAt?: number;
+  /** Live statistics due a reload: the next period has been written. */
+  private stale = false;
 
   constructor(private readonly onChange: () => void) {}
 
@@ -67,9 +70,15 @@ export class HistoryStore {
     const margin = Math.max(60_000, (range.end - range.start) / 100);
     const outside =
       range.start < this.loadedFrom || (live ? this.loadedTo !== Infinity : range.end > this.loadedTo + margin);
-    if (shape !== this.shape || outside || (away && live) || resumedStatistics) {
+    if (shape !== this.shape || outside || (away && live) || resumedStatistics || this.stale) {
+      // Statistics read again for the same span (the card came back to the page, which a masonry
+      // view does whenever it re-lays out its columns, or the next period was written) keep
+      // drawing what they have until the new rows land: blanking to "Loading" would rebuild the
+      // chart and replay its draw-in every time.
+      const refresh = shape === this.shape && !outside && source === 'statistics' && this.status === 'ready';
       this.shape = shape;
-      this.load(hass, series, range, live, query);
+      this.stale = false;
+      this.load(hass, series, range, live, query, refresh);
     }
     if (this.status === 'ready' && source === 'history' && this.loadedTo === Infinity) this.appendLive(hass, series);
     const data = new Map<string, Point[]>();
@@ -92,6 +101,7 @@ export class HistoryStore {
     clearTimeout(this.timer);
     this.timer = undefined;
     this.shape = '';
+    this.stale = false;
     this.loadedFrom = Infinity;
     this.loadedTo = -Infinity;
     this.generation++;
@@ -103,9 +113,10 @@ export class HistoryStore {
     range: Range,
     live: boolean,
     query: StatisticsQuery | undefined,
+    refresh = false,
   ): void {
     const generation = ++this.generation;
-    this.status = 'loading';
+    if (!refresh) this.status = 'loading';
     // Count the span as covered from the moment it is asked for, so redraws while it loads (or
     // after it fails) don't ask again.
     this.loadedFrom = range.start;
@@ -120,22 +131,29 @@ export class HistoryStore {
         this.error = undefined;
         this.seen.clear();
         for (const s of series) this.seen.set(key(s), hass.states[s.entity]);
-        if (query && live) {
-          // Reload when the next statistics period has been written.
-          this.timer = setTimeout(() => {
-            this.shape = '';
-            this.onChange();
-          }, STATISTICS_REFRESH_MS[query.period]);
-        }
+        if (query && live) this.refreshLater(query);
         this.onChange();
       },
       (err: unknown) => {
         if (generation !== this.generation) return;
+        if (refresh) {
+          // A refresh that fails keeps the rows it had, and tries again a period later.
+          if (query && live) this.refreshLater(query);
+          return;
+        }
         this.status = 'error';
         this.error = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err);
         this.onChange();
       },
     );
+  }
+
+  /** Reload live statistics once the next period has been written. */
+  private refreshLater(query: StatisticsQuery): void {
+    this.timer = setTimeout(() => {
+      this.stale = true;
+      this.onChange();
+    }, STATISTICS_REFRESH_MS[query.period]);
   }
 
   private appendLive(hass: HomeAssistant, series: SeriesRequest[]): void {

@@ -9,6 +9,7 @@ import { bubble } from './bubble';
 import { columnChart } from './column';
 import { combined } from './combined';
 import { heatmap } from './heatmap';
+import { spiral } from './spiral';
 import { histogram } from './histogram';
 import { line } from './line';
 import { needle } from './needle';
@@ -19,12 +20,14 @@ import { rings } from './rings';
 import { scatter } from './scatter';
 import { segmented } from './segmented';
 import { tank } from './tank';
+import { battery } from './battery';
 import { thin } from './thin';
 import { waffle } from './waffle';
 import { funnel } from './funnel';
 import { radar } from './radar';
 import { polarArea } from './polar-area';
 import { treemap } from './treemap';
+import { marimekko } from './marimekko';
 import { icicle, sunburst } from './sunburst';
 import { groupedBars } from './grouped-bars';
 import { bullet } from './bullet';
@@ -38,16 +41,21 @@ import { streamgraph } from './streamgraph';
 import { candlestick } from './candlestick';
 import { violin } from './violin';
 import { beeswarm } from './beeswarm';
+import { stripPlot } from './strip-plot';
 import { sankey } from './sankey';
+import { chord } from './chord';
 import { timeline } from './timeline';
 import { climate } from './climate';
 import { windRoseStyle } from './wind-rose';
 import { day_clock } from './day-clock';
+import { cyclePlot } from './cycle-plot';
 import { trend } from './trend';
 
 export interface RenderContext {
   show: ShowOptions;
   hass: HomeAssistant;
+  /** Ask the card to draw again, for a value style that loads something (the gauges' ghost). */
+  requestUpdate?(): void;
 }
 
 /** Where a style sits in the editor's style picker. */
@@ -139,6 +147,7 @@ export const STYLES: Record<StyleName, StyleModule> = {
   thin,
   segmented,
   tank,
+  battery,
   ring,
   needle,
   arc,
@@ -154,11 +163,13 @@ export const STYLES: Record<StyleName, StyleModule> = {
   scatter,
   bubble,
   heatmap,
+  spiral,
   box,
   funnel,
   radar,
   polar_area: polarArea,
   treemap,
+  marimekko,
   sunburst,
   icicle,
   grouped_bars: groupedBars,
@@ -173,10 +184,13 @@ export const STYLES: Record<StyleName, StyleModule> = {
   candlestick,
   violin,
   beeswarm,
+  strip_plot: stripPlot,
   sankey,
+  chord,
   timeline,
   climate,
   wind_rose: windRoseStyle,
   day_clock,
+  cycle_plot: cyclePlot,
   trend,
 };

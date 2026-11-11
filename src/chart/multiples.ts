@@ -98,12 +98,14 @@ export function multiplesGrid(
   // (temperatures on a power scale would be flat lines).
   const units = new Set(frame.series.map((s) => s.entity.unit).filter((u) => u !== ''));
   const share = options.scale === 'shared' || (options.scale === 'auto' && units.size <= 1);
-  const shared = share ? extent(frame.series.map((s) => s.points)) : undefined;
+  // A series' faint line of hidden readings (`hidden`) fits on its axis too.
+  const lists = (s: ChartSeries) => (s.hidden ? [s.points, s.hidden] : [s.points]);
+  const shared = share ? extent(frame.series.flatMap(lists)) : undefined;
   const { show } = ctx.config;
   const grid = `grid-template-columns:repeat(${cols}, minmax(0, 1fr))`;
   return html`<div class="multiples" style=${grid}>
     ${frame.series.map((s) => {
-      const axes = plotAxes(ctx, frame.range, shared ?? extent([s.points]), panel, PANEL_GAPS);
+      const axes = plotAxes(ctx, frame.range, shared ?? extent(lists(s)), panel, PANEL_GAPS);
       const title =
         show.name || show.value
           ? html`<div class="entity panel-title" data-index=${s.index} tabindex="0" aria-label=${s.entity.label}>

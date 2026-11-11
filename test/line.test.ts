@@ -265,6 +265,8 @@ describe('line chart editor', () => {
       source: 'history',
       group_by: 'none',
       aggregate: 'mean',
+      compare: [],
+      compare_style: 'grey',
       curve: 'smooth',
       color_by: 'series',
       labels: false,
@@ -276,6 +278,11 @@ describe('line chart editor', () => {
       extremes_max: false,
       extremes_min: false,
       extremes_average: 'none',
+      anomalies: false,
+      anomalies_window: 'auto',
+      anomalies_sigma: 3,
+      anomalies_color: 'red',
+      anomalies_band: true,
       x_axis: true,
       y_axis: true,
       axis_labels: 'outside',
@@ -285,9 +292,12 @@ describe('line chart editor', () => {
       tooltip: true,
       zoom: false,
       overview: false,
+      forecast_hours: 24,
+      now_marker: 'off',
       zones: false,
       header: 'above',
       compact: false,
+      legend_toggle: false,
       multiples: false,
       multiples_scale: 'auto',
     });
@@ -305,6 +315,19 @@ describe('line chart editor', () => {
     expect(events.at(-1)).toEqual({ ...raw, gridlines: { vertical: true }, axis_labels: 'inside', y_min: 0 });
     const list = ed.shadowRoot!.querySelector('cd-entities-editor') as Stub;
     const fields = (list.chartFields as { fields: { name: string }[] }).fields.map((f) => f.name);
-    expect(fields).toEqual(['series_color', 'curve', 'line_width', 'dash', 'on_top', 'dots']);
+    expect(fields).toEqual([
+      'series_color',
+      'curve',
+      'line_width',
+      'dash',
+      'on_top',
+      'dots',
+      'forecast_entity',
+      'forecast_attribute',
+      'forecast_value_key',
+      'forecast_time_key',
+      'forecast_type',
+      'forecast_multiply',
+    ]);
   });
 });

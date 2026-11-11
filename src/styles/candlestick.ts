@@ -13,11 +13,13 @@ import {
   frameStyles,
   periodNav,
   seriesHeader,
+  seriesTransform,
   validateHistoryOptions,
 } from '../chart/frame';
 import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import { withLegend } from '../chart/legend-toggle';
 import { runPath, runs } from '../chart/paths';
 import { linear } from '../chart/scale';
 import {
@@ -48,6 +50,8 @@ import { AGGREGATES, GROUP_UNITS } from '../history/group';
 import type { Aggregate, GroupUnit } from '../history/group';
 import { parsePeriod, periodRange, stepsFor } from '../history/period';
 import { storeFor } from '../history/store';
+import { convertPoints } from '../units';
+import { chartConditions, conditionStatus, conditionalPoints } from '../history/condition';
 import { boundaries, startOf, zoneFor } from '../history/timezone';
 import type { Zone } from '../history/timezone';
 import type { Point, Range, Source } from '../history/types';
@@ -121,21 +125,31 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const statistics = source === 'statistics' ? candleQuery(unit, zone, ctx.hass.config?.time_zone) : undefined;
   const loaded = store.get(ctx.hass, requests, { start, end: span.end }, source, { live: span.live, statistics });
+  // Series with a `when` (their own or the card's) keep only the readings taken while it held.
+  const conditions = chartConditions(ctx, { start, end: span.end }, span.live);
   let candles: (Candle | null)[] = [];
   const series = ctx.items.map((entity, index): ChartSeries => {
     const own = entity.config as typeof entity.config & { color?: string };
-    const points = loaded.data.get(key(requests[index])) ?? [];
+    const points = conditionalPoints(
+      entity.config,
+      convertPoints(loaded.data.get(key(requests[index])) ?? [], entity.conversion),
+      conditions,
+    );
     let grouped: Point[];
+    // The entity's history transform (running total, rate of change), before the readings are grouped.
+    const shown = seriesTransform(entity, points, range, until, zone, ctx.hass);
     if (index === 0) {
       candles =
-        source === 'statistics' ? statisticsCandles(points, bounds, until) : historyCandles(points, bounds, until);
+        source === 'statistics'
+          ? statisticsCandles(shown.points, bounds, until)
+          : historyCandles(shown.points, bounds, until);
       grouped = candles.map((c, i) => ({ t: bounds[i], end: bounds[i + 1], v: c ? c.close : null }));
     } else {
-      grouped = underValues(points, bounds, aggregate, source, until);
+      grouped = underValues(shown.points, bounds, aggregate, source, until);
     }
     return {
       index,
-      entity,
+      entity: shown.entity,
       points: grouped,
       color: baseColor(own.color ?? (index === 0 ? SERIES_COLORS[0] : 'grey')),
       curve: 'smooth',
@@ -143,7 +157,7 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
     };
   });
   return {
-    status: loaded.status,
+    status: conditionStatus(loaded.status, conditions),
     error: loaded.error,
     range,
     period,
@@ -362,7 +376,8 @@ export const candlestick: ChartStyleModule = {
     stopHover(host);
   },
   render(ctx) {
-    const frame = candleFrame(ctx);
+    // The candles' own entity is always drawn: hiding it would leave nothing to read the rest against.
+    const frame = withLegend(candleFrame(ctx), ctx, (s) => s.index === 0);
     const nav = periodNav(frame, ctx);
     const names = seriesHeader(frame, ctx);
     const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
