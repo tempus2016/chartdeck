@@ -14,6 +14,7 @@ import { STYLES } from '../src/styles/index';
 import type { ChartStyleModule } from '../src/styles/index';
 import type { CardConfig, HomeAssistant } from '../src/types';
 import { makeHass } from './helpers/hass';
+import { unfold } from './helpers/schema';
 
 class Stub extends HTMLElement {
   [key: string]: unknown;
@@ -334,9 +335,9 @@ describe('compare editor', () => {
     document.body.appendChild(ed);
     await ed.updateComplete;
     let form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
-    const compare = (form.schema as { name: string; selector?: { select?: { options: { label: string }[] } } }[]).find(
-      (f) => f.name === 'compare',
-    )!;
+    const compare = unfold<{ name: string; selector?: { select?: { options: { label: string }[] } } }>(
+      form.schema,
+    ).find((f) => f.name === 'compare')!;
     expect(compare.selector!.select!.options.map((o) => o.label)).toEqual([
       'Yesterday',
       'Last week',

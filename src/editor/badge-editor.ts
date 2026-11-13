@@ -9,6 +9,7 @@ import { setOption } from './edit';
 import { loadHaComponents } from './chartdeck-card-editor';
 import { applyFormData, formData } from './schemas';
 import type { FieldBinding } from './schemas';
+import { computeHelper } from './helper';
 
 /*
  * The badge's visual editor: entity and look first, then what it reads and how it is labelled,
@@ -156,6 +157,7 @@ export class ChartdeckBadgeEditor extends LitElement {
       .data=${formData(this._config!, fields)}
       .schema=${schema}
       .computeLabel=${this._label}
+      .computeHelper=${(s: { name: string }) => computeHelper(this.hass, `editor_badge_${s.name}`)}
       @value-changed=${(ev: CustomEvent) => this._formChanged(fields, ev)}
     ></ha-form>`;
   }

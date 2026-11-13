@@ -156,13 +156,13 @@ describe('chartdeck-card-editor', () => {
       editor.shadowRoot!.querySelector(`button[data-style="${name}"]`) as HTMLButtonElement;
     const { STYLE_NAMES } = await import('../src/types');
     expect(editor.shadowRoot!.querySelectorAll('button[data-style]')).toHaveLength(STYLE_NAMES.length);
-    expect(button('tank').getAttribute('aria-pressed')).toBe('true');
-    expect(button('bar').getAttribute('aria-pressed')).toBe('false');
+    expect(button('tank').getAttribute('aria-checked')).toBe('true');
+    expect(button('bar').getAttribute('aria-checked')).toBe('false');
     expect(button('ring').querySelector('svg')).not.toBeNull();
     button('ring').click();
     expect(events.at(-1)!.style).toBe('ring');
     await editor.updateComplete;
-    expect(button('ring').getAttribute('aria-pressed')).toBe('true');
+    expect(button('ring').getAttribute('aria-checked')).toBe('true');
     button('bar').click();
     expect(events.at(-1)).not.toHaveProperty('style');
     expect(events.at(-1)!.future_option).toEqual({ x: 1 });
@@ -474,7 +474,9 @@ describe('editor: entities', () => {
     await settle(editor);
     const r = rows(editor);
     expect(r).toHaveLength(2);
-    expect(r[0].querySelector('.label')!.textContent).toBe('Battery A');
+    // A found entity is named by its picker alone; a missing one gets the line saying so.
+    expect(r[0].querySelector('.label')).toBeNull();
+    expect((r[0].querySelector('ha-icon-button.remove') as StubElement).label).toBe('Remove entity: Battery A');
     expect(r[1].querySelector('.label')!.textContent).toBe('sensor.b (not found)');
     expect((r[1].querySelector('ha-entity-picker') as StubElement).value).toBe('sensor.b');
     (r[1].querySelector('ha-icon-button.remove') as HTMLElement).click();

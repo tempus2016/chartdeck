@@ -3,6 +3,7 @@ import '../src/chartdeck-card';
 import { startOf } from '../src/history/timezone';
 import type { CardConfig, HomeAssistant } from '../src/types';
 import { makeHass } from './helpers/hass';
+import { unfold } from './helpers/schema';
 
 class Stub extends HTMLElement {
   [key: string]: unknown;
@@ -168,9 +169,7 @@ describe('period editor', () => {
     document.body.appendChild(ed);
     await ed.updateComplete;
     const form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
-    const names = (form.schema as { name: string; schema?: { name: string }[] }[]).flatMap((f) =>
-      f.schema ? f.schema.map((x) => x.name) : [f.name],
-    );
+    const names = unfold(form.schema).flatMap((f) => (f.schema ? f.schema.map((x) => x.name) : [f.name]));
     return { ed, form, raw, events, names };
   }
 

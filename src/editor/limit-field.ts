@@ -36,6 +36,10 @@ export class CdLimitField extends LitElement {
       gap: 8px;
       align-items: start;
     }
+    /* With no number or entity to enter, the choice takes the whole line. */
+    :host([mode='default']) {
+      grid-template-columns: minmax(0, 1fr);
+    }
   `;
 
   declare hass?: HomeAssistant;
@@ -49,6 +53,11 @@ export class CdLimitField extends LitElement {
 
   protected willUpdate(changed: PropertyValues): void {
     if (changed.has('value') && limitMode(this.value) !== 'default') this._mode = undefined;
+  }
+
+  protected updated(): void {
+    // The host's grid gives the mode the whole line when there's nothing else to enter.
+    this.setAttribute('mode', this._currentMode);
   }
 
   /** The mode dropdown's selector, rebuilt only when its labels change. */
