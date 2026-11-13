@@ -18,12 +18,13 @@ import type { FieldBinding } from './schemas';
 import './bands-editor';
 import './limit-field';
 import { LanguageController } from '../language-controller';
+import { computeHelper } from './helper';
+import { ICON_DELETE } from './icons';
 
 type Item = string | EntityConfig;
 
 const ICON_UP = 'M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z';
 const ICON_DOWN = 'M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z';
-const ICON_DELETE = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
 const ICON_CHEVRON = 'M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z';
 const LIMITS = ['min', 'max', 'target'] as const;
 
@@ -52,12 +53,15 @@ export class CdEntitiesEditor extends LitElement {
     chartFields: { attribute: false },
     transformFields: { attribute: false },
     conditionFields: { attribute: false },
+    numeric: { attribute: false },
     _expanded: { state: true },
   };
 
   static styles = css`
     :host {
       display: block;
+      /* Rows rearrange for the editor's own width (a phone, or a narrow dialog). */
+      container-type: inline-size;
     }
     .entity {
       border-bottom: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));
@@ -66,23 +70,36 @@ export class CdEntitiesEditor extends LitElement {
     .label {
       display: block;
       font-size: 0.875em;
-      color: var(--secondary-text-color);
       margin-bottom: 4px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-    .label.missing {
       color: var(--error-color, #db4437);
+    }
+    .warning {
+      display: block;
+      margin-top: 8px;
     }
     .header {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
+      justify-content: flex-end;
       gap: 4px;
     }
     .header ha-entity-picker {
-      flex: 1;
+      flex: 1 1 200px;
       min-width: 0;
+    }
+    /* Narrow: the picker takes the whole line and the row's buttons go under it. */
+    @container (max-width: 420px) {
+      .header ha-entity-picker {
+        flex-basis: 100%;
+      }
+    }
+    .sub-heading {
+      margin: 8px 0 4px;
+      font-weight: 500;
     }
     .expand {
       transition: transform 0.2s ease;
@@ -99,8 +116,9 @@ export class CdEntitiesEditor extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding: 8px 0 8px 12px;
-      border-left: 2px solid var(--divider-color, rgba(127, 127, 127, 0.3));
+      padding-block: 8px;
+      padding-inline-start: 12px;
+      border-inline-start: 2px solid var(--divider-color, rgba(127, 127, 127, 0.3));
       margin-top: 8px;
     }
     .add {
@@ -119,6 +137,8 @@ export class CdEntitiesEditor extends LitElement {
   declare transformFields?: EntityFields;
   /** History charts: when each series is shown (its `when`), in a form of its own. */
   declare conditionFields?: EntityFields;
+  /** The style draws each entity's number (bars, gauges), so a state that isn't one is flagged. */
+  declare numeric?: boolean;
   /** Indexes of rows whose overrides are open. */
   declare _expanded: Set<number>;
 
@@ -132,6 +152,9 @@ export class CdEntitiesEditor extends LitElement {
   }
 
   private _computeLabel = (schema: { name: string }): string => this._t(`editor_${schema.name}`);
+
+  private _computeHelper = (schema: { name: string }): string | undefined =>
+    computeHelper(this.hass, `editor_${schema.name}`);
 
   /** Wrap the list so the shared config helpers can edit it. */
   private get _asConfig(): CardConfig {
@@ -196,6 +219,17 @@ export class CdEntitiesEditor extends LitElement {
     return { text: this._t('editor_not_found', { entity: id }), missing: true };
   }
 
+  /** On a style that draws numbers, a state that isn't one (and isn't just offline) can't be drawn. */
+  private _notNumber(own: EntityConfig, name: string) {
+    if (!this.numeric || own.attribute) return nothing;
+    const state = this.hass?.states[own.entity]?.state;
+    if (state === undefined || ['unavailable', 'unknown', ''].includes(state)) return nothing;
+    if (Number.isFinite(Number(state))) return nothing;
+    return html`<ha-alert class="warning" data-warning="not-number" alert-type="warning"
+      >${this._t('editor_warn_not_number', { entity: name, state })}</ha-alert
+    >`;
+  }
+
   private _form(section: string, index: number, own: EntityConfig, schema: unknown[], fields: FieldBinding[]) {
     return html`<ha-form
       data-section=${section}
@@ -203,6 +237,7 @@ export class CdEntitiesEditor extends LitElement {
       .data=${formData(own as unknown as CardConfig, fields)}
       .schema=${schema}
       .computeLabel=${this._computeLabel}
+      .computeHelper=${this._computeHelper}
       @value-changed=${(ev: CustomEvent) => this._formChanged(index, fields, ev)}
     ></ha-form>`;
   }
@@ -233,7 +268,10 @@ export class CdEntitiesEditor extends LitElement {
       }
       ${
         this.conditionFields
-          ? this._form('entity-condition', index, own, this.conditionFields.schema, this.conditionFields.fields)
+          ? html`<div role="group" aria-labelledby="when-${index}">
+              <div class="sub-heading" id="when-${index}">${this._t('editor_when_heading')}</div>
+              ${this._form('entity-condition', index, own, this.conditionFields.schema, this.conditionFields.fields)}
+            </div>`
           : nothing
       }
       <ha-icon-picker
@@ -268,8 +306,10 @@ export class CdEntitiesEditor extends LitElement {
     const own: EntityConfig = typeof item === 'string' ? { entity: item } : item;
     const label = this._rowLabel(id);
     const open = this._expanded.has(index);
+    // Each button names its row, so a screen reader hears whose it is.
+    const named = (key: string) => this._t('editor_row_action', { action: this._t(key), entity: label.text });
     return html`<div class="entity">
-      <span class="label ${label.missing ? 'missing' : ''}">${label.text}</span>
+      ${label.missing ? html`<span class="label missing">${label.text}</span>` : nothing}
       <div class="header">
         <ha-entity-picker
           .hass=${this.hass}
@@ -285,32 +325,32 @@ export class CdEntitiesEditor extends LitElement {
         <ha-icon-button
           class="up"
           .path=${ICON_UP}
-          .label=${this._t('editor_move_up')}
+          .label=${named('editor_move_up')}
           .disabled=${index === 0}
           @click=${() => this._move(index, index - 1)}
         ></ha-icon-button>
         <ha-icon-button
           class="down"
           .path=${ICON_DOWN}
-          .label=${this._t('editor_move_down')}
+          .label=${named('editor_move_down')}
           .disabled=${index === count - 1}
           @click=${() => this._move(index, index + 1)}
         ></ha-icon-button>
         <ha-icon-button
           class="remove"
           .path=${ICON_DELETE}
-          .label=${this._t('editor_remove_entity')}
+          .label=${named('editor_remove_entity')}
           @click=${() => this._remove(index)}
         ></ha-icon-button>
         <ha-icon-button
           class="expand"
           .path=${ICON_CHEVRON}
-          .label=${this._t(open ? 'editor_hide_options' : 'editor_show_options')}
+          .label=${named(open ? 'editor_hide_options' : 'editor_show_options')}
           aria-expanded=${open ? 'true' : 'false'}
           @click=${() => this._toggle(index)}
         ></ha-icon-button>
       </div>
-      ${open ? this._renderOverrides(own, index) : nothing}
+      ${this._notNumber(own, label.text)} ${open ? this._renderOverrides(own, index) : nothing}
     </div>`;
   }
 

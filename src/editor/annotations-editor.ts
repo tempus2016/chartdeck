@@ -7,8 +7,8 @@ import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { Band, CardConfig, HomeAssistant } from '../types';
 import './bands-editor';
-
-const DELETE_ICON = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
+import { ICON_DELETE } from './icons';
+import { computeHelper } from './helper';
 
 /** The fields each kind of annotation has, after its kind; label and colour come last. */
 const FIELDS: Record<AnnotationType, string[]> = {
@@ -195,6 +195,7 @@ export function annotationsEditor(ctx: ChartEditorContext): TemplateResult {
                 .data=${annotationData(a)}
                 .schema=${annotationSchema(ANNOTATION_TYPES.includes(a.type) ? a.type : 'line', ctx.hass, entities)}
                 .computeLabel=${(s: { name: string }) => t(`editor_annotation_${s.name}`)}
+                .computeHelper=${(s: { name: string }) => computeHelper(ctx.hass, `editor_annotation_${s.name}`)}
                 @value-changed=${(ev: CustomEvent) => {
                   ev.stopPropagation();
                   replace(i, annotationFromData((ev.detail?.value ?? {}) as Record<string, unknown>, a));
@@ -218,7 +219,7 @@ export function annotationsEditor(ctx: ChartEditorContext): TemplateResult {
             </div>
             <ha-icon-button
               class="remove"
-              .path=${DELETE_ICON}
+              .path=${ICON_DELETE}
               .label=${t('editor_annotation_remove')}
               @click=${() => replace(i)}
             ></ha-icon-button>

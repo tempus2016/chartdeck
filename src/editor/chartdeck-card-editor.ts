@@ -38,6 +38,9 @@ import { GROUP_LEVELS } from '../chart/hierarchy';
 import { LanguageController } from '../language-controller';
 import { withCumulativeFields } from '../history/transform-cumulative';
 import { withDerivativeFields } from '../history/transform-derivative';
+import { computeHelper } from './helper';
+import { presetFor } from './bands-editor';
+import { limitMode } from './limit-field';
 
 /** Styles whose `group_by` groups entities by place rather than readings by time. */
 const HIERARCHY_STYLES: StyleName[] = ['treemap', 'sunburst', 'icicle', 'radar', 'marimekko'];
@@ -75,6 +78,8 @@ export class ChartdeckCardEditor extends LitElement {
   static properties = {
     hass: { attribute: false },
     _config: { state: true },
+    _notice: { state: true },
+    _focusStyle: { state: true },
   };
 
   static styles = css`
@@ -121,13 +126,27 @@ export class ChartdeckCardEditor extends LitElement {
       flex-direction: column;
       gap: 8px;
     }
+    .style-purpose {
+      margin: 0 0 12px;
+      color: var(--secondary-text-color);
+      font-size: 0.875em;
+    }
+    .style-purpose strong {
+      color: var(--primary-text-color);
+      font-weight: 500;
+    }
+    .notice,
+    .warning {
+      display: block;
+      margin: 0 0 12px;
+    }
     .style-group {
-      margin: 12px 0 6px;
+      margin: 16px 0 6px;
       font-size: 0.875em;
       font-weight: 500;
       color: var(--secondary-text-color);
     }
-    .style-group:first-child {
+    .style-groups > [role='group']:first-child .style-group {
       margin-top: 0;
     }
     .styles {
@@ -153,18 +172,28 @@ export class ChartdeckCardEditor extends LitElement {
       outline: 2px solid var(--primary-color, #03a9f4);
       outline-offset: 2px;
     }
-    .style[aria-pressed='true'] {
+    .style[aria-checked='true'] {
       outline: 2px solid var(--primary-color, #03a9f4);
       outline-offset: -1px;
       border-color: transparent;
+    }
+    .style[aria-checked='true']:focus-visible {
+      outline-offset: 2px;
     }
   `;
 
   declare hass?: HomeAssistant;
   declare _config?: CardConfig;
+  /** What the last style change did on its own (a grouping dropped, a sort set), until the next. */
+  declare _notice?: string;
+  /** The style the arrow keys have moved to in the picker (the selected one until they move). */
+  declare _focusStyle?: StyleName;
+  /** A card with no entities opens on the Entities section; decided once, from the first config. */
+  private _openEntities?: boolean;
 
   /** Store the raw config as written, so keys the editor doesn't show are never lost. */
   setConfig(config: CardConfig): void {
+    if (this._openEntities === undefined) this._openEntities = !config?.entities?.length;
     this._config = config;
   }
 
@@ -176,6 +205,9 @@ export class ChartdeckCardEditor extends LitElement {
   private _label = (key: string): string => localize(this.hass, key);
 
   private _computeLabel = (schema: { name: string }): string => localize(this.hass, `editor_${schema.name}`);
+
+  private _computeHelper = (schema: { name: string }): string | undefined =>
+    computeHelper(this.hass, `editor_${schema.name}`);
 
   private _commit(config: CardConfig): void {
     this._config = config;
@@ -196,14 +228,62 @@ export class ChartdeckCardEditor extends LitElement {
       .data=${formData(this._config!, fields)}
       .schema=${schema}
       .computeLabel=${this._computeLabel}
+      .computeHelper=${this._computeHelper}
       @value-changed=${(ev: CustomEvent) => this._formChanged(fields, ev)}
     ></ha-form>`;
   }
 
-  private _panel(key: string, content: unknown): TemplateResult {
-    return html`<ha-expansion-panel .header=${this._label(`editor_section_${key}`)} outlined>
+  private _panel(key: string, content: unknown, summary?: string): TemplateResult {
+    return html`<ha-expansion-panel
+      data-panel=${key}
+      .header=${this._label(`editor_section_${key}`)}
+      .secondary=${summary ?? ''}
+      .expanded=${key === 'entities' && this._openEntities === true}
+      outlined
+    >
       <div class="panel section-${key}">${content}</div>
     </ha-expansion-panel>`;
+  }
+
+  /** One line under a section's name saying what it's set to, so a closed section still tells. */
+  private _summary(key: 'entities' | 'style' | 'limits' | 'colours'): string | undefined {
+    const config = this._config;
+    if (!config) return undefined;
+    switch (key) {
+      case 'entities': {
+        const count = config.entities?.length ?? 0;
+        const rules = config.include ? ` · ${this._label('editor_summary_matching')}` : '';
+        if (count === 0 && !rules) return this._label('editor_summary_no_entities');
+        const text =
+          count === 1
+            ? this._label('editor_summary_entity_one')
+            : localize(this.hass, 'editor_summary_entities', { count });
+        return `${text}${rules}`;
+      }
+      case 'style':
+        return this._label(`editor_style_${config.style ?? 'bar'}`);
+      case 'limits': {
+        const show = (key: 'min' | 'max' | 'target', fallback: string) => {
+          const value = config[key] as Limit | undefined;
+          return limitMode(value) === 'default' ? fallback : String(value);
+        };
+        const range = localize(this.hass, 'editor_summary_limits', { min: show('min', '0'), max: show('max', '100') });
+        const target = show('target', '');
+        return target ? `${range} · ${localize(this.hass, 'editor_summary_target', { target })}` : range;
+      }
+      case 'colours': {
+        const bands = config.severity as Band[] | undefined;
+        const preset = presetFor(bands);
+        if (preset === 'none') return this._label('editor_summary_no_bands');
+        if (preset === 'custom') {
+          const count = bands?.length ?? 0;
+          return count === 1
+            ? this._label('editor_summary_band_one')
+            : localize(this.hass, 'editor_summary_bands', { count });
+        }
+        return this._label(`editor_preset_${preset}`);
+      }
+    }
   }
 
   /** Commit a sub-editor's `value-changed` to `path`, keeping it from reaching HA's dialog. */
@@ -240,6 +320,7 @@ export class ChartdeckCardEditor extends LitElement {
         .chartFields=${this._chartFields()}
         .transformFields=${this._transformFields()}
         .conditionFields=${conditionFields(this._config?.style)}
+        .numeric=${!isChart(STYLES[(this._config?.style ?? 'bar') as StyleName] ?? STYLES.bar)}
         @value-changed=${(ev: CustomEvent) => this._subChanged(['entities'], ev)}
       ></cd-entities-editor>
       ${this._ruleForm('include')} ${this._ruleForm('exclude')}`;
@@ -271,9 +352,11 @@ export class ChartdeckCardEditor extends LitElement {
     if (next !== this._config) this._commit(next);
   }
 
+  /** Include and exclude carry the same pickers, so each sits in a group named by its heading. */
   private _ruleForm(field: 'include' | 'exclude'): TemplateResult {
-    return html`<div class="rules-heading">${this._label(`editor_${field}_heading`)}</div>
-      <p class="rules-help">${this._label(`editor_${field}_help`)}</p>
+    return html`<div role="group" aria-labelledby="rules-${field}" aria-describedby="rules-${field}-help">
+      <div class="rules-heading" id="rules-${field}">${this._label(`editor_${field}_heading`)}</div>
+      <p class="rules-help" id="rules-${field}-help">${this._label(`editor_${field}_help`)}</p>
       <ha-form
         data-section=${field}
         .hass=${this.hass}
@@ -281,7 +364,8 @@ export class ChartdeckCardEditor extends LitElement {
         .schema=${ruleSchema(field, this.hass)}
         .computeLabel=${this._computeRuleLabel}
         @value-changed=${(ev: CustomEvent) => this._ruleChanged(field, ev)}
-      ></ha-form>`;
+      ></ha-form>
+    </div>`;
   }
 
   private _computeRuleLabel = (schema: { name: string }): string =>
@@ -294,7 +378,8 @@ export class ChartdeckCardEditor extends LitElement {
       ['max', '100'],
       ['target', this._label('editor_none')],
     ];
-    return fields.map(
+    return html`${this._limitsWarning()}
+    ${fields.map(
       ([key, defaultLabel]) =>
         html`<cd-limit-field
           data-limit=${key}
@@ -304,7 +389,22 @@ export class ChartdeckCardEditor extends LitElement {
           .defaultLabel=${defaultLabel}
           @value-changed=${(ev: CustomEvent) => this._subChanged([key], ev)}
         ></cd-limit-field>`,
-    );
+    )}`;
+  }
+
+  /** A minimum at or above the maximum leaves nothing to fill: say so where it's set. */
+  private _limitsWarning(): TemplateResult | typeof nothing {
+    const number = (key: 'min' | 'max', fallback: number) => {
+      const value = this._config?.[key] as Limit | undefined;
+      const mode = limitMode(value);
+      return mode === 'default' ? fallback : mode === 'number' ? Number(value) : undefined;
+    };
+    const min = number('min', 0);
+    const max = number('max', 100);
+    if (min === undefined || max === undefined || min < max) return nothing;
+    return html`<ha-alert class="warning" data-warning="limits" alert-type="warning"
+      >${localize(this.hass, 'editor_warn_min_max', { min, max })}</ha-alert
+    >`;
   }
 
   /** The icon-colour switch, then the severity bands. */
@@ -327,52 +427,117 @@ export class ChartdeckCardEditor extends LitElement {
 
   private _selectStyle(style: StyleName): void {
     if (!this._config) return;
+    if (style === (this._config.style ?? 'bar')) return;
     let next = setOption(this._config, ['style'], style === 'bar' ? undefined : style);
+    const notices: string[] = [];
+    const name = this._label(`editor_style_${style}`);
     // `group_by` means places (floor, area…) on the hierarchy charts and times (hour, day…) on the
-    // history charts: one the new style can't read is dropped rather than left to fail.
+    // history charts: one the new style can't read is dropped rather than left to fail, and said.
     const levels = ([] as unknown[]).concat(next.group_by ?? []);
     const places = levels.length > 0 && levels.every((l) => (GROUP_LEVELS as readonly unknown[]).includes(l));
-    if (levels.length > 0 && places !== HIERARCHY_STYLES.includes(style))
+    if (levels.length > 0 && places !== HIERARCHY_STYLES.includes(style)) {
+      const by = levels.map((l) => this._label(`editor_group_by_${String(l)}`)).join(', ');
+      notices.push(localize(this.hass, 'editor_notice_group_by', { by, style: name }));
       next = setOption(next, ['group_by'], undefined);
+    }
     // The battery grid reads best with the emptiest first, so picking it sorts lowest first
     // unless a sort is already set (YAML without one keeps the order listed, like every style).
-    if (style === 'battery' && next.sort === undefined) next = setOption(next, ['sort'], 'ascending');
+    if (style === 'battery' && next.sort === undefined) {
+      notices.push(this._label('editor_notice_sorted'));
+      next = setOption(next, ['sort'], 'ascending');
+    }
+    this._notice = notices.length ? notices.join(' ') : undefined;
+    this._focusStyle = style;
     this._commit(next);
   }
 
-  /** The style picker, one group of thumbnails per kind of style (bars, gauges, charts…). */
+  /** The picker's styles in on-screen order, which the arrow keys walk. */
+  private _styleOrder(): StyleName[] {
+    return STYLE_GROUPS.flatMap((group) => STYLE_NAMES.filter((name) => STYLES[name].group === group));
+  }
+
+  /** Arrow keys move between styles (one Tab stop for the whole picker); Enter or Space picks. */
+  private _styleKey(ev: KeyboardEvent): void {
+    const order = this._styleOrder();
+    const from = order.indexOf((ev.target as HTMLElement).dataset?.style as StyleName);
+    if (from < 0) return;
+    const rtl = getComputedStyle(this).direction === 'rtl';
+    const step: Record<string, number> = {
+      ArrowDown: 1,
+      ArrowUp: -1,
+      ArrowRight: rtl ? -1 : 1,
+      ArrowLeft: rtl ? 1 : -1,
+    };
+    let to: number;
+    if (ev.key in step) to = (from + step[ev.key] + order.length) % order.length;
+    else if (ev.key === 'Home') to = 0;
+    else if (ev.key === 'End') to = order.length - 1;
+    else return;
+    ev.preventDefault();
+    this._focusStyle = order[to];
+    void this.updateComplete.then(() =>
+      this.shadowRoot?.querySelector<HTMLElement>(`.style[data-style="${order[to]}"]`)?.focus(),
+    );
+  }
+
+  /**
+   * The style picker: what the chosen style is for, then one group of thumbnails per kind of style
+   * (bars, gauges, charts…) as a single radio group, each thumbnail saying what it's for on hover.
+   */
   protected renderStyle(): TemplateResult {
-    const current = this._config?.style ?? 'bar';
-    return html`${STYLE_GROUPS.map((group) => {
-      const names = STYLE_NAMES.filter((name) => STYLES[name].group === group);
-      if (!names.length) return nothing;
-      return html`<div class="style-group">${this._label(`editor_group_${group}`)}</div>
-        <div class="styles" data-group=${group}>
-          ${names.map((style) => {
-            const module = STYLES[style];
-            const picture = isChart(module)
-              ? html`<svg class="thumbnail" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">
-                  ${module.thumbnail()}
-                </svg>`
-              : thumbnail(style);
-            return html`<button
-              type="button"
-              class="style"
-              data-style=${style}
-              aria-pressed=${current === style ? 'true' : 'false'}
-              @click=${() => this._selectStyle(style)}
-            >
-              ${picture}<span>${this._label(`editor_style_${style}`)}</span>
-            </button>`;
-          })}
-        </div>`;
-    })}
-    ${
-      GAUGE_STYLES.includes(current as StyleName)
-        ? html`<p class="gauge-help">${this._label('editor_gauge_help')}</p>
-            ${this._form('gauge', gaugeSchema(this.hass, current as StyleName, this._config?.center), GAUGE_FIELDS)}`
-        : nothing
-    }`;
+    const current = (this._config?.style ?? 'bar') as StyleName;
+    const order = this._styleOrder();
+    const focusable = this._focusStyle && order.includes(this._focusStyle) ? this._focusStyle : current;
+    return html`<p class="style-purpose" aria-live="polite">
+        <strong>${this._label(`editor_style_${current}`)}</strong> · ${this._label(`editor_style_purpose_${current}`)}
+      </p>
+      ${
+        this._notice ? html`<ha-alert class="notice" data-notice alert-type="info">${this._notice}</ha-alert>` : nothing
+      }
+      <div
+        class="style-groups"
+        role="radiogroup"
+        aria-label=${this._label('editor_section_style')}
+        @keydown=${this._styleKey}
+      >
+        ${STYLE_GROUPS.map((group) => {
+          const names = STYLE_NAMES.filter((name) => STYLES[name].group === group);
+          if (!names.length) return nothing;
+          return html`<div role="group" aria-labelledby="style-group-${group}">
+            <div class="style-group" id="style-group-${group}">${this._label(`editor_group_${group}`)}</div>
+            <div class="styles" data-group=${group}>
+              ${names.map((style) => {
+                const module = STYLES[style];
+                const picture = isChart(module)
+                  ? html`<svg class="thumbnail" viewBox="0 0 64 40" width="64" height="40" aria-hidden="true">
+                      ${module.thumbnail()}
+                    </svg>`
+                  : thumbnail(style);
+                const purpose = this._label(`editor_style_purpose_${style}`);
+                return html`<button
+                  type="button"
+                  class="style"
+                  role="radio"
+                  data-style=${style}
+                  title=${purpose}
+                  aria-description=${purpose}
+                  aria-checked=${current === style ? 'true' : 'false'}
+                  tabindex=${focusable === style ? '0' : '-1'}
+                  @click=${() => this._selectStyle(style)}
+                >
+                  ${picture}<span>${this._label(`editor_style_${style}`)}</span>
+                </button>`;
+              })}
+            </div>
+          </div>`;
+        })}
+      </div>
+      ${
+        GAUGE_STYLES.includes(current as StyleName)
+          ? html`<p class="gauge-help">${this._label('editor_gauge_help')}</p>
+              ${this._form('gauge', gaugeSchema(this.hass, current as StyleName, this._config?.center), GAUGE_FIELDS)}`
+          : nothing
+      }`;
   }
 
   /** The current chart style's own options, when it has any. */
@@ -384,7 +549,15 @@ export class ChartdeckCardEditor extends LitElement {
     return this._panel(
       'chart',
       html`${module.editor({ hass: this.hass, config: this._config, commit: (config) => this._commit(config) })}
-      ${when ? this._form('card-condition', when.schema, when.fields) : nothing}`,
+      ${
+        when
+          ? html`<div role="group" aria-labelledby="when-card" aria-describedby="when-card-help">
+              <div class="rules-heading" id="when-card">${this._label('editor_when_card_heading')}</div>
+              <p class="rules-help" id="when-card-help">${this._label('editor_when_card_help')}</p>
+              ${this._form('card-condition', when.schema, when.fields)}
+            </div>`
+          : nothing
+      }`,
     );
   }
 
@@ -432,10 +605,11 @@ export class ChartdeckCardEditor extends LitElement {
   render() {
     if (!this._config) return nothing;
     return html`<div class="title">${this._form('title', titleSchema(), TITLE_FIELDS)}</div>
-      ${this._panel('entities', this.renderEntities())} ${this._panel('style', this.renderStyle())}
-      ${this.renderChart()} ${this._panel('limits', this.renderLimits())}
-      ${this._panel('colours', this.renderColours())} ${this._panel('display', this.renderDisplay())}
-      ${this._panel('actions', this.renderActions())}`;
+      ${this._panel('entities', this.renderEntities(), this._summary('entities'))}
+      ${this._panel('style', this.renderStyle(), this._summary('style'))} ${this.renderChart()}
+      ${this._panel('limits', this.renderLimits(), this._summary('limits'))}
+      ${this._panel('colours', this.renderColours(), this._summary('colours'))}
+      ${this._panel('display', this.renderDisplay())} ${this._panel('actions', this.renderActions())}`;
   }
 }
 
