@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CardConfig, HomeAssistant } from '../src/types';
 import { makeHass } from './helpers/hass';
+import { unfold } from './helpers/schema';
 
 class Stub extends HTMLElement {
   [key: string]: unknown;
@@ -196,7 +197,7 @@ describe('pie editor', () => {
       schema: { name: string; schema?: { name: string }[] }[];
       data: Record<string, unknown>;
     };
-    const names = form.schema.flatMap((f) => (f.schema ? f.schema.map((s) => s.name) : [f.name]));
+    const names = unfold(form.schema).flatMap((f) => (f.schema ? f.schema.map((s) => s.name) : [f.name]));
     expect(names).toEqual([
       'source',
       'shape',

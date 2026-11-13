@@ -6,6 +6,7 @@ import type { ChartEditorContext, EntityFields } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { HISTORY_FIELDS, cachedSchema, chartForm, choice, historySchema, historyVariant } from './chart-editors';
 import type { FieldBinding } from './schemas';
+import { ICON_DELETE } from './icons';
 
 /** A state timeline reads states, which statistics don't keep, and draws them ungrouped. */
 const NOT_FOR_TIMELINE = new Set(['source', 'group_by', 'aggregate']);
@@ -28,7 +29,6 @@ function timelineHistorySchema(hass: HomeAssistant | undefined, config: CardConf
   );
 }
 
-const DELETE_ICON = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
 const TEXT = { text: {} };
 
 function colorsOf(config: CardConfig): [string, string][] {
@@ -101,8 +101,8 @@ function stateColorsEditor(ctx: ChartEditorContext): TemplateResult {
         color: var(--primary-color);
         background: none;
         border: 1px solid color-mix(in srgb, var(--primary-color) 40%, transparent);
-        border-radius: 16px;
-        padding: 6px 14px;
+        border-radius: 8px;
+        padding: 6px 12px;
         cursor: pointer;
       }
     </style>
@@ -130,7 +130,7 @@ function stateColorsEditor(ctx: ChartEditorContext): TemplateResult {
           ></ha-selector>
           <ha-icon-button
             class="sc-remove"
-            .path=${DELETE_ICON}
+            .path=${ICON_DELETE}
             .label=${t('editor_state_colors_remove')}
             @click=${() => set(entries.filter((_, j) => j !== i))}
           ></ha-icon-button>

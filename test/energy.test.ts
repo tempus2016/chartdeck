@@ -21,6 +21,7 @@ import { resolveEntities } from '../src/resolve';
 import { normalizeConfig } from '../src/config';
 import type { CardConfig, HomeAssistant } from '../src/types';
 import { makeHass } from './helpers/hass';
+import { unfold } from './helpers/schema';
 
 class Stub extends HTMLElement {
   [key: string]: unknown;
@@ -701,17 +702,17 @@ describe('energy in the editor', () => {
   it('offers the Energy dashboard as a source on line, column and area only', async () => {
     for (const style of ['line', 'column', 'area']) {
       const { form: f } = await form({ style } as Partial<CardConfig>);
-      expect(sources(f.schema as unknown[]), style).toEqual(['history', 'statistics', 'energy']);
-      expect(names(f.schema as unknown[]), style).not.toContain('energy_flows');
+      expect(sources(unfold(f.schema)), style).toEqual(['history', 'statistics', 'energy']);
+      expect(names(unfold(f.schema)), style).not.toContain('energy_flows');
     }
     const { form: f } = await form({ style: 'streamgraph' } as Partial<CardConfig>);
-    expect(sources(f.schema as unknown[])).toEqual(['history', 'statistics']);
+    expect(sources(unfold(f.schema))).toEqual(['history', 'statistics']);
   });
 
   it('offers the split on column and area, not on a line', async () => {
     for (const style of ['column', 'area']) {
       const { form: f } = await form({ style, source: 'energy' } as Partial<CardConfig>);
-      expect(names(f.schema as unknown[]), style).toContain('energy_split');
+      expect(names(unfold(f.schema)), style).toContain('energy_split');
       expect((f.data as Record<string, unknown>).energy_split, style).toBe(true);
     }
     const { events, form: f } = await form({ style: 'column', source: 'energy' } as Partial<CardConfig>);
@@ -720,14 +721,14 @@ describe('energy in the editor', () => {
     );
     expect(events.at(-1)!.energy_split).toBe(false);
     const { form: line } = await form({ style: 'line', source: 'energy' } as Partial<CardConfig>);
-    expect(names(line.schema as unknown[])).not.toContain('energy_split');
+    expect(names(unfold(line.schema))).not.toContain('energy_split');
   });
 
   it('gives the pie and Sankey a source, then a span and flows for the Energy dashboard', async () => {
     for (const style of ['pie', 'sankey']) {
       const { events, form: f } = await form({ style } as Partial<CardConfig>);
-      expect(sources(f.schema as unknown[]), style).toEqual(['current', 'energy']);
-      expect(names(f.schema as unknown[]), style).not.toContain('energy_flows');
+      expect(sources(unfold(f.schema)), style).toEqual(['current', 'energy']);
+      expect(names(unfold(f.schema)), style).not.toContain('energy_flows');
       expect((f.data as Record<string, unknown>).source).toBe('current');
       f.dispatchEvent(
         new CustomEvent('value-changed', { detail: { value: { ...(f.data as object), source: 'energy' } } }),
@@ -739,7 +740,7 @@ describe('energy in the editor', () => {
       source: 'energy',
       period: { calendar: 'day' },
     } as Partial<CardConfig>);
-    const fields = names(pie.schema as unknown[]);
+    const fields = names(unfold(pie.schema));
     expect(fields).toEqual(
       expect.arrayContaining(['period_calendar', 'period_until', 'period_offset', 'energy_flows']),
     );
@@ -750,7 +751,7 @@ describe('energy in the editor', () => {
           selector: { select: { options: { value: string }[] } };
         }
       ).selector.select.options.map((o) => o.value);
-    expect(flowOptions(pie.schema as unknown[])).toContain('gas');
+    expect(flowOptions(unfold(pie.schema))).toContain('gas');
     pie.dispatchEvent(
       new CustomEvent('value-changed', { detail: { value: { ...(pie.data as object), source: 'current' } } }),
     );

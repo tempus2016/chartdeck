@@ -6,6 +6,7 @@ import { boundaries, startOf } from '../src/history/timezone';
 import type { Point } from '../src/history/types';
 import type { CardConfig, HomeAssistant } from '../src/types';
 import { makeHass } from './helpers/hass';
+import { unfold } from './helpers/schema';
 
 class Stub extends HTMLElement {
   [key: string]: unknown;
@@ -262,9 +263,7 @@ describe('grouped line chart', () => {
     ed.hass = makeHass({});
     const names = () => {
       const form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
-      return (form.schema as { name: string; schema?: { name: string }[] }[]).flatMap((f) =>
-        f.schema ? f.schema.map((x) => x.name) : [f.name],
-      );
+      return unfold(form.schema).flatMap((f) => (f.schema ? f.schema.map((x) => x.name) : [f.name]));
     };
     const raw = { type: 'custom:chartdeck-card', style: 'line', entities: ['sensor.energy'] } as CardConfig;
     ed.setConfig(raw);

@@ -14,6 +14,7 @@ import {
 } from '../src/chart/anomaly';
 import type { CardConfig, HomeAssistant } from '../src/types';
 import { makeHass } from './helpers/hass';
+import { unfold } from './helpers/schema';
 
 class Stub extends HTMLElement {
   [key: string]: unknown;
@@ -301,7 +302,7 @@ describe('anomaly editor', () => {
     document.body.appendChild(ed);
     await ed.updateComplete;
     let form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
-    const names = (form.schema as { name: string }[]).map((f) => f.name);
+    const names = unfold<{ name: string }>(form.schema).map((f) => f.name);
     expect(names).toContain('anomalies');
     expect(JSON.stringify(form.schema)).not.toContain('anomalies_sigma');
     form.dispatchEvent(

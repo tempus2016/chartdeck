@@ -5,13 +5,13 @@ import { languageOf, localize } from '../localize';
 import type { Band, HomeAssistant } from '../types';
 import { deepEqual } from './schemas';
 import { LanguageController } from '../language-controller';
+import { ICON_DELETE } from './icons';
 
 export type PresetName = keyof typeof BAND_PRESETS;
 
 const PRESET_NAMES = Object.keys(BAND_PRESETS) as PresetName[];
 const COLOR_NAMES = Object.keys(PALETTE);
 const CUSTOM = 'custom';
-const DELETE_ICON = 'M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z';
 const TEXT_SELECTOR = { text: {} };
 const ENTITY_SELECTOR = { entity: { domain: ['sensor', 'input_number', 'number'] } };
 const ICON_ENTITY =
@@ -51,6 +51,11 @@ export class CdBandsEditor extends LitElement {
   static styles = css`
     :host {
       display: block;
+      container-type: inline-size;
+    }
+    .warning {
+      display: block;
+      margin-top: 12px;
     }
     /* Two lines per band: where it starts and its colour, then its label and icon. */
     .band {
@@ -87,6 +92,16 @@ export class CdBandsEditor extends LitElement {
     }
     .remove {
       grid-area: remove;
+    }
+    /* Narrow: the start keeps its buttons; the colour, label and icon each get a line wide enough to read. */
+    @container (max-width: 420px) {
+      .band {
+        grid-template-areas:
+          'swatch from from mode remove'
+          '. color color color color'
+          '. label label label label'
+          '. icon icon icon icon';
+      }
     }
     .swatch {
       width: 20px;
@@ -279,12 +294,33 @@ export class CdBandsEditor extends LitElement {
     this._emit(bands);
   }
 
+  /** Two bands starting at the same number: the card keeps one, so the other never shows. */
+  private _duplicateWarning() {
+    const seen = new Set<number>();
+    for (const band of this.bands ?? []) {
+      const from = typeof band.from === 'string' && !isEntityStart(band.from) ? Number(band.from) : band.from;
+      if (typeof from !== 'number' || !Number.isFinite(from)) continue;
+      if (seen.has(from)) {
+        return html`<ha-alert class="warning" data-warning="bands" alert-type="warning"
+          >${localize(this.hass, 'editor_warn_band_same_start', { from: String(from) })}</ha-alert
+        >`;
+      }
+      seen.add(from);
+    }
+    return nothing;
+  }
+
   private _renderBand(band: Band, index: number, selectors: ReturnType<CdBandsEditor['_getSelectors']>) {
     const custom = !isPaletteColor(band.color) || this._customOpen.has(index);
     const entity = isEntityStart(band.from) ? band.from : undefined;
     const entityMode = entity !== undefined || this._entityOpen.has(index);
     return html`<div class="band">
-      <span class="swatch" style=${styleMap({ '--swatch': baseColor(band.color) })}></span>
+      <span
+        class="swatch"
+        role="img"
+        aria-label=${isPaletteColor(band.color) ? this._t(`editor_color_${band.color}`) : band.color}
+        style=${styleMap({ '--swatch': baseColor(band.color) })}
+      ></span>
       <ha-selector
         .required=${false}
         data-role="from"
@@ -331,7 +367,7 @@ export class CdBandsEditor extends LitElement {
       ></ha-icon-button>
       <ha-icon-button
         class="remove"
-        .path=${DELETE_ICON}
+        .path=${ICON_DELETE}
         .label=${this._t('editor_remove_band')}
         @click=${() => this._removeBand(index)}
       ></ha-icon-button>
@@ -378,7 +414,7 @@ export class CdBandsEditor extends LitElement {
         .value=${preset}
         @value-changed=${this._presetChanged}
       ></ha-selector>
-      ${(this.bands ?? []).map((band, i) => this._renderBand(band, i, selectors))}
+      ${(this.bands ?? []).map((band, i) => this._renderBand(band, i, selectors))} ${this._duplicateWarning()}
       <button type="button" class="add-band" @click=${this._addBand}>${this._t('editor_add_band')}</button>`;
   }
 }

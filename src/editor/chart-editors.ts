@@ -25,6 +25,7 @@ import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { annotationsEditor } from './annotations-editor';
+import { computeHelper } from './helper';
 import { NOW_MARKER_FIELDS, nowMarkerSchema } from './now-marker-editor';
 import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
 import type { FieldBinding } from './schemas';
@@ -322,6 +323,112 @@ export function cachedSchema(id: string, hass: HomeAssistant | undefined, build:
   return schema;
 }
 
+/** The folding sections a long chart form is split into, in the order they appear. */
+export const CHART_GROUPS = ['data', 'look', 'axes', 'extras', 'layout'] as const;
+export type ChartGroup = (typeof CHART_GROUPS)[number];
+
+/** Field names that belong to a section other than `look` (prefix matches end in `_`). */
+const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
+  data: [
+    'period_',
+    'source',
+    'energy_',
+    'group_by',
+    'aggregate',
+    'compare',
+    'readings',
+    'bucket',
+    'bins',
+    'bin_width',
+    'days',
+    'hours',
+    'points_per_hour',
+    'cycle_plot_',
+    'series_aggregate',
+    'entity_aggregate',
+    'under_aggregate',
+    'measure',
+  ],
+  axes: [
+    'x_axis',
+    'y_axis',
+    'axis_labels',
+    'grid_horizontal',
+    'grid_vertical',
+    'y_min',
+    'y_max',
+    'x_min',
+    'x_max',
+    'min_range',
+    'y_scale',
+    'value_axis',
+    'value_grid',
+    'value_min',
+    'value_max',
+    'tooltip',
+    'trend_y_',
+    'trend_tooltip',
+  ],
+  extras: ['zoom', 'overview', 'forecast_', 'zones', 'now_', 'show_now', 'extremes', 'anomalies', 'extrema', 'average'],
+  layout: ['sync', 'header', 'compact', 'legend_toggle', 'multiples'],
+};
+
+/** Below this many fields a chart form stays one flat list: folding a short form only hides it. */
+const GROUP_MIN_FIELDS = 9;
+
+type SchemaItem = { name?: string; type?: string; schema?: SchemaItem[] };
+
+function matches(name: string, pattern: string): boolean {
+  return pattern.endsWith('_') ? name.startsWith(pattern) : name === pattern || name.startsWith(`${pattern}_`);
+}
+
+/** The section a schema item goes in: a grid goes with its first named field. */
+export function chartGroupOf(item: SchemaItem): ChartGroup {
+  const name = item.name || item.schema?.find((child) => child.name)?.name || '';
+  for (const group of CHART_GROUPS) {
+    if (group === 'look') continue;
+    if (GROUP_MATCH[group].some((pattern) => matches(name, pattern))) return group;
+  }
+  return 'look';
+}
+
+function countFields(items: SchemaItem[]): number {
+  return items.reduce((n, item) => n + (item.schema ? countFields(item.schema) : 1), 0);
+}
+
+const grouped = new WeakMap<unknown[], unknown[]>();
+
+/**
+ * A long chart form folded into sections (time span and readings, look, axes, extras, layout),
+ * the first open. Short forms, and forms whose fields all land in one section, come back as they
+ * are. Kept per schema, so ha-form is handed the same object each render.
+ */
+export function groupChartSchema(hass: HomeAssistant | undefined, schema: unknown[]): unknown[] {
+  const known = grouped.get(schema);
+  if (known) return known;
+  const items = schema as SchemaItem[];
+  let result: unknown[] = schema;
+  if (countFields(items) >= GROUP_MIN_FIELDS && !items.some((item) => item.type === 'expandable')) {
+    const buckets = new Map<ChartGroup, SchemaItem[]>();
+    for (const item of items) {
+      const group = chartGroupOf(item);
+      buckets.set(group, [...(buckets.get(group) ?? []), item]);
+    }
+    if (buckets.size > 1) {
+      result = CHART_GROUPS.filter((group) => buckets.has(group)).map((group, i) => ({
+        type: 'expandable',
+        name: '',
+        flatten: true,
+        expanded: i === 0,
+        title: localize(hass, `editor_chart_group_${group}`),
+        schema: buckets.get(group),
+      }));
+    }
+  }
+  grouped.set(schema, result);
+  return result;
+}
+
 /** An ha-form bound to card-config paths; a value set back to its default removes the key. */
 export function chartForm(
   ctx: ChartEditorContext,
@@ -335,8 +442,9 @@ export function chartForm(
     data-section=${section}
     .hass=${ctx.hass}
     .data=${formData(ctx.config, fields)}
-    .schema=${schema}
+    .schema=${section === 'chart' ? groupChartSchema(ctx.hass, schema) : schema}
     .computeLabel=${(s: { name: string }) => localize(ctx.hass, labels[s.name] ?? `editor_${s.name}`)}
+    .computeHelper=${(s: { name: string }) => computeHelper(ctx.hass, labels[s.name] ?? `editor_${s.name}`)}
     @value-changed=${(ev: CustomEvent) => {
       ev.stopPropagation();
       const next = withEnergyDefaults(

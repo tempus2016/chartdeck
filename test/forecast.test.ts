@@ -18,6 +18,7 @@ import { STYLES } from '../src/styles/index';
 import type { ChartStyleModule } from '../src/styles/index';
 import type { CardConfig, HomeAssistant } from '../src/types';
 import { makeHass } from './helpers/hass';
+import { unfold } from './helpers/schema';
 
 class Stub extends HTMLElement {
   [key: string]: unknown;
@@ -425,7 +426,7 @@ describe('forecast editor', () => {
     document.body.appendChild(ed);
     await ed.updateComplete;
     const form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
-    expect((form.schema as { name: string }[]).some((f) => f.name === 'forecast_hours')).toBe(true);
+    expect(unfold<{ name: string }>(form.schema).some((f) => f.name === 'forecast_hours')).toBe(true);
     expect((form.data as Record<string, unknown>).forecast_hours).toBe(24);
     form.dispatchEvent(
       new CustomEvent('value-changed', { detail: { value: { ...(form.data as object), forecast_hours: 48 } } }),
