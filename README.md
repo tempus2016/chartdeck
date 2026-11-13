@@ -41,7 +41,9 @@ This page is the summary. What changed in each version is on the [releases page]
 - **Limits from anywhere.** Minimum, maximum and target can each be a number or another
   entity.
 - **In your language.** The card and its editor follow the language in your Home Assistant
-  profile: English, German, Spanish, French, Dutch or Portuguese.
+  profile: English, Arabic, Bengali, Chinese (Simplified and Traditional), Dutch, French,
+  German, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese, Russian, Spanish,
+  Turkish, Urdu or Vietnamese.
 
 ## Styles
 

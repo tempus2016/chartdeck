@@ -20,11 +20,25 @@ const LANGUAGES: Record<string, Record<string, string>> = { [FALLBACK]: en };
 
 // One loader per bundled language; a dynamic import each, so rollup makes each one a chunk.
 const LOADERS: Record<string, () => Promise<{ default: Record<string, string> }>> = {
+  ar: () => import('./locales/ar.json'),
+  bn: () => import('./locales/bn.json'),
   de: () => import('./locales/de.json'),
   es: () => import('./locales/es.json'),
   fr: () => import('./locales/fr.json'),
+  hi: () => import('./locales/hi.json'),
+  id: () => import('./locales/id.json'),
+  it: () => import('./locales/it.json'),
+  ja: () => import('./locales/ja.json'),
+  ko: () => import('./locales/ko.json'),
   nl: () => import('./locales/nl.json'),
+  pl: () => import('./locales/pl.json'),
   pt: () => import('./locales/pt.json'),
+  ru: () => import('./locales/ru.json'),
+  tr: () => import('./locales/tr.json'),
+  ur: () => import('./locales/ur.json'),
+  vi: () => import('./locales/vi.json'),
+  'zh-Hans': () => import('./locales/zh-Hans.json'),
+  'zh-Hant': () => import('./locales/zh-Hant.json'),
 };
 
 const loading = new Map<string, Promise<void>>();
