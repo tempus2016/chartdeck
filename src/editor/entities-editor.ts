@@ -16,6 +16,8 @@ import {
 } from './schemas';
 import type { FieldBinding } from './schemas';
 import './bands-editor';
+import './state-map-editor';
+import { mapState } from '../state-map';
 import './limit-field';
 import { LanguageController } from '../language-controller';
 import { computeHelper } from './helper';
@@ -224,7 +226,9 @@ export class CdEntitiesEditor extends LitElement {
     if (!this.numeric || own.attribute) return nothing;
     const state = this.hass?.states[own.entity]?.state;
     if (state === undefined || ['unavailable', 'unknown', ''].includes(state)) return nothing;
-    if (Number.isFinite(Number(state))) return nothing;
+    if (Number.isFinite(Number(state)) || mapState(state, own.state_map as Record<string, number>) !== undefined) {
+      return nothing;
+    }
     return html`<ha-alert class="warning" data-warning="not-number" alert-type="warning"
       >${this._t('editor_warn_not_number', { entity: name, state })}</ha-alert
     >`;
@@ -249,6 +253,16 @@ export class CdEntitiesEditor extends LitElement {
     };
     return html`<div class="overrides">
       ${this._form('entity-attribute', index, own, entityAttributeSchema(own.entity), ENTITY_ATTRIBUTE_FIELDS)}
+      <div role="group" aria-labelledby="map-${index}">
+        <div class="sub-heading" id="map-${index}">${this._t('editor_state_map')}</div>
+        <cd-state-map-editor
+          .hass=${this.hass}
+          .map=${own.state_map}
+          .entityId=${own.entity}
+          .attribute=${own.attribute}
+          @value-changed=${stop((v) => this._set(index, 'state_map', v))}
+        ></cd-state-map-editor>
+      </div>
       ${this._form(
         'entity-text',
         index,

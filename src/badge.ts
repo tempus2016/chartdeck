@@ -15,6 +15,7 @@ import { LanguageController } from './language-controller';
 import { iconOverride, resolveEntities, watchedEntityIds } from './resolve';
 import type { ResolvedEntity } from './resolve';
 import type { CardConfig, EntityConfig, HomeAssistant, NormalizedConfig } from './types';
+import { stateMapRequest } from './state-map';
 
 /*
  * A Chartdeck badge for the Sections view's badge row (Home Assistant 2024.8 and later):
@@ -174,7 +175,7 @@ export class ChartdeckBadge extends LitElement {
   private _spark(e: ResolvedEntity, color: string): TemplateResult {
     const now = Date.now();
     const range = { start: now - this._hours * HOUR, end: now };
-    const request = { entity: e.entityId, attribute: e.config.attribute };
+    const request = { entity: e.entityId, attribute: e.config.attribute, ...stateMapRequest(e.config.state_map) };
     const loaded = storeFor(this, () => this.requestUpdate()).get(this.hass!, [request], range, 'history');
     let points = loaded.data.get(key(request)) ?? [];
     // A sensor holds its last reading until it changes: carry it on to now.

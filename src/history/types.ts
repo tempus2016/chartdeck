@@ -32,4 +32,6 @@ export interface SeriesRequest {
   text?: boolean;
   /** Read compass points (N, SSW) as degrees as well as numbers (history only; see `parseBearing`). */
   bearing?: boolean;
+  /** Read these words as these numbers before anything else (an entity's `state_map`). */
+  stateMap?: Record<string, number>;
 }

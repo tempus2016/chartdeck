@@ -1,4 +1,5 @@
 import type { HomeAssistant } from '../types';
+import { mapState, stateMapKey } from '../state-map';
 import { parseBearing } from './bearing';
 import type { Point, Range, SeriesRequest } from './types';
 
@@ -26,7 +27,9 @@ interface CompressedState {
 
 /** How a series' states become numbers: plain readings, or wind bearings that may be compass points. */
 export function readerFor(s: SeriesRequest): (raw: unknown) => number | null {
-  return s.bearing ? parseBearing : toReading;
+  const read = s.bearing ? parseBearing : toReading;
+  const map = s.stateMap;
+  return map ? (raw) => mapState(raw, map) ?? read(raw) : read;
 }
 
 /** A state or attribute as a text point's words: numbers as written, anything else (absent, null) as none. */
@@ -192,7 +195,8 @@ export async function loadStatistics(
 
 /** The map key for a series: its entity, plus the attribute when there is one. */
 export function key(s: SeriesRequest): string {
-  const base = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  let base = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  if (s.stateMap && !s.text) base = `${base}|map:${stateMapKey(s.stateMap)}`;
   if (s.text) return `${base}|text`;
   return s.bearing ? `${base}#bearing` : base;
 }
