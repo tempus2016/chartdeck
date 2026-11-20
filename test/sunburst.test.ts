@@ -203,7 +203,8 @@ describe('icicle chart', () => {
     expect(groups).toEqual(['', 'Kitchen', 'Other', 'Office']);
     const leaves = qa(card, '.icicle .cell.leaf');
     expect(leaves.map((c) => c.dataset.index)).toEqual(['1', '2', '0', '3']);
-    expect(leaves[0].style.left).toBe(`${(2 / 3) * 100}%`);
+    expect(leaves[0].style.left).toMatch(/%$/);
+    expect(parseFloat(leaves[0].style.left)).toBeCloseTo((2 / 3) * 100, 3);
     expect(leaves[0].getAttribute('aria-label')).toBe('Oven, 1.0 kW');
     expect(text(leaves[0])).toBe('Oven 1.0 kW');
     expect(q(card, '.icicle')!.getAttribute('aria-label')).toBe('Icicle chart of Kitchen, Other, Office');
