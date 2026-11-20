@@ -248,6 +248,6 @@ export interface HomeAssistant {
   formatEntityState?(stateObj: HassEntity, state?: string): string;
   /** Home Assistant's websocket call; charts load history and statistics with it. */
   callWS?<T>(msg: Record<string, unknown>): Promise<T>;
-  config?: { time_zone?: string };
+  config?: { time_zone?: string; currency?: string };
   formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;
 }

@@ -72,6 +72,9 @@ import {
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { shownValue } from '../history/energy';
+import { costLegend, costPartRows, costPartStyles, partsAt } from '../chart/cost-parts';
+import { costEditor } from '../editor/cost-editor';
+import { costEntities } from '../history/cost';
 import type { Aggregate, GroupUnit } from '../history/group';
 import type { Point } from '../history/types';
 import { localize } from '../localize';
@@ -246,6 +249,27 @@ function drawColumns(
       const v = table.values[k][i];
       if (v === null) return;
       const [left, width] = columnBox(x0, x1, k, n);
+      if (s.costParts && !range) {
+        // A cost split by tariff band: each band's share stacked in the series' column, cheapest first.
+        const slices = partsAt(s.costParts, t);
+        let up = baseline;
+        let down = baseline;
+        const top = slices.reduce((at, sl, j) => (sl.v > 0 ? j : at), -1);
+        const bottom = slices.reduce((at, sl, j) => (sl.v < 0 ? j : at), -1);
+        slices.forEach((sl, j) => {
+          if (sl.v === 0) return;
+          const from = sl.v > 0 ? up : down + sl.v;
+          const to = sl.v > 0 ? up + sl.v : down;
+          if (sl.v > 0) up += sl.v;
+          else down += sl.v;
+          const cap = j === top ? 'top' : j === bottom ? 'bottom' : '';
+          out.columns.push(column(scales, left, width, from, to, baseColor(sl.color), cap, k));
+        });
+        if (showLabels && width * px >= LABEL_PX) {
+          out.labels.push(valueLabel(ctx, left + width / 2, scales.y(v >= 0 ? up : down), v, s.entity.decimals, v < 0));
+        }
+        return;
+      }
       if (range) {
         const lo = table.lows[k][i] ?? v;
         const hi = table.highs[k][i] ?? v;
@@ -305,7 +329,8 @@ function render(ctx0: ChartContext): TemplateResult {
   });
   const nav = periodNav(frame, ctx);
   const names = seriesHeader(frame, ctx);
-  const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
+  const bands = costLegend(frame.series);
+  const header = nav === nothing && names === nothing && bands === nothing ? nothing : html`${nav}${names}${bands}`;
   const message = frameMessage(frame, ctx);
   const layout = chartLayout(raw);
   if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
@@ -334,6 +359,16 @@ function render(ctx0: ChartContext): TemplateResult {
         )
       : undefined;
   const reach = (whiskers ?? []).flat().flatMap((w) => (w ? [w.lo, w.hi] : []));
+  // A split cost's bands stack up and down from zero: the axis reaches each way's sum.
+  for (const s of mode === 'none' ? frame.series : []) {
+    for (const t of s.costParts ? table.times : []) {
+      const slices = partsAt(s.costParts!, t);
+      reach.push(
+        slices.reduce((a, sl) => a + Math.max(0, sl.v), 0),
+        slices.reduce((a, sl) => a + Math.min(0, sl.v), 0),
+      );
+    }
+  }
   const targets = frame.series.map((s) => s.entity.target).filter((t): t is number => t !== null);
   let data: [number, number] | undefined;
   if (layers) data = stackExtent(layers);
@@ -396,6 +431,9 @@ function render(ctx0: ChartContext): TemplateResult {
       if (!w) return value;
       return localize(ctx.hass, 'error_bars_tooltip', { value, low: fmt(w.lo, s), high: fmt(w.hi, s) });
     };
+  }
+  if (!layers && !range && frame.series.some((s) => s.costParts)) {
+    tip.footer = (rows) => costPartRows(ctx, rows, (c) => table.times[slotOf.get(c) ?? -1]);
   }
   if (layers) {
     const sums = totals(table.values);
@@ -522,7 +560,10 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
     ...nowMarkerSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
   ]);
-  return chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS);
+  return html`${chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS)}${costEditor(
+    ctx,
+    true,
+  )}`;
 }
 
 const ENTITY_FIELDS: FieldBinding[] = [{ name: 'column_color', path: ['color'] }];
@@ -601,6 +642,7 @@ export const columnChart: ChartStyleModule = {
     ${columnStyles}
     ${errorBarStyles}
     ${nowMarkerStyles}
+    ${costPartStyles}
   `,
   thumbnail: () => svg`
     <path d="M7 36 V22 a2 2 0 0 1 2 -2 h4 a2 2 0 0 1 2 2 V36 Z" fill="var(--primary-color, #03a9f4)" />
@@ -611,6 +653,7 @@ export const columnChart: ChartStyleModule = {
     <path d="M4 36.5 H62" stroke="var(--secondary-text-color, #888)" stroke-width="1" />`,
   validate,
   editor: columnEditor,
+  watch: (raw) => costEntities(raw),
   entityFields: (hass) => ({
     schema: cachedSchema('column-entity', hass, () => [{ name: 'column_color', selector: { text: {} } }]),
     fields: ENTITY_FIELDS,

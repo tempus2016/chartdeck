@@ -1,6 +1,8 @@
 import { css, html, nothing, svg } from 'lit';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
 import { baseColor } from '../bands';
+import { costEditor } from '../editor/cost-editor';
+import { costEntities } from '../history/cost';
 import { validateAxisOptions } from '../chart/axes';
 import { downsample } from '../chart/downsample';
 import {
@@ -338,7 +340,7 @@ export function areaEditor(ctx: ChartEditorContext): TemplateResult {
     ...axesSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
   ]);
-  return chartForm(ctx, 'chart', schema, AREA_FIELDS);
+  return html`${chartForm(ctx, 'chart', schema, AREA_FIELDS)}${costEditor(ctx)}`;
 }
 
 const NEGATIVE_FIELD: FieldBinding = { name: 'negative_color', path: ['negative_color'] };
@@ -420,6 +422,7 @@ export const area: ChartStyleModule = {
   },
   editor: areaEditor,
   entityFields: areaEntityFields,
+  watch: (raw) => costEntities(raw),
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);

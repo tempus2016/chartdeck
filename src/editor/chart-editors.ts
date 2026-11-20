@@ -25,6 +25,7 @@ import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { annotationsEditor } from './annotations-editor';
+import { costEditor } from './cost-editor';
 import { computeHelper } from './helper';
 import { NOW_MARKER_FIELDS, nowMarkerSchema } from './now-marker-editor';
 import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
@@ -515,5 +516,5 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...multiplesSchema(ctx.hass, ctx.config),
     ],
   );
-  return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${annotationsEditor(ctx)}`;
+  return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${costEditor(ctx)}${annotationsEditor(ctx)}`;
 }

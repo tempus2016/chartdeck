@@ -67,6 +67,8 @@ export interface EnergyMarks {
   statistic?: boolean;
   /** Draw this series below the axis (energy leaving the house on a split chart). */
   energy_below?: boolean;
+  /** The price the Energy settings give this flow (an entity, or a fixed price per unit), for `cost`. */
+  energy_price?: string | number;
 }
 
 const marks = (e: { config: unknown }) => e.config as EnergyMarks;
@@ -87,6 +89,9 @@ const FLOW_COLORS: Record<EnergyFlow, string> = {
 interface GridFlow {
   stat_energy_from?: string | null;
   stat_energy_to?: string | null;
+  /** The price of this flow: an entity's state, or a fixed number per unit. */
+  entity_energy_price?: string | null;
+  number_energy_price?: number | null;
 }
 interface EnergySource extends GridFlow {
   type?: string;
@@ -110,6 +115,8 @@ export interface EnergyStatistic {
   id: string;
   flow: EnergyFlow;
   name?: string;
+  /** The price the settings give it (an entity id, or a fixed price per unit). */
+  price?: string | number;
 }
 
 export function validateEnergy(raw: CardConfig): void {
@@ -154,15 +161,22 @@ export function energyStatistics(prefs: EnergyPrefs, flows: readonly EnergyFlow[
     water: [],
     devices: [],
   };
-  const add = (flow: EnergyFlow, id: string | null | undefined, name?: string | null) => {
-    if (typeof id === 'string' && id !== '') found[flow].push({ id, flow, ...(name ? { name } : {}) });
+  const add = (flow: EnergyFlow, id: string | null | undefined, name?: string | null, priced?: GridFlow) => {
+    if (typeof id !== 'string' || id === '') return;
+    const price =
+      typeof priced?.entity_energy_price === 'string' && priced.entity_energy_price !== ''
+        ? priced.entity_energy_price
+        : typeof priced?.number_energy_price === 'number' && Number.isFinite(priced.number_energy_price)
+          ? priced.number_energy_price
+          : undefined;
+    found[flow].push({ id, flow, ...(name ? { name } : {}), ...(price !== undefined ? { price } : {}) });
   };
   for (const source of prefs.energy_sources ?? []) {
     switch (source.type) {
       case 'grid':
-        for (const f of source.flow_from ?? []) add('grid_import', f.stat_energy_from);
-        for (const f of source.flow_to ?? []) add('grid_export', f.stat_energy_to);
-        add('grid_import', source.stat_energy_from);
+        for (const f of source.flow_from ?? []) add('grid_import', f.stat_energy_from, undefined, f);
+        for (const f of source.flow_to ?? []) add('grid_export', f.stat_energy_to, undefined, f);
+        add('grid_import', source.stat_energy_from, undefined, source);
         add('grid_export', source.stat_energy_to);
         break;
       case 'solar':
@@ -173,10 +187,10 @@ export function energyStatistics(prefs: EnergyPrefs, flows: readonly EnergyFlow[
         add('battery_in', source.stat_energy_to);
         break;
       case 'gas':
-        add('gas', source.stat_energy_from);
+        add('gas', source.stat_energy_from, undefined, source);
         break;
       case 'water':
-        add('water', source.stat_energy_from);
+        add('water', source.stat_energy_from, undefined, source);
         break;
     }
   }
@@ -225,6 +239,7 @@ export function energyEntities(
       entity.double_tap_action = NO_ACTION;
     }
     if (below && OUT_FLOWS.includes(s.flow)) entity.energy_below = true;
+    if (s.price !== undefined) entity.energy_price = s.price;
     return entity;
   });
 }
