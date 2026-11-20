@@ -34,6 +34,7 @@ import type { LegendItems } from './legend-toggle';
 import { rememberPlotted } from './export';
 import { CURVES } from './paths';
 import type { Curve } from './paths';
+import { formulaRequest } from '../formula';
 
 /** The drawing's coordinate box. The SVG stretches to the card's width; strokes don't scale. */
 export const VIEW_W = 1000;
@@ -150,7 +151,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   const requests = ctx.items.map((e) => ({
     entity: e.entityId,
     attribute: e.config.attribute,
-    ...(options.text ? { text: true } : {}),
+    ...(options.text ? { text: true } : formulaRequest(e.config)),
   }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
   let statistics =

@@ -221,7 +221,8 @@ export function derivativeSeries(
   const own = entity.config as DerivativeConfig;
   if (own.transform !== 'derivative') return { entity, points };
   const time = (own.transform_unit_time as DerivativeUnitTime | undefined) ?? 'h';
-  const increasing = !entity.config.attribute && entity.stateObj?.attributes?.state_class === 'total_increasing';
+  const increasing =
+    !entity.formula && !entity.config.attribute && entity.stateObj?.attributes?.state_class === 'total_increasing';
   const smoothing = typeof own.transform_smoothing === 'number' ? own.transform_smoothing : 1;
   let out = rates(points, UNIT_MS[time], increasing, smoothing, parseWindow(own.transform_smoothing_time) ?? 0);
   const steady = out.every((p) => p.v === null) ? heldValue(points) : undefined;

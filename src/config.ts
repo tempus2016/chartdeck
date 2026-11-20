@@ -1,4 +1,5 @@
 import { normalizeRule } from './fill';
+import { formulaEntities, readFormula } from './formula';
 import { DEFAULT_ANGLES, parseGaugeOptions } from './gauge';
 import { STYLE_NAMES } from './types';
 import type {
@@ -86,7 +87,19 @@ function pick<T>(own: T | undefined, card: T | undefined): T | undefined {
 
 /** An entity with the card's options under its own. */
 export function mergeEntity(raw: string | EntityConfig, card: EntityOptions, index: number): MergedEntity {
-  const own: EntityConfig = typeof raw === 'string' ? { entity: raw } : raw;
+  let own: EntityConfig = typeof raw === 'string' ? { entity: raw } : raw;
+  // A formula series (`formula` + `vars`) needs no entity of its own: it takes the first one its
+  // formula reads for its icon and more-info, and the formula itself as its name.
+  let formula;
+  try {
+    formula = own && typeof own === 'object' ? readFormula(own) : undefined;
+  } catch (err) {
+    throw new Error(`Entity ${index + 1}: ${(err as Error).message}`);
+  }
+  if (formula && own && (typeof own.entity !== 'string' || !own.entity)) {
+    const first = formulaEntities(formula)[0];
+    if (first) own = { name: formula.text, ...own, entity: first };
+  }
   if (!own || typeof own !== 'object' || typeof own.entity !== 'string' || !own.entity) {
     throw new Error(`Entity ${index + 1} needs an "entity" id`);
   }

@@ -151,6 +151,10 @@ export interface EntityConfig extends EntityOptions {
   dots?: boolean;
   /** Line charts: draw this series above the others. */
   on_top?: boolean;
+  /** Work the value out from other entities ("a - b"), each named in `vars` (see formula.ts). */
+  formula?: string;
+  /** The entity each name in `formula` reads. */
+  vars?: Record<string, string>;
 }
 export interface ShowOptions {
   name: boolean;
@@ -183,6 +187,8 @@ export interface CardConfig extends EntityOptions {
 export interface MergedEntity extends EntityOptions {
   entity: string;
   attribute?: string;
+  formula?: string;
+  vars?: Record<string, string>;
   min: Limit;
   max: Limit;
   severity: Band[];

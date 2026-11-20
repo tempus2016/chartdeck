@@ -1,3 +1,5 @@
+import { combineSeries, evaluate, formulaOf } from '../formula';
+import type { Formula } from '../formula';
 import type { HomeAssistant } from '../types';
 import { parseBearing } from './bearing';
 import type { Point, Range, SeriesRequest } from './types';
@@ -121,7 +123,11 @@ export function defaultStatisticsQuery(range: Range): StatisticsQuery {
 }
 
 /** Load history for every series in one or two calls (attributes need the full format). */
-export async function loadHistory(
+export function loadHistory(hass: HomeAssistant, series: SeriesRequest[], range: Range): Promise<Map<string, Point[]>> {
+  return withFormulas(series, (plain) => loadPlainHistory(hass, plain, range));
+}
+
+async function loadPlainHistory(
   hass: HomeAssistant,
   series: SeriesRequest[],
   range: Range,
@@ -169,11 +175,20 @@ export async function loadHistory(
 }
 
 /** Load long-term statistics for every series in one call. */
-export async function loadStatistics(
+export function loadStatistics(
   hass: HomeAssistant,
   series: SeriesRequest[],
   range: Range,
   query: StatisticsQuery = defaultStatisticsQuery(range),
+): Promise<Map<string, Point[]>> {
+  return withFormulas(series, (plain) => loadPlainStatistics(hass, plain, range, query));
+}
+
+async function loadPlainStatistics(
+  hass: HomeAssistant,
+  series: SeriesRequest[],
+  range: Range,
+  query: StatisticsQuery,
 ): Promise<Map<string, Point[]>> {
   const out = new Map<string, Point[]>();
   if (!hass.callWS || series.length === 0) return out;
@@ -190,8 +205,54 @@ export async function loadStatistics(
   return out;
 }
 
+/** A formula's value now, from its variables' current states (null when any has no number). */
+export function formulaNow(f: Formula, hass: HomeAssistant): number | null {
+  const vars: Record<string, number | null> = {};
+  for (const [name, id] of Object.entries(f.vars)) vars[name] = toReading(hass.states[id]?.state);
+  return evaluate(f.expr, vars);
+}
+
+/** A request's formula, when it has one that reads (a text series reads words, so never has one). */
+export function requestFormula(s: SeriesRequest): Formula | undefined {
+  return s.formula && !s.text ? formulaOf(s) : undefined;
+}
+
+/**
+ * Load the series, a formula series as its variables' readings joined on time: each variable is
+ * loaded as a plain series (once, however many formulas read it), then each formula is worked
+ * out from them under its own key.
+ */
+async function withFormulas(
+  series: SeriesRequest[],
+  load: (plain: SeriesRequest[]) => Promise<Map<string, Point[]>>,
+): Promise<Map<string, Point[]>> {
+  const formulas = series.map((s) => [s, requestFormula(s)] as const);
+  if (formulas.every(([, f]) => !f)) return load(series);
+  const plain: SeriesRequest[] = [];
+  const seen = new Set<string>();
+  const add = (s: SeriesRequest) => {
+    if (seen.has(key(s))) return;
+    seen.add(key(s));
+    plain.push(s);
+  };
+  for (const [s, f] of formulas) {
+    if (f) for (const id of Object.values(f.vars)) add({ entity: id });
+    else add(s);
+  }
+  const loaded = await load(plain);
+  const out = new Map(loaded);
+  for (const [s, f] of formulas) {
+    if (!f) continue;
+    const vars = Object.fromEntries(Object.entries(f.vars).map(([n, id]) => [n, loaded.get(id) ?? []]));
+    out.set(key(s), combineSeries(f.expr, vars));
+  }
+  return out;
+}
+
 /** The map key for a series: its entity, plus the attribute when there is one. */
 export function key(s: SeriesRequest): string {
+  const f = requestFormula(s);
+  if (f) return `=${f.text}|${JSON.stringify(f.vars)}`;
   const base = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
   if (s.text) return `${base}|text`;
   return s.bearing ? `${base}#bearing` : base;

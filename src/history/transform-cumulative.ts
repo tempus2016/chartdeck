@@ -94,6 +94,8 @@ export function validateCumulative(raw: CardConfig): void {
 export type MeterKind = 'increasing' | 'total' | undefined;
 
 export function meterKind(entity: ResolvedEntity): MeterKind {
+  // A formula of meters can fall (energy in less energy out): every change counts.
+  if (entity.formula) return entity.formula === 'meter' ? 'total' : undefined;
   if (entity.config.attribute) return undefined;
   const cls = entity.stateObj?.attributes?.state_class;
   return cls === 'total_increasing' ? 'increasing' : cls === 'total' ? 'total' : undefined;
