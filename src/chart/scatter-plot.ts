@@ -33,6 +33,8 @@ import {
 import type { ChartSeries, HistoryFrame } from './frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from './grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from './layout';
+import { FIT, clipFit, linearFit, significantDecimals } from './fit';
+import type { Fit, LinearFit } from './fit';
 import { extent } from './scale';
 import { dotsPath } from './series-style';
 import { stopHover, tooltipEnabled, tooltipStyles, validateTooltipOptions } from './tooltip';
@@ -154,6 +156,10 @@ function checkRange(raw: CardConfig, key: string, [lo, hi]: readonly [number, nu
 
 export interface XYOptions {
   against: Against;
+  /** Scatter against an entity only: a least-squares line through each series' dots. */
+  fit: Fit;
+  /** Scatter against an entity only: a ring at where the entities are now. */
+  nowPoint: boolean;
   dotSize: number;
   jitter: number;
   minSize: number;
@@ -163,6 +169,8 @@ export interface XYOptions {
 export function xyOptions(raw: CardConfig, kind: XYKind): XYOptions {
   return {
     against: kind === 'bubble' ? 'entity' : ((raw.against as Against | undefined) ?? 'entity'),
+    fit: kind === 'scatter' && FIT.includes(raw.fit as Fit) ? (raw.fit as Fit) : 'none',
+    nowPoint: kind === 'scatter' && raw.now_point === true,
     dotSize: num(raw.dot_size) ? raw.dot_size : DEFAULT_DOT_SIZE,
     jitter: num(raw.jitter) ? raw.jitter : 0,
     minSize: num(raw.min_size) ? raw.min_size : DEFAULT_MIN_SIZE,
@@ -183,6 +191,12 @@ export function validateXY(raw: CardConfig, kind: XYKind): void {
       throw new Error(`"against" must be one of: ${AGAINST.join(', ')}`);
     }
     checkRange(raw, 'dot_size', DOT_LIMITS);
+    if (raw.fit !== undefined && !FIT.includes(raw.fit as Fit)) {
+      throw new Error(`"fit" must be one of: ${FIT.join(', ')}`);
+    }
+    if (raw.now_point !== undefined && typeof raw.now_point !== 'boolean') {
+      throw new Error('"now_point" must be true or false');
+    }
   } else {
     checkRange(raw, 'min_size', SIZE_LIMITS);
     checkRange(raw, 'max_size', SIZE_LIMITS);
@@ -249,7 +263,12 @@ const valueText = (v: number, s: ChartSeries, hass: HomeAssistant) =>
 const plotHeight = (compact: boolean) => (compact ? 96 : 162);
 
 /** Build the marks (before scaling): which readings to plot, paired as the chart needs. */
-function collect(frame: HistoryFrame, kind: XYKind, against: Against, edge: number | undefined) {
+function collect(
+  frame: HistoryFrame,
+  kind: XYKind,
+  against: Against,
+  edge: number | undefined,
+): { s: ChartSeries; samples: Sample[]; pairs?: Sample[] }[] {
   const { series } = frame;
   if (against === 'time') {
     return series.map((s) => ({
@@ -267,7 +286,50 @@ function collect(frame: HistoryFrame, kind: XYKind, against: Against, edge: numb
     return [{ s: y, samples: thin(pairReadings([x.points, y.points, size.points], edge), MAX_BUBBLES) }];
   }
   const [x, ...ys] = series;
-  return ys.map((s) => ({ s, samples: thin(pairReadings([x.points, s.points], edge), MAX_MARKS) }));
+  return ys.map((s) => {
+    const pairs = pairReadings([x.points, s.points], edge);
+    return { s, samples: thin(pairs, MAX_MARKS), pairs };
+  });
+}
+
+/** One y series' fitted line, with the series and its colour. */
+interface SeriesFit {
+  s: ChartSeries;
+  color: string;
+  fit: LinearFit;
+  /** The lowest and highest reading along the bottom it was fitted to. */
+  span: readonly [number, number];
+}
+
+/** "−0.21 kW per °C · R² 0.81": a fit's slope in the entities' units, and how well it fits. */
+export function fitText(f: LinearFit, x: ChartSeries, y: ChartSeries, hass: HomeAssistant): string {
+  const slope = withUnit(formatNumber(f.slope, significantDecimals(f.slope), hass), y.entity.unit);
+  const r2 = localize(hass, 'scatter_fit_r2', { value: formatNumber(f.r2, 2, hass) });
+  const per = x.entity.unit
+    ? localize(hass, 'scatter_fit_slope', { value: slope, unit: x.entity.unit })
+    : localize(hass, 'scatter_fit_slope_plain', { value: slope });
+  return `${per} · ${r2}`;
+}
+
+/** Under a scatter chart with a fit: each series' slope and R², with a line in its colour. */
+function fitLegend(fits: SeriesFit[], x: ChartSeries, hass: HomeAssistant) {
+  return html`<div class="fit-legend">
+    ${fits.map(
+      ({ s, color, fit }) =>
+        html`<span class="fit-item"
+          ><span class="fit-swatch" style="background:${color}"></span>${
+            fits.length > 1 ? html`<span class="fit-name">${s.entity.name}</span>` : nothing
+          }<span class="fit-text">${fitText(fit, x, s, hass)}</span></span
+        >`,
+    )}
+  </div>`;
+}
+
+/** Where a y series is now against the bottom entity, when both have a number. */
+function nowValue(x: ChartSeries, y: ChartSeries): [number, number] | undefined {
+  const a = x.entity.value;
+  const b = y.entity.value;
+  return a !== null && b !== null && Number.isFinite(a) && Number.isFinite(b) ? [a, b] : undefined;
 }
 
 /** Draw a scatter or bubble chart for the card. */
@@ -310,14 +372,24 @@ export function renderXY(ctx: ChartContext, kind: XYKind, now = Date.now()): Tem
   const all = groups.flatMap((g) => g.samples);
   if (all.length === 0)
     return chartFrame(above, header, html`<div class="chart-message">${localize(ctx.hass, 'chart_no_data')}</div>`);
-  const ys = all.map((m) => m.v[1]);
+  // A fit and a "now" ring need values along the bottom: scatter against an entity.
+  const fitting = kind === 'scatter' && !byTime;
+  const xSeries = frame.series[0];
+  const nows =
+    fitting && opts.nowPoint && frame.range.end >= now
+      ? groups.flatMap(({ s }) => {
+          const v = nowValue(xSeries, s);
+          return v ? [{ s, v }] : [];
+        })
+      : [];
+  const ys = [...all.map((m) => m.v[1]), ...nows.map((n) => n.v[1])];
   const yData: [number, number] = [Math.min(...ys), Math.max(...ys)];
   let axes;
   let xLabel: ((v: number) => string) | undefined;
   if (byTime) {
     axes = plotAxes(ctx, frame.range, extent(frame.series.map((s) => s.points)));
   } else {
-    const xs = all.map((m) => m.v[0]);
+    const xs = [...all.map((m) => m.v[0]), ...nows.map((n) => n.v[0])];
     axes = valueAxes(ctx, [Math.min(...xs), Math.max(...xs)], yData, { x: xRange(ctx.raw) });
     const decimals = xDecimals(axes);
     xLabel = (v) => formatNumber(v, decimals, ctx.hass);
@@ -340,6 +412,34 @@ export function renderXY(ctx: ChartContext, kind: XYKind, now = Date.now()): Tem
       d: kind === 'bubble' ? bubbleDiameter(m.v[2], sizeRange, opts.minSize, opts.maxSize) : undefined,
     }));
   });
+  const fits: SeriesFit[] =
+    fitting && opts.fit === 'linear'
+      ? groups.flatMap(({ s, pairs }) => {
+          const xy = (pairs ?? []).map((p) => [p.v[0], p.v[1]] as const);
+          const fit = linearFit(xy);
+          const xs = xy.map((p) => p[0]);
+          return fit
+            ? [{ s, color: seriesColor(s, offset), fit, span: [Math.min(...xs), Math.max(...xs)] as const }]
+            : [];
+        })
+      : [];
+  // Only across the readings it was fitted to: past them the line would be a guess.
+  const fitLines = fits.map(({ s, color, fit, span }) => {
+    const seg = clipFit(fit, [Math.max(span[0], axes.range.start), Math.min(span[1], axes.range.end)], scales.domain);
+    if (!seg) return nothing;
+    const [x1, y1, x2, y2] = [scales.x(seg[0][0]), scales.y(seg[0][1]), scales.x(seg[1][0]), scales.y(seg[1][1])];
+    // A halo in the card colour keeps the line readable over dots of the same colour.
+    return svg`<line class="fit-halo" x1=${x1} y1=${y1} x2=${x2} y2=${y2}></line>
+      <line class="fit-line" data-series=${s.index} x1=${x1} y1=${y1} x2=${x2} y2=${y2} stroke=${color}></line>`;
+  });
+  const rings = nows.map(({ s, v }) => {
+    const fx = scales.x(v[0]) / VIEW_W;
+    return html`<span
+      class="fit-now"
+      style="left:${pctOf(fx)};top:${pctOf(scales.y(v[1]) / VIEW_H)};border-color:${seriesColor(s, offset)}"
+      ><span class="fit-now-label ${fx > 0.85 ? 'end' : ''}">${localize(ctx.hass, 'scatter_now')}</span></span
+    >`;
+  });
   const content =
     kind === 'bubble'
       ? svg`${[...marks]
@@ -354,14 +454,17 @@ export function renderXY(ctx: ChartContext, kind: XYKind, now = Date.now()): Tem
             ? svg`<path class="dots" data-series=${s.index} d=${dotsPath(own.map((m) => [m.x, m.y]))}
                 stroke=${own[0].color} style="stroke-width:${opts.dotSize}px"></path>`
             : nothing;
-        })}`;
+        })}${fitLines}`;
   const tooltip = tooltipEnabled(ctx.raw);
   const picked = tooltip ? pickedIndex(ctx.host) : undefined;
   const mark = picked !== undefined ? marks[picked] : undefined;
-  const label = localize(ctx.hass, 'chart_aria', {
-    style: localize(ctx.hass, `editor_style_${kind}`),
-    names: frame.series.map((s) => s.entity.name).join(', '),
-  });
+  const label = [
+    localize(ctx.hass, 'chart_aria', {
+      style: localize(ctx.hass, `editor_style_${kind}`),
+      names: frame.series.map((s) => s.entity.name).join(', '),
+    }),
+    ...fits.map(({ s, fit }) => `${s.entity.name}: ${fitText(fit, xSeries, s, ctx.hass)}`),
+  ].join('. ');
   const reach = Math.max(16, kind === 'bubble' ? opts.maxSize / 2 : opts.dotSize);
   return chartFrame(
     layout,
@@ -373,6 +476,7 @@ export function renderXY(ctx: ChartContext, kind: XYKind, now = Date.now()): Tem
       label,
       xLabel,
       overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
+      ${rings.length ? html`<div class="fit-now-layer" aria-hidden="true">${rings}</div>` : nothing}
       ${mark ? markTooltip(mark, frame, kind, against, ctx, width) : nothing}`,
       hover: tooltip
         ? pickHandlers(ctx, (fx, fy, w, h) =>
@@ -387,7 +491,8 @@ export function renderXY(ctx: ChartContext, kind: XYKind, now = Date.now()): Tem
           )
         : undefined,
     })}
-    ${kind === 'bubble' ? sizeLegend(frame.series[2], sizeRange, opts, ctx.hass) : nothing}`,
+    ${kind === 'bubble' ? sizeLegend(frame.series[2], sizeRange, opts, ctx.hass) : nothing}
+    ${fits.length ? fitLegend(fits, xSeries, ctx.hass) : nothing}`,
   );
 }
 
@@ -407,6 +512,8 @@ function markTooltip(m: Mark, frame: HistoryFrame, kind: XYKind, against: Agains
     })),
   });
 }
+
+const pctOf = (n: number) => `${Math.round(n * 10000) / 100}%`;
 
 /** Under a bubble chart: the smallest and largest bubble, with the readings they stand for. */
 function sizeLegend(s: ChartSeries, [lo, hi]: [number, number], opts: XYOptions, hass: HomeAssistant) {
@@ -472,6 +579,74 @@ export const xyStyles = css`
   .frame.compact .size-legend {
     padding-top: 2px;
   }
+  .plot .fit-line {
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  .plot .fit-halo {
+    stroke: var(--card-background-color, #fff);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-opacity: 0.85;
+  }
+  .fit-now-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .fit-now {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid;
+    box-shadow: 0 0 0 2px var(--card-background-color, #fff);
+    transform: translate(-50%, -50%);
+  }
+  .fit-now-label {
+    position: absolute;
+    left: 100%;
+    bottom: 100%;
+    margin-left: 2px;
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--primary-text-color);
+    text-shadow: 0 0 3px var(--card-background-color, #fff);
+  }
+  .fit-now-label.end {
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 2px;
+  }
+  .fit-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    padding-top: 6px;
+    font-size: 0.8125em;
+    color: var(--secondary-text-color);
+  }
+  .fit-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .fit-swatch {
+    flex: none;
+    width: 14px;
+    height: 2px;
+    border-radius: 1px;
+  }
+  .fit-name {
+    color: var(--primary-text-color);
+  }
+  .frame.compact .fit-legend {
+    padding-top: 2px;
+  }
 `;
 
 export function disconnectXY(host: HTMLElement): void {
@@ -521,6 +696,8 @@ const FIELDS: Record<XYKind, FieldBinding[]> = {
     { name: 'against', path: ['against'], default: 'entity' },
     { name: 'dot_size', path: ['dot_size'], default: DEFAULT_DOT_SIZE },
     { name: 'jitter', path: ['jitter'], default: 0 },
+    { name: 'scatter_fit', path: ['fit'], default: 'none' },
+    { name: 'scatter_now_point', path: ['now_point'], default: false },
     ...X_RANGE_FIELDS,
     ...XY_AXES_FIELDS,
     ...LAYOUT_FIELDS,
@@ -553,6 +730,12 @@ export function xyEditor(kind: XYKind) {
                 { name: 'jitter', selector: px(JITTER_LIMITS[0], JITTER_LIMITS[1]) },
               ],
             },
+            ...(byTime
+              ? []
+              : [
+                  { name: 'scatter_fit', selector: choice(ctx.hass, 'scatter_fit', FIT) },
+                  { name: 'scatter_now_point', selector: { boolean: {} } },
+                ]),
           ]
         : [
             {

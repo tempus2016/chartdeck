@@ -79,6 +79,8 @@ describe('scatter and bubble options', () => {
   it('has defaults, and a bubble chart is always against an entity', () => {
     expect(xyOptions({ type: 'x' }, 'scatter')).toEqual({
       against: 'entity',
+      fit: 'none',
+      nowPoint: false,
       dotSize: 6,
       jitter: 0,
       minSize: 6,
@@ -90,6 +92,15 @@ describe('scatter and bubble options', () => {
       jitter: 3,
     });
     expect(xyOptions({ type: 'x', against: 'time' }, 'bubble').against).toBe('entity');
+    // A fit and the "now" ring are scatter options; a bubble chart ignores them.
+    expect(xyOptions({ type: 'x', fit: 'linear', now_point: true }, 'scatter')).toMatchObject({
+      fit: 'linear',
+      nowPoint: true,
+    });
+    expect(xyOptions({ type: 'x', fit: 'linear', now_point: true }, 'bubble')).toMatchObject({
+      fit: 'none',
+      nowPoint: false,
+    });
   });
 
   it('gives readable errors', () => {
