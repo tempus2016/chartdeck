@@ -45,6 +45,7 @@ import { stripPlot } from './strip-plot';
 import { sankey } from './sankey';
 import { chord } from './chord';
 import { timeline } from './timeline';
+import { stateDuration } from './state-duration';
 import { climate } from './climate';
 import { windRoseStyle } from './wind-rose';
 import { day_clock } from './day-clock';
@@ -188,6 +189,7 @@ export const STYLES: Record<StyleName, StyleModule> = {
   sankey,
   chord,
   timeline,
+  state_duration: stateDuration,
   climate,
   wind_rose: windRoseStyle,
   day_clock,

@@ -58,7 +58,7 @@ export function suggestState(config: CardConfig, hass: HomeAssistant | undefined
 }
 
 /** One row per coloured state: its name, its colour and a remove button, then an add button. */
-function stateColorsEditor(ctx: ChartEditorContext): TemplateResult {
+export function stateColorsEditor(ctx: ChartEditorContext): TemplateResult {
   const entries = colorsOf(ctx.config);
   const t = (k: string) => localize(ctx.hass, k);
   const set = (next: [string, string][]) => ctx.commit(withStateColors(ctx.config, next));
