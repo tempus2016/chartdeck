@@ -47,6 +47,7 @@ import {
   annotationLayers,
   annotationUnit,
   annotationStyles,
+  annotationTooltip,
   annotationValues,
   stopAnnotations,
   validateAnnotations,
@@ -486,6 +487,7 @@ export const line: ChartStyleModule = {
                 scales,
                 own ?? shared,
                 plotWidth(ctx),
+                { footer: () => annotationTooltip(ctx, frame, own ?? shared) },
               )
             : nothing
         }`,
