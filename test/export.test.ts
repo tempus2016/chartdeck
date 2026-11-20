@@ -298,7 +298,8 @@ describe('the export menu on a card', () => {
   });
 
   it('centres the button on the title line once ha-card has drawn its header', async () => {
-    const host = document.createElement('div');
+    // Attached to the document: like a browser, jsdom gives a detached element no computed style.
+    const host = document.body.appendChild(document.createElement('div'));
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = '<ha-card><div class="export titled"></div></ha-card>';
     const card = root.querySelector('ha-card') as HTMLElement & { updateComplete?: Promise<unknown> };
@@ -318,7 +319,7 @@ describe('the export menu on a card', () => {
     expect(menu.style.top).toBe('20px');
 
     // A short title row drawn in the light DOM: the button stays inside it.
-    const other = document.createElement('div');
+    const other = document.body.appendChild(document.createElement('div'));
     other.attachShadow({ mode: 'open' }).innerHTML =
       '<ha-card><div class="card-header" style="padding: 16px 16px 0px"></div><div class="export titled"></div></ha-card>';
     const short = other.shadowRoot!.querySelector('.card-header') as HTMLElement;
@@ -327,6 +328,8 @@ describe('the export menu on a card', () => {
     placeExport(other);
     expect((other.shadowRoot!.querySelector('.export') as HTMLElement).style.top).toBe('8px');
     placeExport(document.createElement('div'));
+    host.remove();
+    other.remove();
   });
 
   it('gets a row of its own above the chart when the card has no title', async () => {
