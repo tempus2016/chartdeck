@@ -170,12 +170,68 @@ describe('scatter chart', () => {
     expect(q(card, '.frame.compact')).not.toBeNull();
   });
 
+  it('draws a least-squares line per series, with slope and R² under the chart', async () => {
+    const card = await mount({ fit: 'linear' } as Partial<CardConfig>);
+    const line = q(card, 'line.fit-line')!;
+    expect(line).not.toBeNull();
+    expect(line.getAttribute('stroke')).toContain('--primary-color');
+    // Heating falls as it gets warmer outside: the line runs down to the right.
+    expect(Number(line.getAttribute('x2'))).toBeGreaterThan(Number(line.getAttribute('x1')));
+    expect(Number(line.getAttribute('y2'))).toBeGreaterThan(Number(line.getAttribute('y1')));
+    const text = q(card, '.fit-text')!.textContent!;
+    expect(text).toMatch(/^−?-?\d+ W per °C · R² 0\.\d\d$/);
+    expect(q(card, '.fit-name')).toBeNull();
+    expect(q(card, 'svg.plot')!.getAttribute('aria-label')).toContain('Heating: ');
+    // Two series: one line and one named legend item each.
+    const two = await mount({
+      fit: 'linear',
+      entities: ['sensor.out', 'sensor.heat', 'sensor.flow'],
+    } as Partial<CardConfig>);
+    expect(qa(two, 'line.fit-line')).toHaveLength(2);
+    expect(qa(two, '.fit-name').map((e) => e.textContent)).toEqual(['Heating', 'Flow']);
+    // No fit by default, against time, or for a bubble chart.
+    expect(q(await mount({}), '.fit-legend')).toBeNull();
+    const time = await mount({ fit: 'linear', against: 'time', entities: ['sensor.out'] } as Partial<CardConfig>);
+    expect(q(time, 'line.fit-line')).toBeNull();
+  });
+
+  it('says "Slope" when the bottom entity has no unit, and skips a series too short to fit', async () => {
+    const hass = hassWith();
+    hass.states['sensor.out'].attributes = { friendly_name: 'Outside' };
+    const card = await mount({ fit: 'linear' } as Partial<CardConfig>, hass);
+    expect(q(card, '.fit-text')!.textContent).toMatch(/^Slope −?-?\d+ W · R²/);
+    const short = await mount(
+      { fit: 'linear' } as Partial<CardConfig>,
+      hassWith({ 'sensor.out': [{ s: '3', lu: sec(5 * H) }], 'sensor.heat': [{ s: '9', lu: sec(4 * H) }] }),
+    );
+    expect(q(short, 'line.fit-line')).toBeNull();
+    expect(q(short, '.fit-legend')).toBeNull();
+  });
+
+  it('rings where the entities are now, in the series colour, only when the span reaches now', async () => {
+    const card = await mount({ now_point: true } as Partial<CardConfig>);
+    const ring = q(card, '.fit-now') as HTMLElement;
+    expect(ring).not.toBeNull();
+    expect(ring.style.borderColor).toContain('--primary-color');
+    expect(ring.textContent!.trim()).toBe('Now');
+    expect(ring.style.left).toMatch(/%$/);
+    const off = await mount({});
+    expect(q(off, '.fit-now')).toBeNull();
+    const past = await mount({ now_point: true, period: { calendar: 'day', offset: 1 } } as Partial<CardConfig>);
+    expect(q(past, '.fit-now')).toBeNull();
+    const hass = hassWith();
+    hass.states['sensor.heat'].state = 'unavailable';
+    expect(q(await mount({ now_point: true } as Partial<CardConfig>, hass), '.fit-now')).toBeNull();
+  });
+
   it('checks its options', () => {
     const card = document.createElement('chartdeck-card') as Card;
     const set = (extra: Record<string, unknown>) => () =>
       card.setConfig({ type: 'x', style: 'scatter', entities: ['sensor.out'], ...extra } as CardConfig);
     expect(set({ against: 'moon' })).toThrow(/against/);
     expect(set({ jitter: 99 })).toThrow(/jitter/);
+    expect(set({ fit: 'curve' })).toThrow(/"fit" must be one of: none, linear/);
+    expect(set({ now_point: 'yes' })).toThrow(/now_point/);
   });
 });
 
@@ -198,15 +254,31 @@ describe('scatter chart editor', () => {
     document.body.appendChild(ed);
     await ed.updateComplete;
     const form = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
-    expect(form.data).toMatchObject({ against: 'entity', dot_size: 6, jitter: 0, xy_x_axis: true, tooltip: true });
+    expect(form.data).toMatchObject({
+      against: 'entity',
+      dot_size: 6,
+      jitter: 0,
+      scatter_fit: 'none',
+      scatter_now_point: false,
+      xy_x_axis: true,
+      tooltip: true,
+    });
     const names = JSON.stringify(form.schema);
     expect(names).toContain('"x_min"');
+    expect(names).toContain('"scatter_fit"');
+    expect(names).toContain('Straight line (least squares)');
     form.dispatchEvent(
       new CustomEvent('value-changed', {
         detail: { value: { ...(form.data as object), jitter: 4, dot_size: 8, x_min: -5, xy_x_axis: false } },
       }),
     );
     expect(events.at(-1)).toEqual({ ...raw, jitter: 4, dot_size: 8, x_min: -5, x_axis: false });
+    form.dispatchEvent(
+      new CustomEvent('value-changed', {
+        detail: { value: { ...(form.data as object), scatter_fit: 'linear', scatter_now_point: true } },
+      }),
+    );
+    expect(events.at(-1)).toEqual({ ...raw, fit: 'linear', now_point: true });
     form.dispatchEvent(
       new CustomEvent('value-changed', { detail: { value: { ...(form.data as object), against: 'time' } } }),
     );
@@ -215,6 +287,7 @@ describe('scatter chart editor', () => {
     await ed.updateComplete;
     const timeForm = ed.shadowRoot!.querySelector('.section-chart ha-form') as Stub;
     expect(JSON.stringify(timeForm.schema)).not.toContain('"x_min"');
+    expect(JSON.stringify(timeForm.schema)).not.toContain('"scatter_fit"');
     const list = ed.shadowRoot!.querySelector('cd-entities-editor') as Stub;
     const fields = (list.chartFields as { fields: { name: string }[] }).fields.map((f) => f.name);
     expect(fields).toEqual(['dot_color']);
