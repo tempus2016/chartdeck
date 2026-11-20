@@ -185,10 +185,20 @@ describe('now marker on charts', () => {
   });
 
   it('marks now inside the current group on a column chart', async () => {
-    const card = await mount({ style: 'column', now_marker: 'time', period: { last: 7, unit: 'day' } });
-    expect(q(card, '.now-marker')).not.toBeNull();
-    expect(q(card, '.now-label')!.textContent).toMatch(/\d:\d\d/);
-    card.remove();
+    // Pinned to midday: near midnight the marker sits at the very edge of the day's column and is
+    // hidden, so the real clock made this fail late in the evening.
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(noon);
+    try {
+      const card = await mount({ style: 'column', now_marker: 'time', period: { last: 7, unit: 'day' } });
+      expect(q(card, '.now-marker')).not.toBeNull();
+      expect(q(card, '.now-label')!.textContent).toMatch(/\d:\d\d/);
+      card.remove();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
