@@ -42,6 +42,15 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotAxes, PlotScales } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import {
+  TABLE_VIEW_FIELDS,
+  dataTable,
+  tableVariant,
+  tableView,
+  tableViewSchema,
+  tableViewStyles,
+  validateTableView,
+} from '../chart/table-view';
 import { STACK_MODES, stackExtent, stackValues, totals, validateStack } from '../chart/stack';
 import type { Layer, StackMode } from '../chart/stack';
 import {
@@ -105,6 +114,7 @@ function validate(raw: CardConfig): void {
   validateAxisOptions(raw);
   validateTooltipOptions(raw);
   validateLayout(raw);
+  validateTableView(raw);
   validateStack(raw);
   validateErrorBars(raw);
   for (const k of ['range', 'rounded', 'labels']) {
@@ -305,10 +315,12 @@ function render(ctx0: ChartContext): TemplateResult {
   });
   const nav = periodNav(frame, ctx);
   const names = seriesHeader(frame, ctx);
-  const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
+  // With `table_toggle`, the header ends in a Chart | Table switch, and the table can stand in for the plot.
+  const view = tableView(ctx, chartLayout(raw), nav === nothing && names === nothing ? nothing : html`${nav}${names}`);
+  const { layout, header } = view;
   const message = frameMessage(frame, ctx);
-  const layout = chartLayout(raw);
   if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
+  if (view.table) return chartFrame(layout, header, dataTable(ctx, frame, { heading: groupHeading, now }));
   const mode: StackMode = range ? 'none' : ((raw.stack as StackMode | undefined) ?? 'none');
   const group = frame.group;
   // Grouped, every slot is a whole group: today's column is as wide as yesterday's, and the time
@@ -472,6 +484,7 @@ const COLUMN_FIELDS: FieldBinding[] = [
   ...AXES_FIELDS,
   ...NOW_MARKER_FIELDS,
   ...LAYOUT_FIELDS,
+  ...TABLE_VIEW_FIELDS,
 ];
 
 /**
@@ -489,39 +502,44 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
   const ungrouped = ctx.config.group_by === 'none';
   // The shared period fields without their grouping row: the column chart has its own choices.
   const period = { ...ctx.config, group_by: undefined };
-  const schema = cachedSchema(`column|${historyVariant(period)}|${ungrouped}`, ctx.hass, () => [
-    ...historySchema(ctx.hass, period).slice(0, -1),
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'group_by', selector: choice(ctx.hass, 'group_by', COLUMN_GROUPS) },
-        ...(ungrouped ? [] : [{ name: 'aggregate', selector: choice(ctx.hass, 'aggregate', COLUMN_AGGREGATES) }]),
-      ],
-    },
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'stack', selector: choice(ctx.hass, 'stack', STACK_MODES) },
-        { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
-      ],
-    },
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'range', selector: { boolean: {} } },
-        { name: 'column_labels', selector: { boolean: {} } },
-        { name: 'rounded', selector: { boolean: {} } },
-      ],
-    },
-    // Whiskers need groups to spread within.
-    ...(ungrouped ? [] : [{ name: 'error_bars', selector: choice(ctx.hass, 'error_bars', ERROR_BARS) }]),
-    ...axesSchema(ctx.hass),
-    ...nowMarkerSchema(ctx.hass),
-    ...layoutSchema(ctx.hass),
-  ]);
+  const schema = cachedSchema(
+    `column|${historyVariant(period)}|${ungrouped}|${tableVariant(ctx.config)}`,
+    ctx.hass,
+    () => [
+      ...historySchema(ctx.hass, period).slice(0, -1),
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'group_by', selector: choice(ctx.hass, 'group_by', COLUMN_GROUPS) },
+          ...(ungrouped ? [] : [{ name: 'aggregate', selector: choice(ctx.hass, 'aggregate', COLUMN_AGGREGATES) }]),
+        ],
+      },
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'stack', selector: choice(ctx.hass, 'stack', STACK_MODES) },
+          { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
+        ],
+      },
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'range', selector: { boolean: {} } },
+          { name: 'column_labels', selector: { boolean: {} } },
+          { name: 'rounded', selector: { boolean: {} } },
+        ],
+      },
+      // Whiskers need groups to spread within.
+      ...(ungrouped ? [] : [{ name: 'error_bars', selector: choice(ctx.hass, 'error_bars', ERROR_BARS) }]),
+      ...axesSchema(ctx.hass),
+      ...nowMarkerSchema(ctx.hass),
+      ...layoutSchema(ctx.hass),
+      ...tableViewSchema(ctx.config),
+    ],
+  );
   return chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS);
 }
 
@@ -601,6 +619,7 @@ export const columnChart: ChartStyleModule = {
     ${columnStyles}
     ${errorBarStyles}
     ${nowMarkerStyles}
+    ${tableViewStyles}
   `,
   thumbnail: () => svg`
     <path d="M7 36 V22 a2 2 0 0 1 2 -2 h4 a2 2 0 0 1 2 2 V36 Z" fill="var(--primary-color, #03a9f4)" />

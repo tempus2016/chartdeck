@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES, Y_SCALES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { LEGEND_TOGGLE_FIELDS, LEGEND_TOGGLE_SCHEMA } from '../chart/legend-toggle';
+import { TABLE_VIEW_FIELDS, tableVariant, tableViewSchema } from '../chart/table-view';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
 import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
@@ -370,7 +371,7 @@ const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
     'trend_tooltip',
   ],
   extras: ['zoom', 'overview', 'forecast_', 'zones', 'now_', 'show_now', 'extremes', 'anomalies', 'extrema', 'average'],
-  layout: ['sync', 'header', 'compact', 'legend_toggle', 'multiples'],
+  layout: ['sync', 'header', 'compact', 'legend_toggle', 'table_', 'multiples'],
 };
 
 /** Below this many fields a chart form stays one flat list: folding a short form only hides it. */
@@ -474,12 +475,13 @@ const LINE_FIELDS: FieldBinding[] = [
   ...ANOMALY_FIELDS,
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
+  ...TABLE_VIEW_FIELDS,
   ...MULTIPLES_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema(
-    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}`,
+    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}|${tableVariant(ctx.config)}`,
     ctx.hass,
     () => [
       ...historySchema(ctx.hass, ctx.config),
@@ -512,6 +514,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...anomalySchema(ctx.config),
       ...SYNC_SCHEMA,
       ...layoutSchema(ctx.hass),
+      ...tableViewSchema(ctx.config),
       ...multiplesSchema(ctx.hass, ctx.config),
     ],
   );

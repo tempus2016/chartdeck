@@ -17,6 +17,15 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotScales } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import {
+  TABLE_VIEW_FIELDS,
+  dataTable,
+  tableVariant,
+  tableView,
+  tableViewSchema,
+  tableViewStyles,
+  validateTableView,
+} from '../chart/table-view';
 import { runPath, runs } from '../chart/paths';
 import type { Curve, XY } from '../chart/paths';
 import { extent } from '../chart/scale';
@@ -57,6 +66,7 @@ import { CURVES } from '../chart/paths';
 import { localize } from '../localize';
 import { shownValue } from '../history/energy';
 import type { Point } from '../history/types';
+import { groupHeading } from './column';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant } from '../types';
 
@@ -224,10 +234,16 @@ function render(ctx: ChartContext): TemplateResult {
   const frame: HistoryFrame = historyFrame(ctx, Date.now(), { ghost: mode === 'none' && ghostOn(ctx.raw) });
   const nav = periodNav(frame, ctx);
   const names = seriesHeader(frame, ctx);
-  const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
+  // With `table_toggle`, the header ends in a Chart | Table switch, and the table can stand in for the plot.
+  const view = tableView(
+    ctx,
+    chartLayout(ctx.raw),
+    nav === nothing && names === nothing ? nothing : html`${nav}${names}`,
+  );
+  const { layout, header } = view;
   const message = frameMessage(frame, ctx);
-  const layout = chartLayout(ctx.raw);
   if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
+  if (view.table) return chartFrame(layout, header, dataTable(ctx, frame, { heading: groupHeading }));
   const thinned = frame.series.map((s) => ({ ...s, points: downsample(s.points, MAX_POINTS) }));
   let shown: ChartSeries[] = thinned;
   let drawn: AreaDrawing[];
@@ -314,10 +330,11 @@ const AREA_FIELDS: FieldBinding[] = [
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
   ...LAYOUT_FIELDS,
+  ...TABLE_VIEW_FIELDS,
 ];
 
 export function areaEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema(`area|${historyVariant(ctx.config)}`, ctx.hass, () => [
+  const schema = cachedSchema(`area|${historyVariant(ctx.config)}|${tableVariant(ctx.config)}`, ctx.hass, () => [
     ...historySchema(ctx.hass, ctx.config),
     {
       type: 'grid',
@@ -337,6 +354,7 @@ export function areaEditor(ctx: ChartEditorContext): TemplateResult {
     },
     ...axesSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
+    ...tableViewSchema(ctx.config),
   ]);
   return chartForm(ctx, 'chart', schema, AREA_FIELDS);
 }
@@ -398,6 +416,7 @@ export const area: ChartStyleModule = {
     ${layoutStyles}
     ${areaStyles}
     ${conditionStyles}
+    ${tableViewStyles}
   `,
   thumbnail: () => svg`
     <defs>
@@ -415,6 +434,7 @@ export const area: ChartStyleModule = {
     validateTooltipOptions(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
+    validateTableView(raw);
     validateStack(raw);
     validateNegativeColor(raw);
   },
