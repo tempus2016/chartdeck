@@ -88,6 +88,18 @@ import {
   validateCompare,
 } from '../chart/compare-ghost';
 import { lineEditor } from '../editor/chart-editors';
+import {
+  goalBehind,
+  goalContext,
+  goalEntities,
+  goalExtent,
+  goalFront,
+  goalOverlay,
+  goalPill,
+  goalState,
+  goalStyles,
+  validateGoal,
+} from '../chart/goal';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
 import type { ChartContext, ChartStyleModule } from './index';
@@ -266,6 +278,7 @@ export const line: ChartStyleModule = {
     ${anomalyStyles}
     ${compareStyles}
     ${nowMarkerStyles}
+    ${goalStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -298,6 +311,7 @@ export const line: ChartStyleModule = {
     validateAnomalies(raw);
     validateCompare(raw);
     validateNowMarker(raw);
+    validateGoal(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -312,7 +326,7 @@ export const line: ChartStyleModule = {
       : { schema, fields };
     return withForecastFields(hass, own);
   },
-  watch: (raw) => [...annotationEntities(raw), ...forecastEntities(raw)],
+  watch: (raw) => [...annotationEntities(raw), ...forecastEntities(raw), ...goalEntities(raw)],
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);
@@ -324,7 +338,9 @@ export const line: ChartStyleModule = {
     stopCompare(host);
     stopNowMarker(host);
   },
-  render(ctx) {
+  render(card) {
+    // A goal reads its whole calendar period, the first entity as its running total.
+    const ctx = goalContext(card);
     // Forecasts carry series on past now, stretching the span to show them.
     const ahead = forecastLayer(ctx, historyFrame(ctx, Date.now(), { ghost: ghostOn(ctx.raw) }));
     const frame = ahead.frame;
@@ -336,7 +352,10 @@ export const line: ChartStyleModule = {
     // Earlier spans drawn faintly behind, moved over this one, named in a key under the header.
     const ghosts = compareGhosts(ctx, frame);
     const key = ctx.config.show.name ? compareKey(ctx, ghosts) : nothing;
-    const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}${key}`;
+    const goal = goalState(ctx, frame);
+    const pill = goalPill(goal, ctx.hass);
+    const header =
+      nav === nothing && names === nothing && pill === nothing ? nothing : html`${nav}${names}${pill}${key}`;
     const message = frameMessage(frame, ctx);
     const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
@@ -404,6 +423,7 @@ export const line: ChartStyleModule = {
       ...behind.map((s) => s.points),
       ...forecasts.map((s) => s.points),
       thresholds,
+      goalExtent(goal),
     ]);
     if (log && !data) {
       const empty = html`<div class="chart-message">${localize(ctx.hass, 'chart_log_nothing')}</div>`;
@@ -470,13 +490,13 @@ export const line: ChartStyleModule = {
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${compareLines(behind, scales)}${ghostLines(drawn, scales)}${anomalies.behind}${marks.lines}${forecastLines(forecasts, scales)}${lines}${notes.front}`,
+        content: svg`${notes.behind}${compareLines(behind, scales)}${ghostLines(drawn, scales)}${anomalies.behind}${marks.lines}${goalBehind(goal, scales)}${forecastLines(forecasts, scales)}${lines}${goalFront(goal, scales)}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
         ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay}
-        ${nowMarkerLayer(ctx, frame, view, scales, width)}
+        ${nowMarkerLayer(ctx, frame, view, scales, width)} ${goalOverlay(goal, scales, ctx.hass)}
         ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing}
         ${
           tooltip
