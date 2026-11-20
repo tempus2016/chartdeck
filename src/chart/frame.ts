@@ -461,6 +461,8 @@ export function plot(
   label: string,
   defs: SVGTemplateResult | typeof nothing = nothing,
   background: SVGTemplateResult | typeof nothing = nothing,
+  /** The id of the text describing the chart in words (its summary), if any. */
+  describedBy?: string,
 ) {
   return html`<svg
     class="plot"
@@ -468,6 +470,7 @@ export function plot(
     preserveAspectRatio="none"
     role="img"
     aria-label=${label}
+    aria-describedby=${describedBy ?? nothing}
   >
     <defs>
       <clipPath id="cd-draw-in">

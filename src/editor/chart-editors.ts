@@ -12,6 +12,7 @@ import { COMPARE_FIELDS, compareSchema, compareVariant } from '../chart/compare-
 import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
+import { SUMMARY_FIELDS, summarySchema } from '../chart/summary';
 import {
   ENERGY_FLOWS,
   ENERGY_SPLIT_STYLES,
@@ -370,7 +371,7 @@ const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
     'trend_tooltip',
   ],
   extras: ['zoom', 'overview', 'forecast_', 'zones', 'now_', 'show_now', 'extremes', 'anomalies', 'extrema', 'average'],
-  layout: ['sync', 'header', 'compact', 'legend_toggle', 'multiples'],
+  layout: ['sync', 'header', 'compact', 'legend_toggle', 'multiples', 'summary_'],
 };
 
 /** Below this many fields a chart form stays one flat list: folding a short form only hides it. */
@@ -475,6 +476,7 @@ const LINE_FIELDS: FieldBinding[] = [
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
   ...MULTIPLES_FIELDS,
+  ...SUMMARY_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
@@ -513,6 +515,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...SYNC_SCHEMA,
       ...layoutSchema(ctx.hass),
       ...multiplesSchema(ctx.hass, ctx.config),
+      ...summarySchema(),
     ],
   );
   return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${annotationsEditor(ctx)}`;

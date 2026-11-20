@@ -1,4 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
+import { SUMMARY_FIELDS, chartSummary, summarySchema, validateSummary } from '../chart/summary';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
 import { baseColor } from '../bands';
 import { validateAxisOptions } from '../chart/axes';
@@ -289,6 +290,7 @@ function render(ctx: ChartContext): TemplateResult {
       axes,
       ctx,
       content: svg`${ghosts}${drawn.map((d) => d.body)}`,
+      summary: chartSummary(ctx, frame.series, { range: frame.range, live: frame.live }),
       defs: svg`${drawn.map((d) => d.defs)}`,
       label,
       overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
@@ -314,6 +316,7 @@ const AREA_FIELDS: FieldBinding[] = [
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
   ...LAYOUT_FIELDS,
+  ...SUMMARY_FIELDS,
 ];
 
 export function areaEditor(ctx: ChartEditorContext): TemplateResult {
@@ -337,6 +340,7 @@ export function areaEditor(ctx: ChartEditorContext): TemplateResult {
     },
     ...axesSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
+    ...summarySchema(),
   ]);
   return chartForm(ctx, 'chart', schema, AREA_FIELDS);
 }
@@ -415,6 +419,7 @@ export const area: ChartStyleModule = {
     validateTooltipOptions(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
+    validateSummary(raw);
     validateStack(raw);
     validateNegativeColor(raw);
   },
