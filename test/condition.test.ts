@@ -391,7 +391,15 @@ describe("the card's condition, the faint line and the strip", () => {
       entities: ['sensor.power'],
       when: { entity: 'person.john', state: 'home' },
     });
-    const html = (card: Card) => qa(card, sel).map((e) => e.outerHTML.replace(/<!--[^]*?-->/g, ''));
+    const noComments = (e: Element) => {
+      const copy = e.cloneNode(true) as Element;
+      const walker = document.createTreeWalker(copy, NodeFilter.SHOW_COMMENT);
+      const found: Node[] = [];
+      while (walker.nextNode()) found.push(walker.currentNode);
+      found.forEach((n) => n.parentNode!.removeChild(n));
+      return copy.outerHTML;
+    };
+    const html = (card: Card) => qa(card, sel).map(noComments);
     expect(html(plain).length).toBeGreaterThan(0);
     expect(html(masked)).not.toEqual(html(plain));
     const calls = (masked.hass!.callWS as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].entity_ids);
