@@ -38,6 +38,7 @@ import { GROUP_LEVELS } from '../chart/hierarchy';
 import { LanguageController } from '../language-controller';
 import { withCumulativeFields } from '../history/transform-cumulative';
 import { withDerivativeFields } from '../history/transform-derivative';
+import { withRollingFields } from '../history/transform-rolling';
 import { computeHelper } from './helper';
 import { presetFor } from './bands-editor';
 import { limitMode } from './limit-field';
@@ -303,11 +304,15 @@ export class ChartdeckCardEditor extends LitElement {
   private _transformFields() {
     if (!this._config) return undefined;
     const style = this._config.style ?? 'bar';
-    return withDerivativeFields(
-      style,
+    return withRollingFields(
       this.hass,
       this._config,
-      withCumulativeFields(style, this.hass, this._config, undefined),
+      withDerivativeFields(
+        style,
+        this.hass,
+        this._config,
+        withCumulativeFields(style, this.hass, this._config, undefined),
+      ),
     );
   }
 

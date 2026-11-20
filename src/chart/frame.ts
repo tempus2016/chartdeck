@@ -9,9 +9,10 @@ import type { EnergyMarks } from '../history/energy';
 import { key } from '../history/fetch';
 import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQueryFor } from '../history/group';
 import type { Aggregate, Grouping } from '../history/group';
-import { pauseStore, storeFor } from '../history/store';
+import { pauseStore, storeFor, trim } from '../history/store';
 import { cumulativeSeries, validateCumulative } from '../history/transform-cumulative';
 import { derivativeSeries, validateDerivative } from '../history/transform-derivative';
+import { rollingLead, rollingSeries, rollingWindow, validateRolling, wantsRaw } from '../history/transform-rolling';
 import {
   conditionOf,
   conditionStatus,
@@ -88,6 +89,7 @@ export function validateHistoryOptions(raw: CardConfig): void {
   parseGrouping(raw);
   validateCumulative(raw);
   validateDerivative(raw);
+  validateRolling(raw);
   validateConditions(raw);
   if (raw.source !== undefined && !SOURCES.includes(raw.source as Source)) {
     throw new Error(`"source" must be one of: ${SOURCES.join(', ')}`);
@@ -116,11 +118,17 @@ export interface FrameOptions {
   hourly?: boolean;
   /** Also keep every reading of a series with a `when` (`ChartSeries.hidden`), for the faint line behind it. */
   ghost?: boolean;
+  /**
+   * Also keep the readings of a rolling series that asks for them (`transform_raw`) in
+   * `ChartSeries.hidden`, for the faint line behind it (when no `when` faint line takes its place).
+   */
+  raw?: boolean;
 }
 
 /**
  * One series' readings with its entity's history transform applied (`transform: cumulative`, a
- * running total; `transform: derivative`, a rate of change), and the entity with its value and
+ * running total; `transform: derivative`, a rate of change; `transform: rolling`, a rolling
+ * statistic, trimmed to `keep`: its readings may start a window early), and the entity with its value and
  * unit to match. Readings that are already in the shown unit go in (unit conversion comes first);
  * an entity without a transform comes back as it was. Every chart that draws history as numbers
  * calls this: the frame here, and box plot, candlestick and the 24-hour clock, which load their own.
@@ -132,9 +140,11 @@ export function seriesTransform(
   until: number,
   zone: Zone,
   hass: ChartContext['hass'],
+  keep: Range = range,
 ): { entity: ResolvedEntity; points: Point[] } {
   ({ entity, points } = cumulativeSeries(entity, points, range, until, zone, hass));
   ({ entity, points } = derivativeSeries(entity, points, hass, until));
+  ({ entity, points } = rollingSeries(entity, points, keep, hass, until));
   return { entity, points };
 }
 
@@ -159,7 +169,10 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
       : undefined;
   if (statistics && options.hourly) statistics = { ...statistics, period: 'hour' };
   // Statistics groups load from one row early: the row before a group gives its `first`.
-  const load = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
+  const kept = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
+  // A rolling series loads a window earlier still, so the left edge has a full window behind it.
+  const lead = options.text ? 0 : rollingLead(ctx.items.map((e) => e.config));
+  const load = lead ? { start: kept.start - lead, end: kept.end } : kept;
   const loaded = store.get(ctx.hass, requests, load, source, { live: span.live, statistics });
   // Series with a `when` keep only the readings taken while their condition held.
   const conditions = loadConditions(
@@ -188,8 +201,12 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   };
   // Per series, in this order: readings in the shown unit (unit conversion), then only those taken
   // while its condition held (`when`), then its transform (running total, rate of change).
-  const transform = (entity: ResolvedEntity, points: Point[]) =>
-    options.text ? { entity, points } : seriesTransform(entity, points, range, until, zone, ctx.hass);
+  // Every other series is trimmed back to its own span (rolling ones trim themselves, after the maths).
+  const transform = (entity: ResolvedEntity, points: Point[]) => {
+    if (options.text) return { entity, points };
+    const own = lead && rollingWindow(entity.config) === undefined ? trim(points, kept) : points;
+    return seriesTransform(entity, own, range, until, zone, ctx.hass, kept);
+  };
   const series = ctx.items.map((loadedEntity, index): ChartSeries => {
     const own = loadedEntity.config as typeof loadedEntity.config & { color?: string; curve?: Curve; dash?: boolean };
     const all = convertPoints(loaded.data.get(key(requests[index])) ?? [], loadedEntity.conversion);
@@ -210,6 +227,9 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     };
     if (options.ghost && conditions && conditionOf(loadedEntity.config, ctx.raw)) {
       out.hidden = below(prepare(entity, transform(loadedEntity, all).points));
+    } else if (options.raw && wantsRaw(loadedEntity.config)) {
+      // The readings themselves, faint behind their rolling series.
+      out.hidden = below(prepare(entity, trim(conditionalPoints(loadedEntity.config, all, conditions), kept)));
     }
     return out;
   });

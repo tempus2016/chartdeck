@@ -37,7 +37,7 @@ import type { Point } from './types';
  */
 
 /** Every per-entity transform. Both transform files list them all, so neither rejects the other's. */
-export const TRANSFORMS = ['cumulative', 'derivative'] as const;
+export const TRANSFORMS = ['cumulative', 'derivative', 'rolling'] as const;
 export const DERIVATIVE_UNIT_TIMES = ['s', 'min', 'h', 'd'] as const;
 export type DerivativeUnitTime = (typeof DERIVATIVE_UNIT_TIMES)[number];
 const UNIT_MS: Record<DerivativeUnitTime, number> = { s: 1000, min: 60_000, h: 3_600_000, d: 86_400_000 };

@@ -326,7 +326,7 @@ export const line: ChartStyleModule = {
   },
   render(ctx) {
     // Forecasts carry series on past now, stretching the span to show them.
-    const ahead = forecastLayer(ctx, historyFrame(ctx, Date.now(), { ghost: ghostOn(ctx.raw) }));
+    const ahead = forecastLayer(ctx, historyFrame(ctx, Date.now(), { ghost: ghostOn(ctx.raw), raw: true }));
     const frame = ahead.frame;
     // Charts in a sync group share the pointer's time: another chart's shows here too.
     const own = hoverTime(ctx.host);
