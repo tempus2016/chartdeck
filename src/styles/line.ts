@@ -79,6 +79,7 @@ import {
   withForecastFields,
 } from '../chart/forecast';
 import { anomalyLayer, anomalyStyles, validateAnomalies } from '../chart/anomaly';
+import { historyLink, historyLinkStyles, historyTap, validatePointAction } from '../chart/history-link';
 import {
   compareGhosts,
   compareKey,
@@ -236,7 +237,7 @@ function linePlot(
     label,
     defs,
     overlay: html`${over} ${labels ? pointLabels(frame, series, frame.range, scales, labels, true, ctx) : nothing}
-    ${tooltip ? tooltipLayer(ctx, series, scales, time, width) : nothing}`,
+    ${tooltip ? tooltipLayer(ctx, series, scales, time, width, { after: historyLink(ctx, series, time) }) : nothing}`,
     hover: tooltip
       ? hoverHandlers(
           ctx,
@@ -244,6 +245,7 @@ function linePlot(
           series.map((s) => s.points),
         )
       : undefined,
+    tap: historyTap(ctx, frame.range, series),
   });
 }
 
@@ -255,6 +257,7 @@ export const line: ChartStyleModule = {
     ${frameStyles}
     ${gridStyles}
     ${tooltipStyles}
+    ${historyLinkStyles}
     ${layoutStyles}
     ${zoomStyles}
     ${annotationStyles}
@@ -286,6 +289,7 @@ export const line: ChartStyleModule = {
     validateHistoryOptions(raw);
     validateAxisOptions(raw);
     validateTooltipOptions(raw);
+    validatePointAction(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
     validateZoomOptions(raw);
@@ -486,11 +490,13 @@ export const line: ChartStyleModule = {
                 scales,
                 own ?? shared,
                 plotWidth(ctx),
+                { after: historyLink(ctx, shown, own ?? shared) },
               )
             : nothing
         }`,
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
+        tap: historyTap(ctx, view, shown, zoom.options.zoom),
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
         ...strip,
       }),

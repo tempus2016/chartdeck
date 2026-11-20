@@ -227,6 +227,25 @@ export function axesSchema(hass?: HomeAssistant) {
   ];
 }
 
+/** Opening History at a tapped point (`point_action`), on the line, column and area charts. */
+export const POINT_ACTION_FIELDS: FieldBinding[] = [
+  { name: 'point_action', path: ['point_action', 'action'], default: 'none' },
+  { name: 'point_action_window', path: ['point_action', 'window'], default: '2h' },
+];
+
+export function pointActionSchema(hass?: HomeAssistant) {
+  return [
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'point_action', selector: choice(hass, 'point_action', ['none', 'history']) },
+        { name: 'point_action_window', selector: { text: {} } },
+      ],
+    },
+  ];
+}
+
 /** Zoom gestures and the overview strip, shared by every history chart. */
 export const ZOOM_FIELDS: FieldBinding[] = [
   { name: 'zoom', path: ['zoom'], default: false },
@@ -366,6 +385,7 @@ const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
     'value_min',
     'value_max',
     'tooltip',
+    'point_action',
     'trend_y_',
     'trend_tooltip',
   ],
@@ -465,6 +485,7 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...POINT_ACTION_FIELDS,
   { name: 'y_scale', path: ['y_scale'], default: DEFAULT_AXES.scale },
   ...ZOOM_FIELDS,
   ...FORECAST_FIELDS,
@@ -502,6 +523,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       },
       ...labelSchema(ctx.hass, ctx.config),
       ...axesSchema(ctx.hass),
+      ...pointActionSchema(ctx.hass),
       // Only the line chart draws on a log scale: columns and stacked areas stand on zero.
       { name: 'y_scale', selector: choice(ctx.hass, 'y_scale', Y_SCALES) },
       ...ZOOM_SCHEMA,

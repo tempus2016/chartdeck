@@ -196,6 +196,8 @@ export interface ChartAreaOptions {
   /** Extra classes and inline style on the whole frame, for what `below` needs (its height). */
   wrapClasses?: string;
   wrapStyle?: string;
+  /** Opening History at a clicked point (`point_action`): a press, then the click that follows. */
+  tap?: { down(ev: PointerEvent): void; click(ev: MouseEvent): void };
 }
 
 /** Every pointer handler the plot area can take. */
@@ -230,6 +232,7 @@ export function chartArea({
   below = nothing,
   wrapClasses = '',
   wrapStyle = '',
+  tap,
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
@@ -256,18 +259,26 @@ export function chartArea({
   const rLabels = r
     ? html`<div class="y-axis right">${outside ? rSizer : nothing}${rightLabels(r, ctx)}</div>`
     : nothing;
+  const press = gestures?.down ?? hover?.move;
+  const down = tap
+    ? (ev: PointerEvent) => {
+        tap.down(ev);
+        press?.(ev);
+      }
+    : press;
   const wrap = `plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''} ${below === nothing ? '' : 'has-overview'} ${wrapClasses}`;
   return html`<div class=${wrap} style=${wrapStyle}>
     ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
     <div
-      class="plot-area ${hover ? 'hoverable' : ''} ${classes}"
-      @pointerdown=${gestures?.down ?? hover?.move}
+      class="plot-area ${hover ? 'hoverable' : ''} ${tap ? 'opens-history' : ''} ${classes}"
+      @pointerdown=${down}
       @pointermove=${gestures?.move ?? hover?.move}
       @pointerup=${gestures?.up}
       @pointerleave=${gestures?.leave ?? hover?.leave}
       @pointercancel=${gestures?.cancel ?? hover?.leave}
       @wheel=${gestures?.wheel}
       @dblclick=${gestures?.dblclick}
+      @click=${tap?.click}
     >
       ${plot(content, label, defs, gridLines(axes))} ${outside ? nothing : html`${yLabels}${rLabels}${xLabels}`}
       ${overlay}

@@ -167,6 +167,8 @@ export interface TooltipOptions {
   text?: (s: ChartSeries, p: Point | undefined) => string;
   /** Rows after the series' own, from what each shows (a stack's total). */
   footer?: (rows: { s: ChartSeries; p: Point | undefined }[]) => TemplateResult | typeof nothing;
+  /** After everything else: a link out (Open in History). */
+  after?: TemplateResult | typeof nothing;
 }
 
 /**
@@ -213,7 +215,7 @@ export function tooltipLayer(
             <span class="tooltip-value">${options.text ? options.text(s, p) : valueText(p, s, ctx)}</span>
           </div>`,
       )}
-      ${options.footer ? options.footer(rows) : nothing}
+      ${options.footer ? options.footer(rows) : nothing} ${options.after ?? nothing}
     </div>
   </div>`;
 }
