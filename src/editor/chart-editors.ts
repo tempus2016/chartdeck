@@ -9,6 +9,7 @@ import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
 import { FORECAST_FIELDS, forecastSchema, forecastVariant } from '../chart/forecast';
 import { ANOMALY_FIELDS, anomalySchema, anomalyVariant } from '../chart/anomaly';
 import { COMPARE_FIELDS, compareSchema, compareVariant } from '../chart/compare-ghost';
+import { NORMAL_RANGE_FIELDS, normalRangeSchema, normalRangeVariant } from '../chart/normal-range';
 import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
@@ -369,7 +370,19 @@ const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
     'trend_y_',
     'trend_tooltip',
   ],
-  extras: ['zoom', 'overview', 'forecast_', 'zones', 'now_', 'show_now', 'extremes', 'anomalies', 'extrema', 'average'],
+  extras: [
+    'zoom',
+    'overview',
+    'forecast_',
+    'zones',
+    'now_',
+    'show_now',
+    'extremes',
+    'anomalies',
+    'extrema',
+    'average',
+    'normal_range',
+  ],
   layout: ['sync', 'header', 'compact', 'legend_toggle', 'multiples'],
 };
 
@@ -472,6 +485,7 @@ const LINE_FIELDS: FieldBinding[] = [
   ...NOW_MARKER_FIELDS,
   ...EXTREMES_FIELDS,
   ...ANOMALY_FIELDS,
+  ...NORMAL_RANGE_FIELDS,
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
   ...MULTIPLES_FIELDS,
@@ -479,7 +493,7 @@ const LINE_FIELDS: FieldBinding[] = [
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema(
-    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}`,
+    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}|${normalRangeVariant(ctx.config)}`,
     ctx.hass,
     () => [
       ...historySchema(ctx.hass, ctx.config),
@@ -510,6 +524,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...nowMarkerSchema(ctx.hass),
       ...extremesSchema(ctx.hass),
       ...anomalySchema(ctx.config),
+      ...normalRangeSchema(ctx.hass, ctx.config),
       ...SYNC_SCHEMA,
       ...layoutSchema(ctx.hass),
       ...multiplesSchema(ctx.hass, ctx.config),
