@@ -61,6 +61,14 @@ describe('goal options', () => {
       validateGoal(card({ goal: { target: 'sensor.t', period: 'week', direction: 'above', project: 'recent' } })),
     ).not.toThrow();
     expect(() => validateGoal(card({ goal: 3 }))).toThrow('"goal" must have a "target"');
+    // The first entity becomes a running total: another transform there is refused, not dropped.
+    const paced = (transform: string) =>
+      validateGoal(
+        card({ goal: { target: 5 }, entities: [{ entity: 'sensor.t', transform, transform_window: '2h' }] }),
+      );
+    expect(() => paced('rolling')).toThrow(`"goal" paces the first entity's running total`);
+    expect(() => paced('derivative')).toThrow('"transform: derivative"');
+    expect(() => paced('cumulative')).not.toThrow();
     expect(() => validateGoal(card({ goal: { target: 'lots' } }))).toThrow('"goal.target" must be a number');
     expect(() => validateGoal(card({ goal: { period: 'decade' } }))).toThrow('"goal.period" must be one of');
     expect(() => validateGoal(card({ goal: { direction: 'up' } }))).toThrow('"goal.direction" must be one of');

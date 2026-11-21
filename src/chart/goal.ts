@@ -76,6 +76,14 @@ export function validateGoal(raw: CardConfig): void {
       throw new Error(`"goal.${k}" must be one of: ${values.join(', ')}`);
     }
   }
+  // The goal draws the first entity as its running total: another transform would be dropped unseen.
+  const first = raw.entities?.[0];
+  const transform = isObject(first) ? first.transform : undefined;
+  if (transform !== undefined && transform !== 'cumulative') {
+    throw new Error(
+      `"goal" paces the first entity's running total, so that entity can't also have "transform: ${String(transform)}"`,
+    );
+  }
 }
 
 /** The card's goal with its defaults, or undefined when it has none. */
