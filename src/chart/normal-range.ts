@@ -3,6 +3,7 @@ import type { SVGTemplateResult, TemplateResult } from 'lit';
 import { baseColor } from '../bands';
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
+import { costOf, costOn } from '../history/cost';
 import { key } from '../history/fetch';
 import type { StatisticsQuery } from '../history/fetch';
 import { HistoryStore } from '../history/store';
@@ -90,6 +91,29 @@ export function validateNormalRange(config: CardConfig): void {
   if (!(low < high)) throw new Error('"normal_range_low" must be below "normal_range_high"');
   if (raw.normal_range_color !== undefined && typeof raw.normal_range_color !== 'string') {
     throw new Error('"normal_range_color" must be text');
+  }
+  if (raw.normal_range !== true) return;
+  // The band is the entity's own readings by time of day: a series drawn as something else (a running
+  // total, a rate, a rolling statistic, money) would sit against a band it can't be compared with.
+  if (config.goal !== undefined) {
+    throw new Error('"normal_range" can\'t be used with "goal": the goal draws a running total');
+  }
+  const entities = (config.entities ?? []).filter(
+    (e): e is Exclude<typeof e, string> => typeof e === 'object' && e !== null,
+  );
+  const changed = entities.find((e) => (e as { transform?: unknown }).transform !== undefined);
+  if (changed) {
+    throw new Error(
+      `"normal_range" can't be used with "transform: ${String((changed as { transform?: unknown }).transform)}": the usual range is worked out from the readings themselves`,
+    );
+  }
+  if (
+    costOn(config) &&
+    (config.entities ?? []).some((e) => costOf(typeof e === 'string' ? { entity: e } : e, config))
+  ) {
+    throw new Error(
+      '"normal_range" can\'t be used with "cost": the usual range is in the entity\'s own unit, not money',
+    );
   }
 }
 

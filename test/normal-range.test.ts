@@ -31,6 +31,16 @@ describe('normal range options', () => {
   it('accepts good options and names bad ones', () => {
     expect(check({ normal_range_weeks: 8, normal_range_days: 'same_weekday', normal_range_low: 5 })).not.toThrow();
     expect(check({ normal_range: 'yes' })).toThrow('"normal_range" must be true or false');
+    // Series drawn as something other than their readings are refused, not left without a band.
+    expect(check({ goal: { target: 5 } })).toThrow('"normal_range" can\'t be used with "goal"');
+    expect(check({ entities: [{ entity: 'sensor.t', transform: 'rolling', transform_window: '2h' }] })).toThrow(
+      '"transform: rolling"',
+    );
+    expect(check({ style: 'line', cost: { price: 0.3 }, entities: ['sensor.e'] })).toThrow('with "cost"');
+    expect(
+      check({ style: 'line', cost: { price: 0.3 }, entities: [{ entity: 'sensor.e', cost: false }] }),
+    ).not.toThrow();
+    expect(check({ normal_range: false, goal: { target: 5 } })).not.toThrow();
     expect(check({ normal_range_median: 1 })).toThrow('"normal_range_median" must be true or false');
     expect(check({ normal_range_weeks: 0 })).toThrow('"normal_range_weeks" must be a whole number from 1 to 12');
     expect(check({ normal_range_weeks: 2.5 })).toThrow('whole number');
@@ -307,10 +317,9 @@ describe('normal range on the line chart', () => {
     expect(qa(card, 'path.normal-band')).toHaveLength(1);
   });
 
-  it('draws no band for a transformed series, a long span or day groups, or when off', async () => {
+  it('draws no band for a long span or day groups, or when off (a transformed series is refused)', async () => {
     const { h } = recorder();
     for (const extra of [
-      { entities: [{ entity: 'sensor.in', transform: 'cumulative' }] },
       { period: { last: 21, unit: 'day' } },
       { period: { last: 7, unit: 'day' }, group_by: 'day' },
       { normal_range: false },
