@@ -264,6 +264,6 @@ export interface HomeAssistant {
     path: string,
     parameters?: Record<string, unknown>,
   ): Promise<T>;
-  config?: { time_zone?: string };
+  config?: { time_zone?: string; currency?: string };
   formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;
 }

@@ -89,6 +89,7 @@ import {
   validateCompare,
 } from '../chart/compare-ghost';
 import { lineEditor } from '../editor/chart-editors';
+import { costEntities } from '../history/cost';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
 import type { ChartContext, ChartStyleModule } from './index';
@@ -313,7 +314,7 @@ export const line: ChartStyleModule = {
       : { schema, fields };
     return withForecastFields(hass, own);
   },
-  watch: (raw) => [...annotationEntities(raw), ...forecastEntities(raw)],
+  watch: (raw) => [...annotationEntities(raw), ...forecastEntities(raw), ...costEntities(raw)],
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);
