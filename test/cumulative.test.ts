@@ -504,6 +504,13 @@ describe('charts that load their own history', () => {
   });
 
   it("averages the running total into a 24-hour clock's number ring", async () => {
+    // Pinned to midday: the clock shows today, so just after midnight the readings 3-5 h ago fell
+    // on yesterday and the ring read 0.0 kWh.
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(noon);
+    onTestFinished(() => vi.useRealTimers());
     const card = await mount({ style: 'day_clock', period: undefined });
     const label = card.shadowRoot!.querySelector('.dc-ring')!.getAttribute('aria-label')!;
     expect(label).toMatch(/peak 4\.0 kWh at/);
