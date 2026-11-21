@@ -54,6 +54,7 @@ import type { Range, Source } from '../history/types';
 import { localize } from '../localize';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
+import { formulaRequest } from '../formula';
 
 export const ORIENTATIONS = ['vertical', 'horizontal'] as const;
 export type Orientation = (typeof ORIENTATIONS)[number];
@@ -96,7 +97,11 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
   const span = periodRange(period, now, zone, period.navigate ? stepsFor(ctx.host, period) : 0);
   const group = parseGrouping(ctx.raw);
   const range: Range = { start: group ? startOf(group.unit, span.start, zone) : span.start, end: span.end };
-  const requests = ctx.items.map((e) => ({ entity: e.entityId, attribute: e.config.attribute }));
+  const requests = ctx.items.map((e) => ({
+    entity: e.entityId,
+    attribute: e.config.attribute,
+    ...formulaRequest(e.config),
+  }));
   const statistics: StatisticsQuery | undefined =
     source === 'statistics'
       ? {

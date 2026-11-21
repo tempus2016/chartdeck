@@ -3,6 +3,9 @@ import { mergeEntity } from './config';
 import { matchEntities } from './fill';
 import { conditionEntities } from './history/condition';
 import { defaultDecimals, formatNumber, withUnit } from './format';
+import { formulaEntities, formulaOf, sharedUnit } from './formula';
+import type { Formula } from './formula';
+import { formulaNow } from './history/fetch';
 import { isStatistic } from './history/energy';
 import { localize } from './localize';
 import { fillSpan, position } from './scale';
@@ -47,6 +50,12 @@ export interface ResolvedEntity {
   display: string;
   /** Aria label: "<name>, <display>". */
   label: string;
+  /**
+   * Set on a formula series (see formula.ts): `meter` when every entity it reads is a meter
+   * (a − b of two energy meters is a net meter), else `measurement`. Its own entity's state class
+   * doesn't describe it then.
+   */
+  formula?: 'meter' | 'measurement';
 }
 
 const warned = new Set<string>();
@@ -136,22 +145,34 @@ export function resolveBands(bands: Band[], hass: HomeAssistant | undefined, uni
   return read.length ? read.sort((a, b) => a.from - b.from) : DEFAULT_BANDS;
 }
 
+/** A formula reads meters only (energy in less energy out), or anything else. */
+function formulaKind(formula: Formula, hass: HomeAssistant): 'meter' | 'measurement' {
+  const ids = formulaEntities(formula);
+  const meter = (id: string) =>
+    ['total_increasing', 'total'].includes(String(hass.states[id]?.attributes?.state_class));
+  return ids.length > 0 && ids.every(meter) ? 'meter' : 'measurement';
+}
+
 function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
   const entityId = entity.entity;
   const stateObj = hass.states[entityId];
   const name = entity.name ?? stateObj?.attributes?.friendly_name ?? entityId;
+  // A formula is worked out from its variables' states; its unit is the one they share.
+  const formula = formulaOf(entity);
   // The sensor's unit and display precision describe its state, not its attributes.
-  const own = entity.attribute ? '' : String(stateObj?.attributes?.unit_of_measurement ?? '');
+  let own = entity.attribute ? '' : String(stateObj?.attributes?.unit_of_measurement ?? '');
+  if (formula) own = sharedUnit(formula, hass);
   const unit = entity.unit ?? own;
   // A unit the card can convert to (W to kW) converts; any other is only shown (see units.ts).
   const converted = entity.unit === undefined ? undefined : conversion(own || undefined, entity.unit);
-  const raw = rawValue(entity, stateObj);
-  const read = toValue(raw);
+  const raw = formula ? undefined : rawValue(entity, stateObj);
+  const read = formula ? formulaNow(formula, hass) : toValue(raw);
   const value = converted && read !== null ? converted.apply(read) : read;
   const available = value !== null;
   let decimals: number;
   if (!isUnset(entity.decimals)) decimals = entity.decimals as number;
-  else if (entity.attribute) decimals = available ? reportedDecimals(raw) : 0;
+  else if (formula && !own) decimals = 2;
+  else if (entity.attribute && !formula) decimals = available ? reportedDecimals(raw) : 0;
   else if (converted && typeof hass.entities?.[entityId]?.display_precision === 'number') {
     // The sensor's own precision, moved for the new unit's size (W at 0 is kW at 3).
     decimals = convertedDecimals(hass.entities[entityId].display_precision as number, converted.slope);
@@ -166,6 +187,9 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
   if (available) {
     valueText = formatNumber(value, decimals, hass);
     display = withUnit(valueText, unit);
+  } else if (formula && stateObj) {
+    // Any variable without a number leaves the formula without one.
+    display = localize(hass, 'unavailable');
   } else if (!stateObj) {
     // A long-term statistic with no entity (source: energy) has no current value, but isn't missing.
     display = isStatistic({ config: entity }) ? '' : localize(hass, 'entity_not_found');
@@ -194,6 +218,7 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
     valueText,
     display,
     label: display ? `${name}, ${display}` : name,
+    ...(formula ? { formula: formulaKind(formula, hass) } : {}),
   };
 }
 
@@ -231,6 +256,8 @@ export function watchedEntityIds(config: NormalizedConfig): Set<string> {
   const ids = new Set<string>();
   for (const e of config.entities) {
     ids.add(e.entity);
+    const formula = formulaOf(e);
+    if (formula) for (const id of formulaEntities(formula)) ids.add(id);
     for (const limit of [e.min, e.max, e.target, ...e.severity.map((b) => b.from)]) {
       if (typeof limit === 'string' && limit !== '') ids.add(limit);
     }

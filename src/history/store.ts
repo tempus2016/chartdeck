@@ -1,5 +1,14 @@
-import type { HomeAssistant } from '../types';
-import { defaultStatisticsQuery, key, loadHistory, loadStatistics, readerFor, toPoint } from './fetch';
+import type { HassEntity, HomeAssistant } from '../types';
+import {
+  defaultStatisticsQuery,
+  formulaNow,
+  key,
+  loadHistory,
+  loadStatistics,
+  readerFor,
+  requestFormula,
+  toPoint,
+} from './fetch';
 import type { StatisticsQuery } from './fetch';
 import type { Point, Range, SeriesRequest, Source } from './types';
 
@@ -130,7 +139,7 @@ export class HistoryStore {
         this.status = 'ready';
         this.error = undefined;
         this.seen.clear();
-        for (const s of series) this.seen.set(key(s), hass.states[s.entity]);
+        for (const s of series) this.seen.set(key(s), sourceStates(hass, s));
         if (query && live) this.refreshLater(query);
         this.onChange();
       },
@@ -159,17 +168,31 @@ export class HistoryStore {
   private appendLive(hass: HomeAssistant, series: SeriesRequest[]): void {
     for (const s of series) {
       const k = key(s);
-      const state = hass.states[s.entity];
-      if (!state || this.seen.get(k) === state) continue;
-      this.seen.set(k, state);
-      const t = Date.parse(state.last_updated ?? state.last_changed ?? '') || Date.now();
+      const states = sourceStates(hass, s);
+      const before = this.seen.get(k) as typeof states | undefined;
+      if (states.some((x) => !x) || (before && states.every((x, i) => x === before[i]))) continue;
+      this.seen.set(k, states);
+      // A formula's variables: the newest change is when its value changed.
+      const t = Math.max(...states.map((x) => Date.parse(x!.last_updated ?? x!.last_changed ?? '') || Date.now()));
       const points = this.data.get(k) ?? [];
       const last = points[points.length - 1];
       if (last && t <= last.t) continue;
-      points.push(toPoint(t, s.attribute ? state.attributes?.[s.attribute] : state.state, s.text, readerFor(s)));
+      const f = requestFormula(s);
+      const state = states[0]!;
+      points.push(
+        f
+          ? { t, v: formulaNow(f, hass) }
+          : toPoint(t, s.attribute ? state.attributes?.[s.attribute] : state.state, s.text, readerFor(s)),
+      );
       this.data.set(k, points);
     }
   }
+}
+
+/** The state objects a series is read from: its entity's, or each of a formula's variables'. */
+function sourceStates(hass: HomeAssistant, s: SeriesRequest): (HassEntity | undefined)[] {
+  const ids = [...new Set(Object.values(requestFormula(s)?.vars ?? {}))];
+  return ids.length ? ids.map((id) => hass.states[id]) : [hass.states[s.entity]];
 }
 
 /**
