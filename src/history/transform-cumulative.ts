@@ -64,6 +64,7 @@ export const CUMULATIVE_STYLES = [
   'spiral',
   'strip_plot',
   'cycle_plot',
+  'duration_curve',
 ];
 
 interface CumulativeConfig {

@@ -24,6 +24,7 @@ const FRAME_CHARTS = [
   'spiral',
   'strip_plot',
   'cycle_plot',
+  'duration_curve',
 ];
 
 describe('per-entity option style lists', () => {

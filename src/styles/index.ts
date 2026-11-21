@@ -50,6 +50,7 @@ import { windRoseStyle } from './wind-rose';
 import { day_clock } from './day-clock';
 import { cyclePlot } from './cycle-plot';
 import { trend } from './trend';
+import { durationCurve } from './duration-curve';
 
 export interface RenderContext {
   show: ShowOptions;
@@ -193,4 +194,5 @@ export const STYLES: Record<StyleName, StyleModule> = {
   day_clock,
   cycle_plot: cyclePlot,
   trend,
+  duration_curve: durationCurve,
 };

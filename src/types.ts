@@ -50,7 +50,8 @@ export type StyleName =
   | 'wind_rose'
   | 'day_clock'
   | 'cycle_plot'
-  | 'trend';
+  | 'trend'
+  | 'duration_curve';
 export const STYLE_NAMES: StyleName[] = [
   'bar',
   'thin',
@@ -102,6 +103,7 @@ export const STYLE_NAMES: StyleName[] = [
   'day_clock',
   'cycle_plot',
   'trend',
+  'duration_curve',
 ];
 export type SortMode = 'none' | 'ascending' | 'descending';
 /** A number, or a string naming an entity whose state supplies the number. */

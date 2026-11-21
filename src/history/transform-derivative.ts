@@ -70,6 +70,7 @@ export const DERIVATIVE_STYLES = [
   'spiral',
   'strip_plot',
   'cycle_plot',
+  'duration_curve',
 ];
 
 interface DerivativeConfig {
