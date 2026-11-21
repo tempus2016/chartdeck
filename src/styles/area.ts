@@ -29,6 +29,14 @@ import {
   tableViewStyles,
   validateTableView,
 } from '../chart/table-view';
+import {
+  KEYBOARD_NAV_FIELDS,
+  KEYBOARD_NAV_SCHEMA,
+  keyboardNav,
+  keyboardStyles,
+  stopKeyboard,
+  validateKeyboardNav,
+} from '../chart/keyboard';
 import { runPath, runs } from '../chart/paths';
 import type { Curve, XY } from '../chart/paths';
 import { extent } from '../chart/scale';
@@ -304,6 +312,9 @@ function render(ctx: ChartContext): TemplateResult {
     style: localize(ctx.hass, 'editor_style_area'),
     names: frame.series.map((s) => s.entity.name).join(', '),
   });
+  // One Tab stop: arrow keys step through the readings, the tooltip follows (on a stack, the ring
+  // sits on top of the focused series' layer, as the tooltip's dot does).
+  const reader = keyboardNav(ctx, shown, axes.scales, frame.range, label, tip);
   return chartFrame(
     layout,
     header,
@@ -315,7 +326,8 @@ function render(ctx: ChartContext): TemplateResult {
       defs: svg`${drawn.map((d) => d.defs)}`,
       label,
       overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
-      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), { ...tip, after: historyLink(ctx, shown, hoverTime(ctx.host)) }) : nothing}`,
+      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), { ...tip, after: historyLink(ctx, shown, hoverTime(ctx.host)) }) : nothing}
+      ${reader.layer}`,
       hover: tooltip
         ? hoverHandlers(
             ctx,
@@ -325,6 +337,7 @@ function render(ctx: ChartContext): TemplateResult {
         : undefined,
       tap: historyTap(ctx, frame.range, shown),
       ...conditionStrip(ctx, frame, frame.range, axes.scales),
+      keys: reader.keys,
     }),
   );
 }
@@ -338,6 +351,7 @@ const AREA_FIELDS: FieldBinding[] = [
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
   ...POINT_ACTION_FIELDS,
+  ...KEYBOARD_NAV_FIELDS,
   ...LAYOUT_FIELDS,
   ...SUMMARY_FIELDS,
   ...TABLE_VIEW_FIELDS,
@@ -364,6 +378,7 @@ export function areaEditor(ctx: ChartEditorContext): TemplateResult {
     },
     ...axesSchema(ctx.hass),
     ...pointActionSchema(ctx.hass),
+    ...KEYBOARD_NAV_SCHEMA,
     ...layoutSchema(ctx.hass),
     ...summarySchema(),
     ...tableViewSchema(ctx.config),
@@ -430,6 +445,7 @@ export const area: ChartStyleModule = {
     ${areaStyles}
     ${conditionStyles}
     ${tableViewStyles}
+    ${keyboardStyles}
   `,
   thumbnail: () => svg`
     <defs>
@@ -450,6 +466,7 @@ export const area: ChartStyleModule = {
     validateLayout(raw);
     validateSummary(raw);
     validateTableView(raw);
+    validateKeyboardNav(raw);
     validateStack(raw);
     validateNegativeColor(raw);
   },
@@ -460,6 +477,7 @@ export const area: ChartStyleModule = {
     disconnectHistory(host);
     stopChartWidth(host);
     stopHover(host);
+    stopKeyboard(host);
   },
   render,
 };

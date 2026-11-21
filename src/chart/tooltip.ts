@@ -75,6 +75,20 @@ export function hoverTime(host: HTMLElement): number | undefined {
   return states.get(host)?.t;
 }
 
+/**
+ * Put the chart's hover time somewhere other than under the pointer (the keyboard reading a
+ * chart), or clear it, and draw again when it changed. Everything that follows the pointer
+ * (the tooltip, a synced chart's guide) follows this too.
+ */
+export function setHoverTime(ctx: Pick<ChartContext, 'host' | 'requestUpdate'>, t: number | undefined): void {
+  const state = stateOf(ctx.host);
+  if (state.timer !== undefined) clearTimeout(state.timer);
+  state.timer = undefined;
+  if (state.t === t) return;
+  state.t = t;
+  ctx.requestUpdate();
+}
+
 /** Forget the pointer (the card leaves the page). */
 export function stopHover(host: HTMLElement): void {
   const s = states.get(host);

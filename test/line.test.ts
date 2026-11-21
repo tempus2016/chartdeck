@@ -293,6 +293,7 @@ describe('line chart editor', () => {
       tooltip: true,
       point_action: 'none',
       point_action_window: '2h',
+      keyboard_nav: true,
       zoom: false,
       overview: false,
       forecast_hours: 24,

@@ -6,6 +6,7 @@ import type { ChartContext } from '../styles/index';
 import { axisOptions, timeLabel, timeTicks, timeZoneOf, valueAxis, zoneOffset } from './axes';
 import type { AxisOptions, TimeUnit, ValueAxis } from './axes';
 import type { Hover } from './tooltip';
+import type { KeyHandlers } from './keyboard';
 import { VIEW_H, VIEW_W, plot } from './frame';
 import { linear } from './scale';
 import { logAxis, logScale, logTickText } from './log-scale';
@@ -202,6 +203,8 @@ export interface ChartAreaOptions {
   tap?: { down(ev: PointerEvent): void; click(ev: MouseEvent): void };
   /** The chart in words (see summary.ts): described by it, and shown under it when asked. */
   summary?: ChartSummary;
+  /** Keyboard reading (`keyboard.ts`): the plot area becomes one Tab stop with these handlers. */
+  keys?: KeyHandlers;
 }
 
 /** Every pointer handler the plot area can take. */
@@ -238,6 +241,7 @@ export function chartArea({
   wrapStyle = '',
   tap,
   summary,
+  keys,
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
@@ -276,6 +280,11 @@ export function chartArea({
       ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
       <div
         class="plot-area ${hover ? 'hoverable' : ''} ${tap ? 'opens-history' : ''} ${classes}"
+        tabindex=${keys ? '0' : nothing}
+        role=${keys ? 'group' : nothing}
+        aria-label=${keys ? keys.label : nothing}
+        @keydown=${keys?.keydown}
+        @blur=${keys?.blur}
         @pointerdown=${down}
         @pointermove=${gestures?.move ?? hover?.move}
         @pointerup=${gestures?.up}

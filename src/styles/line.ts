@@ -99,6 +99,7 @@ import {
   stopNormalRange,
   validateNormalRange,
 } from '../chart/normal-range';
+import { keyboardNav, keyboardStyles, stopKeyboard, validateKeyboardNav } from '../chart/keyboard';
 import { lineEditor } from '../editor/chart-editors';
 import { costEntities } from '../history/cost';
 import {
@@ -298,6 +299,7 @@ export const line: ChartStyleModule = {
     ${nowMarkerStyles}
     ${goalStyles}
     ${tableViewStyles}
+    ${keyboardStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -335,6 +337,7 @@ export const line: ChartStyleModule = {
     validateGoal(raw);
     validateNormalRange(raw);
     validateTableView(raw);
+    validateKeyboardNav(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -361,6 +364,7 @@ export const line: ChartStyleModule = {
     stopCompare(host);
     stopNowMarker(host);
     stopNormalRange(host);
+    stopKeyboard(host);
   },
   render(card) {
     // A goal reads its whole calendar period, the first entity as its running total.
@@ -512,6 +516,8 @@ export const line: ChartStyleModule = {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
     });
+    // One Tab stop: arrow keys step through the readings on show, and the tooltip follows.
+    const reader = keyboardNav(ctx, shown, scales, view, label);
     const strip = conditionStrip(
       ctx,
       frame,
@@ -532,7 +538,7 @@ export const line: ChartStyleModule = {
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
         ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay} ${normal.overlay}
         ${nowMarkerLayer(ctx, frame, view, scales, width)} ${goalOverlay(goal, scales, ctx.hass)}
-        ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing}
+        ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing} ${reader.layer}
         ${
           tooltip
             ? tooltipLayer(
@@ -553,6 +559,7 @@ export const line: ChartStyleModule = {
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         tap: historyTap(ctx, view, shown, zoom.options.zoom),
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
+        keys: reader.keys,
         ...strip,
       }),
     );
