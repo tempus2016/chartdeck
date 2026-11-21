@@ -90,16 +90,23 @@ This page is the summary. What changed in each version is on the [releases page]
 | 24-hour clock | When each entity was on, around the clock | 2.0 |
 | Trend card | A compact tile: the value over its recent history | 2.0 |
 | Line chart extras | Zoom and pan, annotations, value labels, synced charts, small multiples, highest/lowest/average marks, log scale | 2.0 |
-| Marimekko | A total split two ways, such as energy by room and by use | vNEXT |
-| Chord | Flows both ways between a few places, round a circle | vNEXT |
-| Battery grid | Every battery in the house, emptiest first | vNEXT |
-| Spiral | A daily or weekly routine, one turn per day or week | vNEXT |
-| Strip plot | Every reading as a dot, with a line at the median | vNEXT |
-| Cycle plot | The average day for each weekday, side by side | vNEXT |
-| Chart extras | Forecasts, anomalies, earlier spans and a now line on the line chart; error bars on columns; a recent range behind the gauges; running totals, rates, unit conversion, conditional series, hiding series, an export menu and the Energy dashboard as a source | vNEXT |
+| Marimekko | A total split two ways, such as energy by room and by use | 2.2 |
+| Chord | Flows both ways between a few places, round a circle | 2.2 |
+| Battery grid | Every battery in the house, emptiest first | 2.2 |
+| Spiral | A daily or weekly routine, one turn per day or week | 2.2 |
+| Strip plot | Every reading as a dot, with a line at the median | 2.2 |
+| Cycle plot | The average day for each weekday, side by side | 2.2 |
+| Chart extras | Forecasts, anomalies, earlier spans and a now line on the line chart; error bars on columns; a recent range behind the gauges; running totals, rates, unit conversion, conditional series, hiding series, an export menu and the Energy dashboard as a source | 2.2 |
+| Duration curve | How long a sensor spent above each value, such as solar output | vNEXT |
+| Time in each state | How many hours a day each entity spent heating, on or away | vNEXT |
+| More chart extras | A goal to pace against, the usual range for the time of day and calendar events on the line chart; a fit line, slope and R² on the scatter chart; what energy cost, with tariffs; series worked out from a formula, rolling averages, text states as numbers; a table view, summaries for screen readers, reading values from the keyboard and opening History at a point | vNEXT |
 
-A Chartdeck badge (`custom:chartdeck-badge`, vNEXT) puts one entity in the badge row of a
+A Chartdeck badge (`custom:chartdeck-badge`, 2.2) puts one entity in the badge row of a
 Sections view as a value, sparkline, ring or thin bar, with the card's colour bands and limits.
+
+A Chartdeck tile feature (`custom:chartdeck-feature`, vNEXT) draws a small sparkline, columns
+or a bar under a tile card, for the tile's entity or another one, such as a plug's power under
+the tile of its switch.
 
 ## Installation
 
