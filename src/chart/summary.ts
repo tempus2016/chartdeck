@@ -144,11 +144,14 @@ export function describeSeries(
       }),
     );
   }
-  // A peak or low only when it isn't where the series started or ended.
-  if (facts.max > Math.max(facts.first, facts.last)) {
+  // A peak or low only when it isn't where the series started or ended, as written: sums of money
+  // (cost) carry float noise, so 0.30000000000000004 must not read as a peak above 0.30.
+  const top = Math.max(facts.first, facts.last);
+  const bottom = Math.min(facts.first, facts.last);
+  if (facts.max > top && value(facts.max) !== value(top)) {
     parts.push(t('summary_peak', { value: value(facts.max), time: when(facts.maxAt) }));
   }
-  if (facts.min < Math.min(facts.first, facts.last)) {
+  if (facts.min < bottom && value(facts.min) !== value(bottom)) {
     parts.push(t('summary_low', { value: value(facts.min), time: when(facts.minAt) }));
   }
   if (options.live) parts.push(t(`summary_now_${facts.recent}`, {}));

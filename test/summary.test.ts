@@ -62,6 +62,11 @@ describe('summary sentences', () => {
     expect(describeSeries(level, { entity: entity() }, { ...options, live: false }, undefined)).toBe(
       'Ended about where it started, at 20.0 °C, over 6 h. Peak 25.0 °C at t1.',
     );
+    // A peak or low that reads the same as the start or end is not named (float noise in sums of money).
+    const noise = seriesFacts(pts([0, 0.3], [H, 0.30000000000000004], [2 * H, 0.1], [3 * H, 0.09999999999999998]))!;
+    expect(describeSeries(noise, { entity: entity() }, { ...options, live: false }, undefined)).toBe(
+      'Fell from 0.3 °C to 0.1 °C over 6 h.',
+    );
   });
 
   it('names a peak by clock time for a day or less, by date beyond', () => {
