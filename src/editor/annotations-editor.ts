@@ -17,10 +17,27 @@ const FIELDS: Record<AnnotationType, string[]> = {
   time: ['times'],
   state: ['entity', 'state', 'shade'],
   point: ['at', 'series'],
+  calendar: ['calendar', 'calendar_match', 'calendar_shade'],
 };
 
+/** Fields shown under their own name that set another key (their labels and pickers differ). */
+const KEYS: Record<string, string> = {
+  series: 'entity',
+  calendar: 'entity',
+  calendar_match: 'match',
+  calendar_shade: 'shade',
+};
+const keyOf = (name: string) => KEYS[name] ?? name;
+
 /** A field's default: setting it back removes the key. */
-const DEFAULTS: Record<string, unknown> = { dash: true, shade: false, at: 'max', history: false, zone: 'none' };
+const DEFAULTS: Record<string, unknown> = {
+  dash: true,
+  shade: false,
+  at: 'max',
+  history: false,
+  zone: 'none',
+  calendar_shade: false,
+};
 
 function select(hass: HomeAssistant | undefined, prefix: string, values: readonly string[]) {
   return {
@@ -45,6 +62,9 @@ export function annotationSchema(type: AnnotationType, hass: HomeAssistant | und
     times: { text: {} },
     entity: { entity: {} },
     series: { entity: { include_entities: entities } },
+    calendar: { entity: { domain: 'calendar' } },
+    calendar_match: { text: {} },
+    calendar_shade: { boolean: {} },
     state: { text: {} },
     shade: { boolean: {} },
     dash: { boolean: {} },
@@ -72,7 +92,7 @@ export function annotationSchema(type: AnnotationType, hass: HomeAssistant | und
 export function annotationData(a: Annotation): Record<string, unknown> {
   const data: Record<string, unknown> = { type: a.type };
   for (const name of [...FIELDS[a.type], 'label', 'color']) {
-    const key = name === 'series' ? 'entity' : name;
+    const key = keyOf(name);
     let v = (a as unknown as Record<string, unknown>)[key];
     if (name === 'times') v = timeList(a.times).join(', ');
     else if ((name === 'value' || name === 'from' || name === 'to') && v !== undefined) v = String(v);
@@ -95,7 +115,7 @@ export function annotationFromData(data: Record<string, unknown>, before: Annota
     if (v === undefined || v === '' || v === DEFAULTS[name]) continue;
     if ((name === 'value' || name === 'from' || name === 'to') && Number.isFinite(Number(v))) v = Number(v);
     if (name === 'times') v = timeList(v as string);
-    out[name === 'series' ? 'entity' : name] = v;
+    out[keyOf(name)] = v;
   }
   // The zone's bands have their own editor under the form: keep them while the kind stays.
   if (type === before.type && before.severity !== undefined) out.severity = before.severity;
@@ -119,7 +139,11 @@ export function withAnnotations(config: CardConfig, list: Annotation[]): CardCon
 }
 
 /** Starting values for a new annotation of each kind. */
-function fresh(type: AnnotationType, config: CardConfig): Annotation {
+function fresh(type: AnnotationType, config: CardConfig, hass?: HomeAssistant): Annotation {
+  if (type === 'calendar') {
+    const first = Object.keys(hass?.states ?? {}).find((id) => id.startsWith('calendar.'));
+    return { type, entity: first ?? 'calendar.example' };
+  }
   if (type === 'line') return { type, value: 0 };
   if (type === 'band') return { type, from: 0, to: 1 };
   if (type === 'time') return { type, times: ['07:00'] };
@@ -232,7 +256,7 @@ export function annotationsEditor(ctx: ChartEditorContext): TemplateResult {
             html`<button
               type="button"
               data-type=${type}
-              @click=${() => ctx.commit(withAnnotations(ctx.config, [...list, fresh(type, ctx.config)]))}
+              @click=${() => ctx.commit(withAnnotations(ctx.config, [...list, fresh(type, ctx.config, ctx.hass)]))}
             >
               + ${t(`editor_annotation_add_${type}`)}
             </button>`,

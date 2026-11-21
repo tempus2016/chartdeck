@@ -252,6 +252,12 @@ export interface HomeAssistant {
   formatEntityState?(stateObj: HassEntity, state?: string): string;
   /** Home Assistant's websocket call; charts load history and statistics with it. */
   callWS?<T>(msg: Record<string, unknown>): Promise<T>;
+  /** Home Assistant's REST call (path after `/api/`); calendar annotations load events with it. */
+  callApi?<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    parameters?: Record<string, unknown>,
+  ): Promise<T>;
   config?: { time_zone?: string };
   formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;
 }
