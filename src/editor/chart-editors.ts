@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES, Y_SCALES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { LEGEND_TOGGLE_FIELDS, LEGEND_TOGGLE_SCHEMA } from '../chart/legend-toggle';
+import { TABLE_VIEW_FIELDS, tableVariant, tableViewSchema } from '../chart/table-view';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
 import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
@@ -406,7 +407,7 @@ const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
     'average',
     'normal_range',
   ],
-  layout: ['sync', 'header', 'compact', 'legend_toggle', 'multiples', 'summary_'],
+  layout: ['sync', 'header', 'compact', 'legend_toggle', 'table_', 'multiples', 'summary_'],
 };
 
 /** Below this many fields a chart form stays one flat list: folding a short form only hides it. */
@@ -512,13 +513,14 @@ const LINE_FIELDS: FieldBinding[] = [
   ...NORMAL_RANGE_FIELDS,
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
+  ...TABLE_VIEW_FIELDS,
   ...MULTIPLES_FIELDS,
   ...SUMMARY_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema(
-    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}|${normalRangeVariant(ctx.config)}`,
+    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}|${normalRangeVariant(ctx.config)}|${tableVariant(ctx.config)}`,
     ctx.hass,
     () => [
       ...historySchema(ctx.hass, ctx.config),
@@ -553,6 +555,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...normalRangeSchema(ctx.hass, ctx.config),
       ...SYNC_SCHEMA,
       ...layoutSchema(ctx.hass),
+      ...tableViewSchema(ctx.config),
       ...multiplesSchema(ctx.hass, ctx.config),
       ...summarySchema(),
     ],

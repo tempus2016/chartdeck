@@ -113,6 +113,8 @@ import {
   goalStyles,
   validateGoal,
 } from '../chart/goal';
+import { dataTable, tableView, tableViewStyles, validateTableView } from '../chart/table-view';
+import { groupHeading } from './column';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
 import type { ChartContext, ChartStyleModule } from './index';
@@ -295,6 +297,7 @@ export const line: ChartStyleModule = {
     ${compareStyles}
     ${nowMarkerStyles}
     ${goalStyles}
+    ${tableViewStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -331,6 +334,7 @@ export const line: ChartStyleModule = {
     validateNowMarker(raw);
     validateGoal(raw);
     validateNormalRange(raw);
+    validateTableView(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -376,13 +380,20 @@ export const line: ChartStyleModule = {
     // The usual range for each time of day over the last weeks, shaded behind (with its own key).
     const usual = normalBands(ctx, frame);
     const key = ctx.config.show.name ? html`${compareKey(ctx, ghosts)}${normalRangeKey(ctx, usual)}` : nothing;
-    const header =
-      nav === nothing && names === nothing && pill === nothing ? nothing : html`${nav}${names}${pill}${key}`;
+    // With `table_toggle`, the header ends in a Chart | Table switch, and the table can stand in for the plot.
+    const table = tableView(
+      ctx,
+      chartLayout(ctx.raw),
+      nav === nothing && names === nothing && pill === nothing ? nothing : html`${nav}${names}${pill}${key}`,
+    );
+    const { layout, header } = table;
     const message = frameMessage(frame, ctx);
-    const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
+    if (table.table) return chartFrame(layout, header, dataTable(ctx, frame, { heading: groupHeading }));
     const multiples = multiplesOptions(ctx.raw);
     if (multiples) {
+      // Small multiples keep only the period buttons above (each chart has its own title), and the switch.
+      const top = tableView(ctx, { ...layout, header: 'above' }, nav);
       // A log axis has no place for zero or below: each small chart draws only the readings above it.
       const panels =
         ctx.raw.y_scale === 'log'
@@ -397,8 +408,8 @@ export const line: ChartStyleModule = {
           : frame;
       // One small chart per series: the period buttons stay above, each chart has its own title.
       return chartFrame(
-        { ...layout, header: 'above' },
-        nav,
+        top.layout,
+        top.header,
         multiplesGrid(ctx, panels, multiples, own ?? shared, (s, axes, width) =>
           linePlot(ctx, panels, [s], axes, width, `-${s.index}`, nothing, own ?? shared),
         ),

@@ -301,6 +301,8 @@ describe('line chart editor', () => {
       header: 'above',
       compact: false,
       legend_toggle: false,
+      table_toggle: false,
+      table_change: true,
       multiples: false,
       multiples_scale: 'auto',
       normal_range: false,
