@@ -1,6 +1,7 @@
 import { combineSeries, evaluate, formulaOf } from '../formula';
 import type { Formula } from '../formula';
 import type { HomeAssistant } from '../types';
+import { mapState, stateMapKey } from '../state-map';
 import { parseBearing } from './bearing';
 import type { Point, Range, SeriesRequest } from './types';
 
@@ -28,7 +29,9 @@ interface CompressedState {
 
 /** How a series' states become numbers: plain readings, or wind bearings that may be compass points. */
 export function readerFor(s: SeriesRequest): (raw: unknown) => number | null {
-  return s.bearing ? parseBearing : toReading;
+  const read = s.bearing ? parseBearing : toReading;
+  const map = s.stateMap;
+  return map ? (raw) => mapState(raw, map) ?? read(raw) : read;
 }
 
 /** A state or attribute as a text point's words: numbers as written, anything else (absent, null) as none. */
@@ -253,7 +256,8 @@ async function withFormulas(
 export function key(s: SeriesRequest): string {
   const f = requestFormula(s);
   if (f) return `=${f.text}|${JSON.stringify(f.vars)}`;
-  const base = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  let base = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
+  if (s.stateMap && !s.text) base = `${base}|map:${stateMapKey(s.stateMap)}`;
   if (s.text) return `${base}|text`;
   if (s.statistic) return `${base}|stat:${s.statistic}`;
   return s.bearing ? `${base}#bearing` : base;

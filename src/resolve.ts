@@ -9,6 +9,7 @@ import { formulaNow } from './history/fetch';
 import { isStatistic } from './history/energy';
 import { localize } from './localize';
 import { fillSpan, position } from './scale';
+import { mapState } from './state-map';
 import { conversion, convertedDecimals } from './units';
 import type { Conversion } from './units';
 import { DEFAULT_BANDS } from './config';
@@ -166,7 +167,8 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
   // A unit the card can convert to (W to kW) converts; any other is only shown (see units.ts).
   const converted = entity.unit === undefined ? undefined : conversion(own || undefined, entity.unit);
   const raw = formula ? undefined : rawValue(entity, stateObj);
-  const read = formula ? formulaNow(formula, hass) : toValue(raw);
+  const mapped = formula ? undefined : mapState(raw, entity.state_map);
+  const read = formula ? formulaNow(formula, hass) : (mapped ?? toValue(raw));
   const value = converted && read !== null ? converted.apply(read) : read;
   const available = value !== null;
   let decimals: number;
@@ -184,7 +186,10 @@ function resolveOne(entity: MergedEntity, hass: HomeAssistant): ResolvedEntity {
 
   let valueText = '';
   let display: string;
-  if (available) {
+  if (mapped !== undefined && stateObj) {
+    // A mapped state is drawn by its number but read as its word: "Heating", not "100".
+    valueText = display = statusText(entity, stateObj, raw, hass);
+  } else if (available) {
     valueText = formatNumber(value, decimals, hass);
     display = withUnit(valueText, unit);
   } else if (formula && stateObj) {

@@ -55,6 +55,7 @@ import { localize } from '../localize';
 import type { CardConfig } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import { formulaRequest } from '../formula';
+import { stateMapRequest } from '../state-map';
 
 export const ORIENTATIONS = ['vertical', 'horizontal'] as const;
 export type Orientation = (typeof ORIENTATIONS)[number];
@@ -101,6 +102,7 @@ export function boxFrame(ctx: ChartContext, now = Date.now()): BoxFrame {
     entity: e.entityId,
     attribute: e.config.attribute,
     ...formulaRequest(e.config),
+    ...stateMapRequest(e.config.state_map),
   }));
   const statistics: StatisticsQuery | undefined =
     source === 'statistics'

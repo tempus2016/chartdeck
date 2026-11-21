@@ -38,6 +38,8 @@ export interface SeriesRequest {
    */
   formula?: string;
   vars?: Record<string, string>;
+  /** Read these words as these numbers before anything else (an entity's `state_map`). */
+  stateMap?: Record<string, number>;
   /**
    * Long-term statistics: read this column for this series whatever the query's value column is
    * (a power sensor's hourly mean on a costed card that reads every other series' change).

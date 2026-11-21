@@ -60,6 +60,7 @@ import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import { formulaRequest } from '../formula';
+import { stateMapRequest } from '../state-map';
 
 export const UNDERNEATH = ['columns', 'line'] as const;
 export type Underneath = (typeof UNDERNEATH)[number];
@@ -126,6 +127,7 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
     entity: e.entityId,
     attribute: e.config.attribute,
     ...formulaRequest(e.config),
+    ...stateMapRequest(e.config.state_map),
   }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const statistics = source === 'statistics' ? candleQuery(unit, zone, ctx.hass.config?.time_zone) : undefined;

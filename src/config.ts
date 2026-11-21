@@ -1,6 +1,7 @@
 import { normalizeRule } from './fill';
 import { formulaEntities, readFormula } from './formula';
 import { DEFAULT_ANGLES, parseGaugeOptions } from './gauge';
+import { normalizeStateMap } from './state-map';
 import { STYLE_NAMES } from './types';
 import type {
   ActionConfig,
@@ -106,6 +107,7 @@ export function mergeEntity(raw: string | EntityConfig, card: EntityOptions, ind
   if (own.attribute !== undefined && own.attribute !== null && typeof own.attribute !== 'string') {
     throw new Error(`Entity ${index + 1}: "attribute" must be an attribute name`);
   }
+  const stateMap = normalizeStateMap(own.state_map, index);
   const min = pick(toLimit(own.min, 'min'), toLimit(card.min, 'min')) ?? 0;
   const max = pick(toLimit(own.max, 'max'), toLimit(card.max, 'max')) ?? 100;
   if (typeof min === 'number' && typeof max === 'number' && min >= max) {
@@ -136,6 +138,8 @@ export function mergeEntity(raw: string | EntityConfig, card: EntityOptions, ind
   if (target !== undefined) merged.target = target;
   if (decimals !== undefined) merged.decimals = decimals;
   if (!own.attribute) delete merged.attribute;
+  if (stateMap) merged.state_map = stateMap;
+  else delete merged.state_map;
   // Gauge options are the card's alone: every gauge on a card is drawn the same way. Only the
   // gauge styles read them: other styles (rings, pie…) give center and the angles their own meaning.
   if (DEFAULT_ANGLES[(card as CardConfig).style ?? 'bar']) merged.gauge = parseGaugeOptions(card as CardConfig);

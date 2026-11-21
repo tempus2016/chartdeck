@@ -143,6 +143,8 @@ export interface EntityConfig extends EntityOptions {
   entity: string;
   /** Read this attribute as the value instead of the state. */
   attribute?: string;
+  /** Draw these states (or attribute values) as these numbers, e.g. heating: 100, idle: 0. */
+  state_map?: Record<string, number>;
   /** Charts: this series' colour (a palette name or any CSS colour). */
   color?: string;
   /** Line and area charts: smooth, straight or step. */
@@ -193,6 +195,7 @@ export interface MergedEntity extends EntityOptions {
   attribute?: string;
   formula?: string;
   vars?: Record<string, string>;
+  state_map?: Record<string, number>;
   min: Limit;
   max: Limit;
   severity: Band[];
