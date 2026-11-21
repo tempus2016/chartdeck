@@ -11,7 +11,16 @@ import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQuer
 import type { Aggregate, Grouping } from '../history/group';
 import { pauseStore, storeFor, trim } from '../history/store';
 import { cumulativeSeries, validateCumulative } from '../history/transform-cumulative';
-import { costEntities, costOf, costOn, costSeries, loadPrices, pausePrices, validateCost } from '../history/cost';
+import {
+  costEntities,
+  costMeasure,
+  costOf,
+  costOn,
+  costSeries,
+  loadPrices,
+  pausePrices,
+  validateCost,
+} from '../history/cost';
 import type { CostPart } from '../history/cost';
 import { derivativeSeries, validateDerivative } from '../history/transform-derivative';
 import { rollingLead, rollingSeries, rollingWindow, validateRolling, wantsRaw } from '../history/transform-rolling';
@@ -165,23 +174,30 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   const group = parseGrouping(ctx.raw);
   // Grouped, the chart starts where its first group does: the last 7 days by day from midnight.
   const range: Range = { start: group ? startOf(group.unit, span.start, zone) : span.start, end: span.end };
-  const requests = ctx.items.map((e) => ({
+  // Series drawn as a cost (`cost`) and the price entities they read.
+  const costs = costOn(ctx.raw) ? ctx.items.map((e) => costOf(e.config, ctx.raw)) : [];
+  const priced = costs.some((c) => c !== undefined);
+  // Grouped statistics on a costed card read each hour's change; a power has none, so it reads its mean.
+  const powerMean = (i: number) =>
+    !options.text && group !== undefined && source === 'statistics' && costs[i] !== undefined
+      ? costMeasure(ctx.items[i]).how === 'power'
+      : false;
+  const requests = ctx.items.map((e, i) => ({
     entity: e.entityId,
     attribute: e.config.attribute,
     ...(options.text ? { text: true } : formulaRequest(e.config)),
+    ...(powerMean(i) ? { statistic: 'mean' as const } : {}),
   }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
   let statistics =
     group && source === 'statistics'
       ? statisticsQueryFor(group, zone, ctx.hass.config?.time_zone, options.range === true)
       : undefined;
-  // Series drawn as a cost (`cost`) and the price entities they read.
-  const costs = costOn(ctx.raw) ? ctx.items.map((e) => costOf(e.config, ctx.raw)) : [];
-  const priced = costs.some((c) => c !== undefined);
   if (statistics && (options.hourly || priced)) statistics = { ...statistics, period: 'hour' };
   // A cost prices each hour's change, so grouped statistics read the change.
   if (statistics && priced) {
-    statistics = { ...statistics, types: [...new Set([...statistics.types, 'change' as const])], value: 'change' };
+    const extra = requests.some((r) => r.statistic === 'mean') ? (['change', 'mean'] as const) : (['change'] as const);
+    statistics = { ...statistics, types: [...new Set([...statistics.types, ...extra])], value: 'change' };
   }
   // Statistics groups load from one row early: the row before a group gives its `first`.
   const base = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;

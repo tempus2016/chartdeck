@@ -201,7 +201,7 @@ async function loadPlainStatistics(
     period: query.period,
     types: query.types,
   });
-  for (const s of series) out.set(key(s), parseStatistics(result?.[s.entity], query.value));
+  for (const s of series) out.set(key(s), parseStatistics(result?.[s.entity], s.statistic ?? query.value));
   return out;
 }
 
@@ -255,5 +255,6 @@ export function key(s: SeriesRequest): string {
   if (f) return `=${f.text}|${JSON.stringify(f.vars)}`;
   const base = s.attribute ? `${s.entity}|${s.attribute}` : s.entity;
   if (s.text) return `${base}|text`;
+  if (s.statistic) return `${base}|stat:${s.statistic}`;
   return s.bearing ? `${base}#bearing` : base;
 }

@@ -38,4 +38,9 @@ export interface SeriesRequest {
    */
   formula?: string;
   vars?: Record<string, string>;
+  /**
+   * Long-term statistics: read this column for this series whatever the query's value column is
+   * (a power sensor's hourly mean on a costed card that reads every other series' change).
+   */
+  statistic?: 'mean' | 'min' | 'max' | 'state' | 'change';
 }

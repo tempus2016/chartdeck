@@ -28,6 +28,9 @@ import type { Point, Range } from './types';
  * - A tariff period runs from `from` to `to` every day, past midnight when `to` is earlier. Times
  *   no period covers take `price` (a number or an entity). The first period listed wins where two
  *   overlap.
+ * - A price entity's unit sets its scale: pence or cents ("p/kWh", "ct/kWh", "GBp/kWh") are
+ *   hundredths, a price per MWh a thousandth per kWh. The cost is always shown in the card's
+ *   `currency`, else Home Assistant's.
  * - A price entity holds each price until it changes, so a reading is priced at what the entity
  *   said at the time. Before its first known price the first one is used; unavailable stretches
  *   keep the last known price. Prices may be negative (paid to use energy).
@@ -35,7 +38,7 @@ import type { Point, Range } from './types';
  *   went up between readings, at the mean price between them. A power sensor (W, kW, MW) is
  *   integrated over time, each stretch at the price then.
  * - Long-term statistics (and `source: energy`) are read as each hour's change, priced at that
- *   hour's mean price. A price that changes on the half hour is averaged across the hour.
+ *   hour's mean price; a power sensor's as its hourly mean times the hour. A price that changes on the half hour is averaged across the hour.
  * - The line and area charts draw the running total over the span; the column chart each
  *   group's cost. The header shows the total over the span, in the currency.
  * - On a card with `source: energy`, a flow the Energy settings give a price uses it when the
@@ -391,18 +394,61 @@ export function costTotal(
   return out;
 }
 
-/** Long-term statistics rows of hourly change, each priced at its hour's mean price. */
+/**
+ * Long-term statistics rows, each priced at its row's mean price: a meter's rows are each hour's
+ * change; a power's rows are its mean over the row, so the energy is that mean times the row's
+ * length.
+ */
 export function costRows(
   rows: readonly Point[],
   factor: number,
   price: (a: number, b: number) => number | null,
   rowMs = HOUR,
+  power = false,
 ): Point[] {
+  const hours = power ? rowMs / HOUR : 1;
   return rows.map((r) => {
     if (r.v === null) return { ...r };
     const m = price(r.t, r.t + rowMs);
-    return { ...r, v: m === null ? null : r.v * factor * m };
+    return { ...r, v: m === null ? null : r.v * factor * hours * m };
   });
+}
+
+/** Prices in a minor unit (pence, cents): a hundredth of the currency. */
+const MINOR_UNITS = new Set([
+  'p',
+  'pence',
+  'penny',
+  'gbx',
+  'c',
+  'ct',
+  'cent',
+  'cents',
+  '¢',
+  'öre',
+  'øre',
+  'ore',
+  'rappen',
+  'rp',
+]);
+/** Energy a price is per, as kWh: per MWh is a thousandth per kWh. */
+const PER_KWH: Record<string, number> = { wh: 1000, kwh: 1, mwh: 1e-3 };
+
+/**
+ * What a price entity's unit multiplies its readings by to make them the currency per kWh (or per
+ * the metered unit): "p/kWh" and "ct/kWh" are hundredths, "EUR/MWh" a thousandth, "GBP/kWh" and
+ * anything unknown 1. "GBp" (pence, as some integrations write it) is told apart from "GBP" by case.
+ */
+export function priceScale(unit: unknown): number {
+  if (typeof unit !== 'string' || !unit.includes('/')) return 1;
+  const [top, bottom] = unit.split('/').map((x) => x.trim());
+  const minor = top === 'GBp' || MINOR_UNITS.has(top.toLowerCase()) ? 0.01 : 1;
+  return minor * (PER_KWH[bottom.toLowerCase()] ?? 1);
+}
+
+/** The unit of a cost's price entity, when it has one. */
+function priceUnit(cost: CostConfig, hass: HomeAssistant | undefined): unknown {
+  return isEntityId(cost.price) ? hass?.states[cost.price.trim()]?.attributes?.unit_of_measurement : undefined;
 }
 
 /** The index of the last point at or before `t`, or -1 before the first. */
@@ -584,11 +630,19 @@ export function pausePrices(host: HTMLElement): void {
   stores.get(host)?.pause();
 }
 
-/** A cost's price steps over `range`, from its price entity's readings when it has one. */
-export function costSteps(cost: CostConfig, range: Range, prices: Prices | undefined, zone: Zone): PriceStep[] {
+/** A cost's price steps over `range`, from its price entity's readings (times `scale`, see `priceScale`) when it has one. */
+export function costSteps(
+  cost: CostConfig,
+  range: Range,
+  prices: Prices | undefined,
+  zone: Zone,
+  scale = 1,
+): PriceStep[] {
   const { bandOf } = costBands(cost);
   const base = isEntityId(cost.price)
-    ? (prices?.points.get(cost.price.trim()) ?? [])
+    ? (prices?.points.get(cost.price.trim()) ?? []).map((p) =>
+        p.v === null || scale === 1 ? p : { ...p, v: p.v * scale },
+      )
     : typeof cost.price === 'number'
       ? cost.price
       : undefined;
@@ -645,12 +699,12 @@ export function costSeries(
       noPrice: true,
     };
   }
-  const steps = costSteps(cost, f.load, f.prices, f.zone);
+  const steps = costSteps(cost, f.load, f.prices, f.zone, priceScale(priceUnit(cost, f.hass)));
   const measure = costMeasure(entity);
   const amounts = (band?: number): Point[] => {
     const price = (a: number, b: number) => meanPrice(steps, a, b, band);
     if (f.bounds && f.source === 'statistics')
-      return f.groupRows(costRows(readings, measure.factor, price), f.bounds, f.until);
+      return f.groupRows(costRows(readings, measure.factor, price, HOUR, measure.how === 'power'), f.bounds, f.until);
     const total = costTotal(readings, measure, price, f.bounds ?? [], f.until);
     if (f.bounds) return costGroups(total, f.bounds, f.until);
     // Carried on to now, as any history series is: the total holds until the next reading.

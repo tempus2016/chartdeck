@@ -21,6 +21,7 @@ import {
   priceSteps,
   runningSum,
   validateCost,
+  priceScale,
 } from '../src/history/cost';
 import type { CostFrame } from '../src/history/cost';
 import { energyEntities, energyStatistics } from '../src/history/energy';
@@ -295,6 +296,36 @@ describe('cost sums', () => {
   });
 });
 
+describe('price units', () => {
+  it('scales a price entity by its unit: minor units are hundredths, per MWh a thousandth per kWh', () => {
+    expect(priceScale('GBP/kWh')).toBe(1);
+    expect(priceScale('€/kWh')).toBe(1);
+    expect(priceScale('p/kWh')).toBe(0.01);
+    expect(priceScale('GBp/kWh')).toBe(0.01);
+    expect(priceScale('ct/kWh')).toBe(0.01);
+    expect(priceScale('c/kWh')).toBe(0.01);
+    expect(priceScale('¢/kWh')).toBe(0.01);
+    expect(priceScale('öre/kWh')).toBe(0.01);
+    expect(priceScale('EUR/MWh')).toBeCloseTo(0.001);
+    expect(priceScale('ct/MWh')).toBeCloseTo(0.00001);
+    expect(priceScale('GBP/Wh')).toBe(1000);
+    expect(priceScale('GBP/m³')).toBe(1);
+    expect(priceScale('p/m³')).toBe(0.01);
+    expect(priceScale(undefined)).toBe(1);
+    expect(priceScale('GBP')).toBe(1);
+  });
+
+  it('prices statistics rows of a power by the mean times the row', () => {
+    const flat = (v: number) => () => v;
+    // 2000 W for an hour is 2 kWh; at 0.5 that is 1. Half-hour rows halve it.
+    expect(values(costRows(pts([0, 2000], [1, null]), 1e-3, flat(0.5), H, true))).toEqual([
+      [0, 1],
+      [1, null],
+    ]);
+    expect(values(costRows(pts([0, 2000]), 1e-3, flat(0.5), H / 2, true))).toEqual([[0, 0.5]]);
+  });
+});
+
 describe('cost series', () => {
   const hass = { ...makeHass({}), config: { currency: 'GBP' } } as HomeAssistant;
   const bounds = [0, 12, 24].map((h) => DAY0 + h * H);
@@ -526,6 +557,61 @@ describe('cost on the card', () => {
     expect(query.period).toBe('hour');
     expect(query.types).toContain('change');
     expect(el.shadowRoot!.querySelector('.series-item')!.textContent).toContain('£');
+  });
+
+  it('reads a price entity in pence as hundredths of the currency', async () => {
+    const now = Date.now();
+    const sec = (ago: number) => (now - ago) / 1000;
+    const hass = meterHass({
+      'sensor.import': [
+        { s: '1000', lu: sec(10 * H) },
+        { s: '1010', lu: sec(5 * H) },
+      ],
+      'sensor.rate': [{ s: '30', lu: sec(30 * H) }],
+    });
+    hass.states['sensor.rate'] = {
+      ...hass.states['sensor.rate'],
+      state: '30',
+      attributes: { unit_of_measurement: 'p/kWh' },
+    };
+    const el = await mount({ style: 'line', cost: { price: 'sensor.rate' }, entities: ['sensor.import'] }, hass);
+    // 10 kWh at 30p is £3.00, not £300.
+    expect(el.shadowRoot!.querySelector('.series-item')!.textContent).toContain('£3.00');
+  });
+
+  it('prices a power sensor’s statistics by its hourly mean on a grouped chart', async () => {
+    const start = Date.UTC(2026, 10, 2);
+    const power = [0, 1, 2].map((h) => ({ start: start + h * H, end: start + (h + 1) * H, mean: 2000 }));
+    const hass = meterHass({}, { 'sensor.heat_pump': power });
+    hass.states['sensor.heat_pump'] = {
+      entity_id: 'sensor.heat_pump',
+      state: '2000',
+      attributes: { friendly_name: 'Heat pump', unit_of_measurement: 'W', state_class: 'measurement' },
+      last_changed: '',
+      last_updated: '',
+    } as HomeAssistant['states'][string];
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(start + 3 * H);
+    try {
+      const el = await mount(
+        {
+          style: 'column',
+          source: 'statistics',
+          group_by: 'day',
+          period: { calendar: 'day' },
+          cost: { price: 0.5 },
+          entities: ['sensor.heat_pump'],
+        },
+        hass,
+      );
+      const calls = (hass.callWS as unknown as { mock: { calls: [Record<string, unknown>][] } }).mock.calls;
+      const query = calls.find(([m]) => m.type === 'recorder/statistics_during_period')![0];
+      expect(query.types).toEqual(expect.arrayContaining(['change', 'mean']));
+      // 3 h at 2 kW is 6 kWh; at 0.5 that is £3.00.
+      expect(el.shadowRoot!.querySelector('.series-item')!.textContent).toContain('£3.00');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('asks for a price when none is set', async () => {
