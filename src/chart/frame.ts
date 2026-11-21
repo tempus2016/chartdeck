@@ -9,9 +9,21 @@ import type { EnergyMarks } from '../history/energy';
 import { key } from '../history/fetch';
 import { PERIOD_MS, groupHistory, groupStatistics, parseGrouping, statisticsQueryFor } from '../history/group';
 import type { Aggregate, Grouping } from '../history/group';
-import { pauseStore, storeFor } from '../history/store';
+import { pauseStore, storeFor, trim } from '../history/store';
 import { cumulativeSeries, validateCumulative } from '../history/transform-cumulative';
+import {
+  costEntities,
+  costMeasure,
+  costOf,
+  costOn,
+  costSeries,
+  loadPrices,
+  pausePrices,
+  validateCost,
+} from '../history/cost';
+import type { CostPart } from '../history/cost';
 import { derivativeSeries, validateDerivative } from '../history/transform-derivative';
+import { rollingLead, rollingSeries, rollingWindow, validateRolling, wantsRaw } from '../history/transform-rolling';
 import {
   conditionOf,
   conditionStatus,
@@ -34,6 +46,8 @@ import type { LegendItems } from './legend-toggle';
 import { rememberPlotted } from './export';
 import { CURVES } from './paths';
 import type { Curve } from './paths';
+import { formulaRequest } from '../formula';
+import { stateMapRequest } from '../state-map';
 
 /** The drawing's coordinate box. The SVG stretches to the card's width; strokes don't scale. */
 export const VIEW_W = 1000;
@@ -59,6 +73,8 @@ export interface ChartSeries {
    * kept or not, prepared like `points`, for the faint line behind it.
    */
   hidden?: Point[];
+  /** A column of a cost split by tariff band (`cost.split`): each band's share of every group. */
+  costParts?: CostPart[];
 }
 
 export interface HistoryFrame {
@@ -80,6 +96,8 @@ export interface HistoryFrame {
   conditions?: Conditions;
   /** Set while the header's names toggle series (`legend_toggle`): every series, hidden ones too. */
   legend?: LegendItems;
+  /** Some series draws a cost, but no price or tariff is set for it. */
+  noPrice?: boolean;
 }
 
 /** Checks for the options every history chart shares. */
@@ -88,7 +106,9 @@ export function validateHistoryOptions(raw: CardConfig): void {
   parseGrouping(raw);
   validateCumulative(raw);
   validateDerivative(raw);
+  validateRolling(raw);
   validateConditions(raw);
+  validateCost(raw);
   if (raw.source !== undefined && !SOURCES.includes(raw.source as Source)) {
     throw new Error(`"source" must be one of: ${SOURCES.join(', ')}`);
   }
@@ -116,11 +136,17 @@ export interface FrameOptions {
   hourly?: boolean;
   /** Also keep every reading of a series with a `when` (`ChartSeries.hidden`), for the faint line behind it. */
   ghost?: boolean;
+  /**
+   * Also keep the readings of a rolling series that asks for them (`transform_raw`) in
+   * `ChartSeries.hidden`, for the faint line behind it (when no `when` faint line takes its place).
+   */
+  raw?: boolean;
 }
 
 /**
  * One series' readings with its entity's history transform applied (`transform: cumulative`, a
- * running total; `transform: derivative`, a rate of change), and the entity with its value and
+ * running total; `transform: derivative`, a rate of change; `transform: rolling`, a rolling
+ * statistic, trimmed to `keep`: its readings may start a window early), and the entity with its value and
  * unit to match. Readings that are already in the shown unit go in (unit conversion comes first);
  * an entity without a transform comes back as it was. Every chart that draws history as numbers
  * calls this: the frame here, and box plot, candlestick and the 24-hour clock, which load their own.
@@ -132,9 +158,11 @@ export function seriesTransform(
   until: number,
   zone: Zone,
   hass: ChartContext['hass'],
+  keep: Range = range,
 ): { entity: ResolvedEntity; points: Point[] } {
   ({ entity, points } = cumulativeSeries(entity, points, range, until, zone, hass));
   ({ entity, points } = derivativeSeries(entity, points, hass, until));
+  ({ entity, points } = rollingSeries(entity, points, keep, hass, until));
   return { entity, points };
 }
 
@@ -147,19 +175,37 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   const group = parseGrouping(ctx.raw);
   // Grouped, the chart starts where its first group does: the last 7 days by day from midnight.
   const range: Range = { start: group ? startOf(group.unit, span.start, zone) : span.start, end: span.end };
-  const requests = ctx.items.map((e) => ({
+  // Series drawn as a cost (`cost`) and the price entities they read.
+  const costs = costOn(ctx.raw) ? ctx.items.map((e) => costOf(e.config, ctx.raw)) : [];
+  const priced = costs.some((c) => c !== undefined);
+  // Grouped statistics on a costed card read each hour's change; a power has none, so it reads its mean.
+  const powerMean = (i: number) =>
+    !options.text && group !== undefined && source === 'statistics' && costs[i] !== undefined
+      ? costMeasure(ctx.items[i]).how === 'power'
+      : false;
+  const requests = ctx.items.map((e, i) => ({
     entity: e.entityId,
     attribute: e.config.attribute,
-    ...(options.text ? { text: true } : {}),
+    ...stateMapRequest(e.config.state_map),
+    ...(options.text ? { text: true } : formulaRequest(e.config)),
+    ...(powerMean(i) ? { statistic: 'mean' as const } : {}),
   }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
   let statistics =
     group && source === 'statistics'
       ? statisticsQueryFor(group, zone, ctx.hass.config?.time_zone, options.range === true)
       : undefined;
-  if (statistics && options.hourly) statistics = { ...statistics, period: 'hour' };
+  if (statistics && (options.hourly || priced)) statistics = { ...statistics, period: 'hour' };
+  // A cost prices each hour's change, so grouped statistics read the change.
+  if (statistics && priced) {
+    const extra = requests.some((r) => r.statistic === 'mean') ? (['change', 'mean'] as const) : (['change'] as const);
+    statistics = { ...statistics, types: [...new Set([...statistics.types, ...extra])], value: 'change' };
+  }
   // Statistics groups load from one row early: the row before a group gives its `first`.
-  const load = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
+  const base = statistics ? { start: range.start - PERIOD_MS[statistics.period], end: range.end } : range;
+  // A rolling series loads a window earlier still, so the left edge has a full window behind it.
+  const lead = options.text ? 0 : rollingLead(ctx.items.map((e) => e.config));
+  const load = lead ? { start: base.start - lead, end: base.end } : base;
   const loaded = store.get(ctx.hass, requests, load, source, { live: span.live, statistics });
   // Series with a `when` keep only the readings taken while their condition held.
   const conditions = loadConditions(
@@ -171,6 +217,19 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     ctx.requestUpdate,
     ctx.raw,
   );
+  const prices = priced
+    ? loadPrices(
+        ctx.host,
+        ctx.hass,
+        costEntities(
+          ctx.raw,
+          ctx.items.map((e) => e.config),
+        ),
+        load,
+        span.live,
+        ctx.requestUpdate,
+      )
+    : undefined;
   const bounds = group ? boundaries(group.unit, range.start, range.end, zone) : [];
   const cardCurve = (ctx.raw.curve as Curve | undefined) ?? 'smooth';
   // Readings stop at the present, even when the span runs on to the end of today.
@@ -188,17 +247,47 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
   };
   // Per series, in this order: readings in the shown unit (unit conversion), then only those taken
   // while its condition held (`when`), then its transform (running total, rate of change).
-  const transform = (entity: ResolvedEntity, points: Point[]) =>
-    options.text ? { entity, points } : seriesTransform(entity, points, range, until, zone, ctx.hass);
+  // Every other series is trimmed back to its own span (rolling ones trim themselves, after the maths).
+  const transform = (entity: ResolvedEntity, points: Point[]) => {
+    if (options.text) return { entity, points };
+    const own = lead && rollingWindow(entity.config) === undefined ? trim(points, base) : points;
+    return seriesTransform(entity, own, range, until, zone, ctx.hass, base);
+  };
+  let noPrice = false;
   const series = ctx.items.map((loadedEntity, index): ChartSeries => {
     const own = loadedEntity.config as typeof loadedEntity.config & { color?: string; curve?: Curve; dash?: boolean };
     const all = convertPoints(loaded.data.get(key(requests[index])) ?? [], loadedEntity.conversion);
-    const { entity, points: readings } = transform(
-      loadedEntity,
-      conditionalPoints(loadedEntity.config, all, conditions),
-    );
+    const kept = conditionalPoints(loadedEntity.config, all, conditions);
+    const cost = costs[index];
     // Energy leaving the house (source: energy, split) is drawn below the axis.
-    const below = (entity.config as EnergyMarks).energy_below ? belowAxis : (points: Point[]) => points;
+    const below = (loadedEntity.config as EnergyMarks).energy_below ? belowAxis : (points: Point[]) => points;
+    if (cost && !options.text) {
+      // A cost is a running total from the span's start: readings loaded early for another
+      // series' rolling window are left out.
+      const priced = costSeries(loadedEntity, lead ? trim(kept, base) : kept, cost, {
+        load: base,
+        until,
+        zone,
+        source,
+        bounds: group ? bounds : undefined,
+        prices,
+        hass: ctx.hass,
+        cumulative: ctx.config.style !== 'column',
+        groupRows: (rows, b, u) => groupStatistics(rows, b, 'change', u),
+      });
+      if (priced.noPrice) noPrice = true;
+      return {
+        index,
+        entity: priced.entity,
+        points: below(priced.points),
+        color: baseColor(own.color ?? SERIES_COLORS[index % SERIES_COLORS.length]),
+        curve: own.curve ?? cardCurve,
+        dash: own.dash === true,
+        readings: kept,
+        ...(priced.parts ? { costParts: priced.parts.map((p) => ({ ...p, points: below(p.points) })) } : {}),
+      };
+    }
+    const { entity, points: readings } = transform(loadedEntity, kept);
     const out: ChartSeries = {
       index,
       entity,
@@ -210,12 +299,15 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
     };
     if (options.ghost && conditions && conditionOf(loadedEntity.config, ctx.raw)) {
       out.hidden = below(prepare(entity, transform(loadedEntity, all).points));
+    } else if (options.raw && wantsRaw(loadedEntity.config)) {
+      // The readings themselves, faint behind their rolling series.
+      out.hidden = below(prepare(entity, trim(kept, base)));
     }
     return out;
   });
   const frame = withLegend(
     {
-      status: conditionStatus(loaded.status, conditions),
+      status: prices?.pending && loaded.status === 'ready' ? 'loading' : conditionStatus(loaded.status, conditions),
       error: loaded.error,
       range,
       period,
@@ -226,6 +318,7 @@ export function historyFrame(ctx: ChartContext, now = Date.now(), options: Frame
       zone,
       group,
       ...(conditions ? { conditions } : {}),
+      ...(noPrice ? { noPrice } : {}),
     },
     ctx,
   );
@@ -405,6 +498,7 @@ const periodNavStyles = css`
 export function disconnectHistory(host: HTMLElement): void {
   pauseStore(host);
   pauseConditions(host);
+  pausePrices(host);
 }
 
 /**
@@ -445,6 +539,9 @@ export function frameMessage(frame: HistoryFrame, ctx: ChartContext): TemplateRe
     </div>`;
   }
   if (frame.legend && frame.series.length === 0) return allHiddenMessage(ctx);
+  if (frame.noPrice && frame.series.every((s) => s.points.every((p) => p.v === null))) {
+    return html`<div class="chart-message">${localize(ctx.hass, 'cost_no_price')}</div>`;
+  }
   if (frame.series.every((s) => s.points.every((p) => p.v === null))) {
     return html`<div class="chart-message">${localize(ctx.hass, 'chart_no_data')}</div>`;
   }
@@ -461,13 +558,22 @@ export function plot(
   label: string,
   defs: SVGTemplateResult | typeof nothing = nothing,
   background: SVGTemplateResult | typeof nothing = nothing,
+  /** The id of the text describing the chart in words (its summary), if any. */
+  describedBy?: string,
+  /**
+   * The drawing is inside an element that already carries its name (the keyboard's focusable plot
+   * area): hidden from screen readers so the chart is not announced twice.
+   */
+  decorative = false,
 ) {
   return html`<svg
     class="plot"
     viewBox="0 0 ${VIEW_W} ${VIEW_H}"
     preserveAspectRatio="none"
-    role="img"
-    aria-label=${label}
+    role=${decorative ? nothing : 'img'}
+    aria-label=${decorative ? nothing : label}
+    aria-describedby=${decorative ? nothing : (describedBy ?? nothing)}
+    aria-hidden=${decorative ? 'true' : nothing}
   >
     <defs>
       <clipPath id="cd-draw-in">

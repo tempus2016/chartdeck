@@ -1,5 +1,7 @@
 import { normalizeRule } from './fill';
+import { formulaEntities, readFormula } from './formula';
 import { DEFAULT_ANGLES, parseGaugeOptions } from './gauge';
+import { normalizeStateMap } from './state-map';
 import { STYLE_NAMES } from './types';
 import type {
   ActionConfig,
@@ -86,13 +88,26 @@ function pick<T>(own: T | undefined, card: T | undefined): T | undefined {
 
 /** An entity with the card's options under its own. */
 export function mergeEntity(raw: string | EntityConfig, card: EntityOptions, index: number): MergedEntity {
-  const own: EntityConfig = typeof raw === 'string' ? { entity: raw } : raw;
+  let own: EntityConfig = typeof raw === 'string' ? { entity: raw } : raw;
+  // A formula series (`formula` + `vars`) needs no entity of its own: it takes the first one its
+  // formula reads for its icon and more-info, and the formula itself as its name.
+  let formula;
+  try {
+    formula = own && typeof own === 'object' ? readFormula(own) : undefined;
+  } catch (err) {
+    throw new Error(`Entity ${index + 1}: ${(err as Error).message}`);
+  }
+  if (formula && own && (typeof own.entity !== 'string' || !own.entity)) {
+    const first = formulaEntities(formula)[0];
+    if (first) own = { name: formula.text, ...own, entity: first };
+  }
   if (!own || typeof own !== 'object' || typeof own.entity !== 'string' || !own.entity) {
     throw new Error(`Entity ${index + 1} needs an "entity" id`);
   }
   if (own.attribute !== undefined && own.attribute !== null && typeof own.attribute !== 'string') {
     throw new Error(`Entity ${index + 1}: "attribute" must be an attribute name`);
   }
+  const stateMap = normalizeStateMap(own.state_map, index);
   const min = pick(toLimit(own.min, 'min'), toLimit(card.min, 'min')) ?? 0;
   const max = pick(toLimit(own.max, 'max'), toLimit(card.max, 'max')) ?? 100;
   if (typeof min === 'number' && typeof max === 'number' && min >= max) {
@@ -123,6 +138,8 @@ export function mergeEntity(raw: string | EntityConfig, card: EntityOptions, ind
   if (target !== undefined) merged.target = target;
   if (decimals !== undefined) merged.decimals = decimals;
   if (!own.attribute) delete merged.attribute;
+  if (stateMap) merged.state_map = stateMap;
+  else delete merged.state_map;
   // Gauge options are the card's alone: every gauge on a card is drawn the same way. Only the
   // gauge styles read them: other styles (rings, pie…) give center and the angles their own meaning.
   if (DEFAULT_ANGLES[(card as CardConfig).style ?? 'bar']) merged.gauge = parseGaugeOptions(card as CardConfig);

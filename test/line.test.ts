@@ -84,7 +84,9 @@ describe('line chart', () => {
     expect(lines[1].getAttribute('stroke')).toContain('--warning-color');
     const header = qa(card, '.series-item').map((e) => e.textContent!.replace(/\s+/g, ' ').trim());
     expect(header).toEqual(['Inside 21.0 °C', 'Outside 9.0 °C']);
-    expect(q(card, 'svg.plot')!.getAttribute('aria-label')).toBe('Line chart of Inside, Outside');
+    // The focusable plot area (keyboard reading) carries the chart's name; the drawing isn't announced again.
+    expect(q(card, '.plot-area')!.getAttribute('aria-label')).toMatch(/^Line\ chart\ of\ Inside,\ Outside\. /);
+    expect(q(card, 'svg.plot')!.getAttribute('aria-hidden')).toBe('true');
     expect(card.hass!.callWS).toHaveBeenCalledTimes(1);
   });
 
@@ -263,6 +265,7 @@ describe('line chart editor', () => {
       period_until: 'now',
       period_navigate: false,
       source: 'history',
+      summary_show: false,
       group_by: 'none',
       aggregate: 'mean',
       compare: [],
@@ -290,6 +293,9 @@ describe('line chart editor', () => {
       grid_vertical: false,
       y_scale: 'linear',
       tooltip: true,
+      point_action: 'none',
+      point_action_window: '2h',
+      keyboard_nav: true,
       zoom: false,
       overview: false,
       forecast_hours: 24,
@@ -298,8 +304,18 @@ describe('line chart editor', () => {
       header: 'above',
       compact: false,
       legend_toggle: false,
+      table_toggle: false,
+      table_change: true,
       multiples: false,
       multiples_scale: 'auto',
+      normal_range: false,
+      normal_range_days: 'every_day',
+      normal_range_weeks: 4,
+      normal_range_low: 10,
+      normal_range_high: 90,
+      normal_range_median: true,
+      normal_range_marks: true,
+      normal_range_color: 'amber',
     });
     form.dispatchEvent(
       new CustomEvent('value-changed', {

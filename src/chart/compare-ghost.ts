@@ -16,6 +16,8 @@ import { seriesTransform } from './frame';
 import type { ChartSeries, HistoryFrame } from './frame';
 import type { PlotScales } from './grid';
 import { runPath, runs } from './paths';
+import { formulaRequest } from '../formula';
+import { stateMapRequest } from '../state-map';
 
 /*
  * Compare-period ghosts: the same entities over an earlier span (yesterday, a week ago, a year
@@ -188,7 +190,12 @@ export function compareGhosts(ctx: ChartContext, frame: HistoryFrame, now = Date
   const offsets = compareOffsets(ctx.raw);
   if (offsets.length === 0) return [];
   const style = ((ctx.raw as Raw).compare_style as CompareStyle | undefined) ?? 'grey';
-  const requests = ctx.items.map((e) => ({ entity: e.entityId, attribute: e.config.attribute }));
+  const requests = ctx.items.map((e) => ({
+    entity: e.entityId,
+    attribute: e.config.attribute,
+    ...formulaRequest(e.config),
+    ...stateMapRequest(e.config.state_map),
+  }));
   const { group, zone, source } = frame;
   const ghosts: Ghost[] = [];
   offsets.forEach((offset, o) => {

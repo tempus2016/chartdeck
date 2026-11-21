@@ -11,6 +11,8 @@ import type { ChartContext } from '../styles/index';
 import type { Band, CardConfig, HomeAssistant, ResolvedBand } from '../types';
 import { conversion } from '../units';
 import { formatDateTime } from './axes';
+import { calendarEvents, calendarTooltipRows, eventsAt, eventsIn, isSpanEvent, stopCalendars } from './calendar-marks';
+import type { CalendarEvent, TooltipEvent } from './calendar-marks';
 import { VIEW_H, VIEW_W } from './frame';
 import type { ChartSeries, HistoryFrame } from './frame';
 import type { PlotScales } from './grid';
@@ -26,7 +28,7 @@ import {
 import type { ThresholdZone } from './threshold-history';
 
 /** What an annotation marks. */
-export const ANNOTATION_TYPES = ['line', 'band', 'time', 'state', 'point'] as const;
+export const ANNOTATION_TYPES = ['line', 'band', 'time', 'state', 'point', 'calendar'] as const;
 export type AnnotationType = (typeof ANNOTATION_TYPES)[number];
 
 /** Which reading a point label goes on. */
@@ -56,11 +58,19 @@ export interface Annotation {
   to?: number | string;
   /** time: "07:00" (every day) or "2026-10-28 07:00" (once), one or a list. */
   times?: string | string[];
-  /** state: the entity whose changes are marked, and the state that counts (any change if absent). */
+  /**
+   * state: the entity whose changes are marked, and the state that counts (any change if absent).
+   * calendar: the `calendar.*` entity whose events are marked.
+   */
   entity?: string;
   state?: string;
-  /** state: shade the stretches while the entity is in the state, as well as marking each start. */
+  /**
+   * state: shade the stretches while the entity is in the state, as well as marking each start.
+   * calendar: shade timed events' length too (all-day and day-long events are always shaded).
+   */
   shade?: boolean;
+  /** calendar: only events whose title contains one of these words (comma-separated, any case). */
+  match?: string;
   /** point: which reading gets a label. */
   at?: PointAt;
 }
@@ -72,6 +82,7 @@ const DEFAULT_COLOR: Record<AnnotationType, string> = {
   time: 'grey',
   state: 'amber',
   point: 'primary',
+  calendar: 'purple',
 };
 
 /** Above this many marks from one annotation, only the lines are drawn: labels would be a smear. */
@@ -123,7 +134,7 @@ export function validateAnnotations(raw: CardConfig): void {
     if (!ANNOTATION_TYPES.includes(a.type as AnnotationType)) {
       throw new Error(`"${where('type')}" must be one of: ${ANNOTATION_TYPES.join(', ')}`);
     }
-    for (const k of ['label', 'color', 'state']) {
+    for (const k of ['label', 'color', 'state', 'match']) {
       if (a[k] !== undefined && typeof a[k] !== 'string') throw new Error(`"${where(k)}" must be text`);
     }
     for (const k of ['dash', 'shade']) {
@@ -146,6 +157,9 @@ export function validateAnnotations(raw: CardConfig): void {
     }
     if (a.type === 'state' && a.entity === undefined)
       throw new Error(`"${where('entity')}" is needed for a state mark`);
+    if (a.type === 'calendar' && !(typeof a.entity === 'string' && a.entity.trim().startsWith('calendar.'))) {
+      throw new Error(`"${where('entity')}" must be a calendar entity (calendar.…)`);
+    }
     checkThresholdHistory(a, where);
     if (a.at !== undefined && !POINT_AT.includes(a.at as PointAt)) {
       throw new Error(`"${where('at')}" must be one of: ${POINT_AT.join(', ')}`);
@@ -162,7 +176,7 @@ export function annotationsOf(raw: CardConfig): Annotation[] {
 export function annotationEntities(raw: CardConfig): string[] {
   const ids = new Set<string>();
   for (const a of annotationsOf(raw)) {
-    for (const v of [a.value, a.from, a.to, a.type === 'state' ? a.entity : undefined]) {
+    for (const v of [a.value, a.from, a.to, a.type === 'state' || a.type === 'calendar' ? a.entity : undefined]) {
       if (isEntityId(v)) ids.add(v.trim());
     }
   }
@@ -323,6 +337,7 @@ export function stopAnnotations(host: HTMLElement): void {
   if (c) c.generation++;
   caches.delete(host);
   stopThresholdHistory(host);
+  stopCalendars(host);
 }
 
 /**
@@ -406,6 +421,48 @@ export function stateHistory(ctx: ChartContext, range: Range, live: boolean): Ma
   return c.data;
 }
 
+// ---------------------------------------------------------------- calendars
+
+/** The calendars the card's calendar annotations read. */
+function calendarIds(raw: CardConfig): string[] {
+  return annotationsOf(raw)
+    .filter((a) => a.type === 'calendar' && a.entity)
+    .map((a) => a.entity!.trim());
+}
+
+/** Each calendar annotation with its events in `range` (loading them if needed). */
+function calendarMarks(
+  ctx: ChartContext,
+  frame: Pick<HistoryFrame, 'range' | 'live' | 'zone'>,
+): { a: Annotation; events: CalendarEvent[] }[] {
+  const ids = calendarIds(ctx.raw);
+  if (ids.length === 0) return [];
+  const loaded = calendarEvents(ctx, ids, frame.range, frame.live, frame.zone);
+  return annotationsOf(ctx.raw)
+    .filter((a) => a.type === 'calendar' && a.entity)
+    .map((a) => ({ a, events: eventsIn(loaded.get(a.entity!.trim()) ?? [], frame.range, a.match) }));
+}
+
+/**
+ * Tooltip rows for the calendar events going on at the hovered time `t`, for the line chart's
+ * tooltip footer. A zero-length event counts within 1% of the span of its line.
+ */
+export function annotationTooltip(
+  ctx: ChartContext,
+  frame: Pick<HistoryFrame, 'range' | 'live' | 'zone'>,
+  t: number | undefined,
+): TemplateResult | typeof nothing {
+  if (t === undefined) return nothing;
+  const slack = (frame.range.end - frame.range.start) / 100;
+  const rows: TooltipEvent[] = calendarMarks(ctx, frame).flatMap(({ a, events }) =>
+    eventsAt(events, t, slack).map((event) => ({
+      event,
+      color: baseColor(a.color ?? DEFAULT_COLOR.calendar),
+    })),
+  );
+  return calendarTooltipRows(ctx.hass, rows);
+}
+
 // ---------------------------------------------------------------- drawing
 
 export interface AnnotationLayers {
@@ -469,6 +526,7 @@ export function annotationLayers(
   const x = (t: number) => scales.x(t);
   const [lo, hi] = scales.domain;
   const states = stateHistory(ctx, range, frame.live);
+  const calendars = new Map(calendarMarks(ctx, frame).map(({ a, events }) => [a, events]));
   const steps = thresholdSteps(ctx, frame);
   const until = Math.min(range.end, Date.now());
   const unit = annotationUnit(frame);
@@ -553,6 +611,28 @@ export function annotationLayers(
         spans.map((s) => s.start).filter((t) => t > range.start),
         'state',
       );
+    } else if (a.type === 'calendar') {
+      // All-day and day-long events are spans; timed ones a line at the start (and, with shade, their length).
+      const events = calendars.get(a) ?? [];
+      const shaded = events.filter((e) => isSpanEvent(e) || (a.shade && e.end > e.start));
+      behind.push(
+        svg`${shaded.map((e) => {
+          const x1 = x(Math.max(e.start, range.start));
+          const x2 = x(Math.min(e.end, range.end));
+          return svg`<rect class="calendar-shade" x=${x1} width=${Math.max(0, x2 - x1)} y="0" height=${VIEW_H} fill=${color}></rect>`;
+        })}`,
+      );
+      const timed = events.filter((e) => !isSpanEvent(e) && e.start >= range.start);
+      front.push(
+        svg`${timed.map((e) => svg`<line class="mark-line calendar" x1=${x(e.start)} x2=${x(e.start)} y1="0" y2=${VIEW_H} stroke=${color}></line>`)}`,
+      );
+      // Labels: the annotation's own, or each event's title; a span already going is labelled at the left edge.
+      if (events.length <= MAX_MARK_LABELS) {
+        for (const e of events) {
+          const label = a.label || e.summary;
+          if (label) pending.push({ t: Math.max(e.start, range.start), label, color });
+        }
+      }
     } else if (a.type === 'point') {
       const s = seriesFor(a, frame.series);
       const p = s && pointFor(s, a.at ?? 'max', range, frame.group !== undefined);
@@ -608,6 +688,9 @@ export const annotationStyles = css`
   .plot .state-shade {
     opacity: 0.12;
   }
+  .plot .calendar-shade {
+    opacity: 0.1;
+  }
   .plot .threshold {
     stroke-width: 1.5;
   }
@@ -660,6 +743,17 @@ export const annotationStyles = css`
   }
   .annotation-label.mark.end {
     transform: translateX(calc(-100% - 2px));
+  }
+  .tooltip-events {
+    margin-top: 2px;
+    padding-top: 2px;
+    border-top: 1px solid var(--divider-color, rgba(127, 127, 127, 0.3));
+  }
+  .tooltip-event .event-swatch {
+    border-radius: 2px;
+  }
+  .tooltip-event-more {
+    color: var(--secondary-text-color);
   }
   .annotation-dot {
     position: absolute;

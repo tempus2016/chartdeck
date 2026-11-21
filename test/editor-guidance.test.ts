@@ -243,13 +243,19 @@ describe('warnings', () => {
       'binary_sensor.door': ['on', { friendly_name: 'Front door' }],
       'sensor.off': 'unavailable',
     } as Parameters<typeof makeHass>[0];
-    const entities = ['sensor.a', 'binary_sensor.door', 'sensor.off', { entity: 'binary_sensor.door', attribute: 'x' }];
+    const entities = [
+      'sensor.a',
+      'binary_sensor.door',
+      'sensor.off',
+      { entity: 'binary_sensor.door', attribute: 'x' },
+      { entity: 'binary_sensor.door', state_map: { on: 1, off: 0 } },
+    ];
     const { editor } = await mount({ style: 'bar', entities } as Partial<CardConfig>, states);
     await settle(editor);
     const list = q(editor, 'cd-entities-editor')!;
     const warnings = [...list.shadowRoot!.querySelectorAll('ha-alert[data-warning="not-number"]')];
     expect(warnings.map((w) => w.textContent)).toEqual([
-      'Front door reads "on", which isn\'t a number, so this style can\'t draw it. Pick a sensor that reports a number, or read one of its attributes under its options.',
+      'Front door reads "on", which isn\'t a number, so this style can\'t draw it. Map its states to numbers under its options, read one of its attributes, or pick a sensor that reports a number.',
     ]);
     document.body.innerHTML = '';
     const timeline = await mount({ style: 'timeline', entities } as Partial<CardConfig>, states);

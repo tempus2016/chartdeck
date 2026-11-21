@@ -23,6 +23,7 @@ export const CONDITION_STYLES = [
   'trend',
   'waterfall',
   'timeline',
+  'state_duration',
   'box',
   'candlestick',
   'day_clock',
@@ -30,6 +31,7 @@ export const CONDITION_STYLES = [
   'spiral',
   'strip_plot',
   'cycle_plot',
+  'duration_curve',
 ];
 
 /** Charts that can also draw the hidden readings faintly and the strip under the plot. */

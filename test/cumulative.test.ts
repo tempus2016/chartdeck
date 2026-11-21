@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import '../src/chartdeck-card';
 import {
   cumulativeSeries,
@@ -406,6 +406,11 @@ describe('editor fields', () => {
 
 describe('line chart with a running total', () => {
   it('draws the total and shows it in the header', async () => {
+    // Date is pinned: on a busy machine the card's own "now" fell a few ms after the test's, which
+    // moved the 24 h window and turned 23,000 Wh into 22,999 Wh.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-09T12:00:00Z'));
+    onTestFinished(() => vi.useRealTimers());
     const now = Date.now();
     const sec = (ago: number) => (now - ago) / 1000;
     const hass = makeHass({
@@ -499,6 +504,13 @@ describe('charts that load their own history', () => {
   });
 
   it("averages the running total into a 24-hour clock's number ring", async () => {
+    // Pinned to midday: the clock shows today, so just after midnight the readings 3-5 h ago fell
+    // on yesterday and the ring read 0.0 kWh.
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(noon);
+    onTestFinished(() => vi.useRealTimers());
     const card = await mount({ style: 'day_clock', period: undefined });
     const label = card.shadowRoot!.querySelector('.dc-ring')!.getAttribute('aria-label')!;
     expect(label).toMatch(/peak 4\.0 kWh at/);

@@ -59,6 +59,8 @@ import { formatNumber, withUnit } from '../format';
 import { localize } from '../localize';
 import type { CardConfig, HomeAssistant } from '../types';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
+import { formulaRequest } from '../formula';
+import { stateMapRequest } from '../state-map';
 
 export const UNDERNEATH = ['columns', 'line'] as const;
 export type Underneath = (typeof UNDERNEATH)[number];
@@ -121,7 +123,12 @@ function candleFrame(ctx: ChartContext, now = Date.now()): CandleFrame {
   const bounds = boundaries(unit, start, span.end, zone);
   const range: Range = { start, end: bounds[bounds.length - 1] };
   const until = Math.min(span.end, now);
-  const requests = ctx.items.map((e) => ({ entity: e.entityId, attribute: e.config.attribute }));
+  const requests = ctx.items.map((e) => ({
+    entity: e.entityId,
+    attribute: e.config.attribute,
+    ...formulaRequest(e.config),
+    ...stateMapRequest(e.config.state_map),
+  }));
   const store = storeFor(ctx.host, ctx.requestUpdate);
   const statistics = source === 'statistics' ? candleQuery(unit, zone, ctx.hass.config?.time_zone) : undefined;
   const loaded = store.get(ctx.hass, requests, { start, end: span.end }, source, { live: span.live, statistics });

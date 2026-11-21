@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import '../src/chartdeck-card';
 import { normalizeConfig } from '../src/config';
 import { entityTextSchema } from '../src/editor/schemas';
@@ -463,6 +463,13 @@ describe('day clock numbers', () => {
   });
 
   it('are converted before they are folded into the day', async () => {
+    // Pinned to midday: the clock shows today, so just after midnight the readings 1-2 h ago fell
+    // on yesterday and the peak was missing.
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(noon);
+    onTestFinished(() => vi.useRealTimers());
     const now = Date.now();
     const H = 3_600_000;
     const hass = makeHass({ 'sensor.p': ['2000', { friendly_name: 'Grid', unit_of_measurement: 'W' }] });

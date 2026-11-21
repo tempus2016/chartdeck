@@ -16,9 +16,12 @@ import {
 } from './schemas';
 import type { FieldBinding } from './schemas';
 import './bands-editor';
+import './state-map-editor';
+import { mapState } from '../state-map';
 import './limit-field';
 import { LanguageController } from '../language-controller';
 import { computeHelper } from './helper';
+import { formulaForm } from './formula-editor';
 import { ICON_DELETE } from './icons';
 
 type Item = string | EntityConfig;
@@ -170,6 +173,15 @@ export class CdEntitiesEditor extends LitElement {
     this._emit(setEntityOption(this._asConfig, index, key, value));
   }
 
+  /** Put a whole entity back (a form that edits several of its keys at once). */
+  private _replace(index: number, next: EntityConfig): void {
+    const entities = [...(this.entities ?? [])];
+    if (entities[index] === undefined) return;
+    const keys = Object.keys(next);
+    entities[index] = keys.length === 1 && keys[0] === 'entity' ? next.entity : next;
+    this._emit({ type: '', entities });
+  }
+
   private _move(index: number, to: number): void {
     const expanded = new Set<number>();
     for (const i of this._expanded) expanded.add(i === index ? to : i === to ? index : i);
@@ -221,10 +233,12 @@ export class CdEntitiesEditor extends LitElement {
 
   /** On a style that draws numbers, a state that isn't one (and isn't just offline) can't be drawn. */
   private _notNumber(own: EntityConfig, name: string) {
-    if (!this.numeric || own.attribute) return nothing;
+    if (!this.numeric || own.attribute || own.formula) return nothing;
     const state = this.hass?.states[own.entity]?.state;
     if (state === undefined || ['unavailable', 'unknown', ''].includes(state)) return nothing;
-    if (Number.isFinite(Number(state))) return nothing;
+    if (Number.isFinite(Number(state)) || mapState(state, own.state_map as Record<string, number>) !== undefined) {
+      return nothing;
+    }
     return html`<ha-alert class="warning" data-warning="not-number" alert-type="warning"
       >${this._t('editor_warn_not_number', { entity: name, state })}</ha-alert
     >`;
@@ -249,6 +263,17 @@ export class CdEntitiesEditor extends LitElement {
     };
     return html`<div class="overrides">
       ${this._form('entity-attribute', index, own, entityAttributeSchema(own.entity), ENTITY_ATTRIBUTE_FIELDS)}
+      ${formulaForm(this.hass, own, index, (next) => this._replace(index, next))}
+      <div role="group" aria-labelledby="map-${index}">
+        <div class="sub-heading" id="map-${index}">${this._t('editor_state_map')}</div>
+        <cd-state-map-editor
+          .hass=${this.hass}
+          .map=${own.state_map}
+          .entityId=${own.entity}
+          .attribute=${own.attribute}
+          @value-changed=${stop((v) => this._set(index, 'state_map', v))}
+        ></cd-state-map-editor>
+      </div>
       ${this._form(
         'entity-text',
         index,

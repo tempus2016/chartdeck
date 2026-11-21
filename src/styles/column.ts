@@ -1,4 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
+import { SUMMARY_FIELDS, chartSummary, summarySchema, validateSummary } from '../chart/summary';
 import { nowMarkerLayer, nowMarkerStyles, stopNowMarker, validateNowMarker } from '../chart/now-marker';
 import { NOW_MARKER_FIELDS, nowMarkerSchema } from '../editor/now-marker-editor';
 import type { TemplateResult } from 'lit';
@@ -42,6 +43,23 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotAxes, PlotScales } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import {
+  TABLE_VIEW_FIELDS,
+  dataTable,
+  tableVariant,
+  tableView,
+  tableViewSchema,
+  tableViewStyles,
+  validateTableView,
+} from '../chart/table-view';
+import {
+  KEYBOARD_NAV_FIELDS,
+  KEYBOARD_NAV_SCHEMA,
+  keyboardNav,
+  keyboardStyles,
+  stopKeyboard,
+  validateKeyboardNav,
+} from '../chart/keyboard';
 import { STACK_MODES, stackExtent, stackValues, totals, validateStack } from '../chart/stack';
 import type { Layer, StackMode } from '../chart/stack';
 import {
@@ -56,12 +74,15 @@ import {
   validateTooltipOptions,
 } from '../chart/tooltip';
 import type { TooltipOptions } from '../chart/tooltip';
+import { historyLink, historyLinkStyles, historyTap, validatePointAction } from '../chart/history-link';
 import {
   AXES_FIELDS,
   ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
+  pointActionSchema,
+  POINT_ACTION_FIELDS,
   cachedSchema,
   chartForm,
   choice,
@@ -72,6 +93,9 @@ import {
 import type { FieldBinding } from '../editor/schemas';
 import { formatNumber, withUnit } from '../format';
 import { shownValue } from '../history/energy';
+import { costLegend, costPartRows, costPartStyles, partsAt } from '../chart/cost-parts';
+import { costEditor } from '../editor/cost-editor';
+import { costEntities } from '../history/cost';
 import type { Aggregate, GroupUnit } from '../history/group';
 import type { Point } from '../history/types';
 import { localize } from '../localize';
@@ -104,7 +128,11 @@ function validate(raw: CardConfig): void {
   validateHistoryOptions(shared as CardConfig);
   validateAxisOptions(raw);
   validateTooltipOptions(raw);
+  validatePointAction(raw);
   validateLayout(raw);
+  validateSummary(raw);
+  validateTableView(raw);
+  validateKeyboardNav(raw);
   validateStack(raw);
   validateErrorBars(raw);
   for (const k of ['range', 'rounded', 'labels']) {
@@ -246,6 +274,27 @@ function drawColumns(
       const v = table.values[k][i];
       if (v === null) return;
       const [left, width] = columnBox(x0, x1, k, n);
+      if (s.costParts && !range) {
+        // A cost split by tariff band: each band's share stacked in the series' column, cheapest first.
+        const slices = partsAt(s.costParts, t);
+        let up = baseline;
+        let down = baseline;
+        const top = slices.reduce((at, sl, j) => (sl.v > 0 ? j : at), -1);
+        const bottom = slices.reduce((at, sl, j) => (sl.v < 0 ? j : at), -1);
+        slices.forEach((sl, j) => {
+          if (sl.v === 0) return;
+          const from = sl.v > 0 ? up : down + sl.v;
+          const to = sl.v > 0 ? up + sl.v : down;
+          if (sl.v > 0) up += sl.v;
+          else down += sl.v;
+          const cap = j === top ? 'top' : j === bottom ? 'bottom' : '';
+          out.columns.push(column(scales, left, width, from, to, baseColor(sl.color), cap, k));
+        });
+        if (showLabels && width * px >= LABEL_PX) {
+          out.labels.push(valueLabel(ctx, left + width / 2, scales.y(v >= 0 ? up : down), v, s.entity.decimals, v < 0));
+        }
+        return;
+      }
       if (range) {
         const lo = table.lows[k][i] ?? v;
         const hi = table.highs[k][i] ?? v;
@@ -305,10 +354,17 @@ function render(ctx0: ChartContext): TemplateResult {
   });
   const nav = periodNav(frame, ctx);
   const names = seriesHeader(frame, ctx);
-  const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
+  const bands = costLegend(frame.series);
+  // With `table_toggle`, the header ends in a Chart | Table switch, and the table can stand in for the plot.
+  const view = tableView(
+    ctx,
+    chartLayout(raw),
+    nav === nothing && names === nothing && bands === nothing ? nothing : html`${nav}${names}${bands}`,
+  );
+  const { layout, header } = view;
   const message = frameMessage(frame, ctx);
-  const layout = chartLayout(raw);
   if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
+  if (view.table) return chartFrame(layout, header, dataTable(ctx, frame, { heading: groupHeading, now }));
   const mode: StackMode = range ? 'none' : ((raw.stack as StackMode | undefined) ?? 'none');
   const group = frame.group;
   // Grouped, every slot is a whole group: today's column is as wide as yesterday's, and the time
@@ -334,6 +390,16 @@ function render(ctx0: ChartContext): TemplateResult {
         )
       : undefined;
   const reach = (whiskers ?? []).flat().flatMap((w) => (w ? [w.lo, w.hi] : []));
+  // A split cost's bands stack up and down from zero: the axis reaches each way's sum.
+  for (const s of mode === 'none' ? frame.series : []) {
+    for (const t of s.costParts ? table.times : []) {
+      const slices = partsAt(s.costParts!, t);
+      reach.push(
+        slices.reduce((a, sl) => a + Math.max(0, sl.v), 0),
+        slices.reduce((a, sl) => a + Math.min(0, sl.v), 0),
+      );
+    }
+  }
   const targets = frame.series.map((s) => s.entity.target).filter((t): t is number => t !== null);
   let data: [number, number] | undefined;
   if (layers) data = stackExtent(layers);
@@ -397,6 +463,9 @@ function render(ctx0: ChartContext): TemplateResult {
       return localize(ctx.hass, 'error_bars_tooltip', { value, low: fmt(w.lo, s), high: fmt(w.hi, s) });
     };
   }
+  if (!layers && !range && frame.series.some((s) => s.costParts)) {
+    tip.footer = (rows) => costPartRows(ctx, rows, (c) => table.times[slotOf.get(c) ?? -1]);
+  }
   if (layers) {
     const sums = totals(table.values);
     const unit = sharedUnit(shown);
@@ -412,6 +481,12 @@ function render(ctx0: ChartContext): TemplateResult {
   }
   const tooltip = tooltipEnabled(raw);
   const hovered = tooltip ? hoverTime(ctx.host) : undefined;
+  // A column opens History over its whole group (or its stretch between readings, ungrouped).
+  const slotAt = (t: number) => {
+    const i = slotOf.get(t);
+    return i === undefined ? undefined : { start: table.times[i], end: table.ends[i] };
+  };
+  tip.after = historyLink(ctx, shown, hovered, slotAt);
   const at = hovered === undefined ? undefined : slotOf.get(hovered);
   const highlight =
     at === undefined
@@ -427,6 +502,25 @@ function render(ctx0: ChartContext): TemplateResult {
     style: localize(ctx.hass, 'editor_style_column'),
     names: frame.series.map((s) => s.entity.name).join(', '),
   });
+  // One Tab stop: arrow keys step through the columns, the tooltip and slot highlight follow, and
+  // a ring marks the top of the focused series' column (or its slice of a stack).
+  const reader = keyboardNav(ctx, shown, scales, xRange, label, {
+    ...tip,
+    position: (s, p) => {
+      const i = slotOf.get(p.t);
+      const k = frame.series.findIndex((x) => x.index === s.index);
+      if (i === undefined || k < 0 || p.v === null) return null;
+      const x0 = scales.x(table.times[i]);
+      const x1 = scales.x(table.ends[i]);
+      if (layers) {
+        const layer = layers[k][i];
+        const [left, width] = columnBox(x0, x1, 0, 1);
+        return layer ? [left + width / 2, clampY(scales.y(layer[1]))] : null;
+      }
+      const [left, width] = columnBox(x0, x1, k, frame.series.length);
+      return [left + width / 2, clampY(scales.y(range ? (table.highs[k][i] ?? p.v) : p.v))];
+    },
+  });
   const radius = raw.rounded === false ? 0 : RADIUS_PX;
   return chartFrame(
     layout,
@@ -436,11 +530,17 @@ function render(ctx0: ChartContext): TemplateResult {
       ctx,
       content: svg``,
       label,
+      // Grouped, a peak is a column: name it by its group ("Tue 18 Nov"), and "now" means little.
+      summary: chartSummary(ctx, frame.series, {
+        range: xRange,
+        live: frame.live && !group,
+        when: group ? (t) => groupHeading(t, table.ends[table.times.indexOf(t)] ?? t, group.unit, ctx.hass) : undefined,
+      }),
       overlay: html`<div class="columns" style="--r:${radius}px">${highlight}${drawn.columns}${drawn.targets}</div>
         <div class="point-labels">${drawn.labels}</div>
         ${layout.header === 'over' ? headerOver(header) : nothing}
         ${nowMarkerLayer(ctx, frame, xRange, scales, plotWidth(ctx))}
-        ${tooltip ? tooltipLayer(ctx, shown, scales, hovered, plotWidth(ctx), tip) : nothing}`,
+        ${tooltip ? tooltipLayer(ctx, shown, scales, hovered, plotWidth(ctx), tip) : nothing} ${reader.layer}`,
       hover: tooltip
         ? hoverHandlers(
             ctx,
@@ -448,6 +548,8 @@ function render(ctx0: ChartContext): TemplateResult {
             shown.map((s) => s.points),
           )
         : undefined,
+      tap: historyTap(ctx, xRange, shown, false, slotAt),
+      keys: reader.keys,
     }),
   );
 }
@@ -470,8 +572,12 @@ const COLUMN_FIELDS: FieldBinding[] = [
   { name: 'rounded', path: ['rounded'], default: true },
   { name: 'error_bars', path: ['error_bars'], default: 'none' },
   ...AXES_FIELDS,
+  ...POINT_ACTION_FIELDS,
+  ...KEYBOARD_NAV_FIELDS,
   ...NOW_MARKER_FIELDS,
   ...LAYOUT_FIELDS,
+  ...SUMMARY_FIELDS,
+  ...TABLE_VIEW_FIELDS,
 ];
 
 /**
@@ -489,40 +595,51 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
   const ungrouped = ctx.config.group_by === 'none';
   // The shared period fields without their grouping row: the column chart has its own choices.
   const period = { ...ctx.config, group_by: undefined };
-  const schema = cachedSchema(`column|${historyVariant(period)}|${ungrouped}`, ctx.hass, () => [
-    ...historySchema(ctx.hass, period).slice(0, -1),
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'group_by', selector: choice(ctx.hass, 'group_by', COLUMN_GROUPS) },
-        ...(ungrouped ? [] : [{ name: 'aggregate', selector: choice(ctx.hass, 'aggregate', COLUMN_AGGREGATES) }]),
-      ],
-    },
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'stack', selector: choice(ctx.hass, 'stack', STACK_MODES) },
-        { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
-      ],
-    },
-    {
-      type: 'grid',
-      name: '',
-      schema: [
-        { name: 'range', selector: { boolean: {} } },
-        { name: 'column_labels', selector: { boolean: {} } },
-        { name: 'rounded', selector: { boolean: {} } },
-      ],
-    },
-    // Whiskers need groups to spread within.
-    ...(ungrouped ? [] : [{ name: 'error_bars', selector: choice(ctx.hass, 'error_bars', ERROR_BARS) }]),
-    ...axesSchema(ctx.hass),
-    ...nowMarkerSchema(ctx.hass),
-    ...layoutSchema(ctx.hass),
-  ]);
-  return chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS);
+  const schema = cachedSchema(
+    `column|${historyVariant(period)}|${ungrouped}|${tableVariant(ctx.config)}`,
+    ctx.hass,
+    () => [
+      ...historySchema(ctx.hass, period).slice(0, -1),
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'group_by', selector: choice(ctx.hass, 'group_by', COLUMN_GROUPS) },
+          ...(ungrouped ? [] : [{ name: 'aggregate', selector: choice(ctx.hass, 'aggregate', COLUMN_AGGREGATES) }]),
+        ],
+      },
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'stack', selector: choice(ctx.hass, 'stack', STACK_MODES) },
+          { name: 'color_by', selector: choice(ctx.hass, 'color_by', ['series', 'bands']) },
+        ],
+      },
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          { name: 'range', selector: { boolean: {} } },
+          { name: 'column_labels', selector: { boolean: {} } },
+          { name: 'rounded', selector: { boolean: {} } },
+        ],
+      },
+      // Whiskers need groups to spread within.
+      ...(ungrouped ? [] : [{ name: 'error_bars', selector: choice(ctx.hass, 'error_bars', ERROR_BARS) }]),
+      ...axesSchema(ctx.hass),
+      ...pointActionSchema(ctx.hass),
+      ...KEYBOARD_NAV_SCHEMA,
+      ...nowMarkerSchema(ctx.hass),
+      ...layoutSchema(ctx.hass),
+      ...tableViewSchema(ctx.config),
+      ...summarySchema(),
+    ],
+  );
+  return html`${chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS)}${costEditor(
+    ctx,
+    true,
+  )}`;
 }
 
 const ENTITY_FIELDS: FieldBinding[] = [{ name: 'column_color', path: ['color'] }];
@@ -597,10 +714,14 @@ export const columnChart: ChartStyleModule = {
     ${frameStyles}
     ${gridStyles}
     ${tooltipStyles}
+    ${historyLinkStyles}
     ${layoutStyles}
     ${columnStyles}
     ${errorBarStyles}
     ${nowMarkerStyles}
+    ${costPartStyles}
+    ${tableViewStyles}
+    ${keyboardStyles}
   `,
   thumbnail: () => svg`
     <path d="M7 36 V22 a2 2 0 0 1 2 -2 h4 a2 2 0 0 1 2 2 V36 Z" fill="var(--primary-color, #03a9f4)" />
@@ -611,6 +732,7 @@ export const columnChart: ChartStyleModule = {
     <path d="M4 36.5 H62" stroke="var(--secondary-text-color, #888)" stroke-width="1" />`,
   validate,
   editor: columnEditor,
+  watch: (raw) => costEntities(raw),
   entityFields: (hass) => ({
     schema: cachedSchema('column-entity', hass, () => [{ name: 'column_color', selector: { text: {} } }]),
     fields: ENTITY_FIELDS,
@@ -620,6 +742,7 @@ export const columnChart: ChartStyleModule = {
     stopChartWidth(host);
     stopHover(host);
     stopNowMarker(host);
+    stopKeyboard(host);
   },
   render,
 };

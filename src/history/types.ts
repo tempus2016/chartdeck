@@ -32,4 +32,17 @@ export interface SeriesRequest {
   text?: boolean;
   /** Read compass points (N, SSW) as degrees as well as numbers (history only; see `parseBearing`). */
   bearing?: boolean;
+  /**
+   * Work the series out from other entities (see formula.ts): the formula as written and the
+   * entity each of its names reads. `entity` and `attribute` are then not read.
+   */
+  formula?: string;
+  vars?: Record<string, string>;
+  /** Read these words as these numbers before anything else (an entity's `state_map`). */
+  stateMap?: Record<string, number>;
+  /**
+   * Long-term statistics: read this column for this series whatever the query's value column is
+   * (a power sensor's hourly mean on a costed card that reads every other series' change).
+   */
+  statistic?: 'mean' | 'min' | 'max' | 'state' | 'change';
 }

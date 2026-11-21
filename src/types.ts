@@ -46,11 +46,13 @@ export type StyleName =
   | 'sankey'
   | 'chord'
   | 'timeline'
+  | 'state_duration'
   | 'climate'
   | 'wind_rose'
   | 'day_clock'
   | 'cycle_plot'
-  | 'trend';
+  | 'trend'
+  | 'duration_curve';
 export const STYLE_NAMES: StyleName[] = [
   'bar',
   'thin',
@@ -97,11 +99,13 @@ export const STYLE_NAMES: StyleName[] = [
   'sankey',
   'chord',
   'timeline',
+  'state_duration',
   'climate',
   'wind_rose',
   'day_clock',
   'cycle_plot',
   'trend',
+  'duration_curve',
 ];
 export type SortMode = 'none' | 'ascending' | 'descending';
 /** A number, or a string naming an entity whose state supplies the number. */
@@ -139,6 +143,8 @@ export interface EntityConfig extends EntityOptions {
   entity: string;
   /** Read this attribute as the value instead of the state. */
   attribute?: string;
+  /** Draw these states (or attribute values) as these numbers, e.g. heating: 100, idle: 0. */
+  state_map?: Record<string, number>;
   /** Charts: this series' colour (a palette name or any CSS colour). */
   color?: string;
   /** Line and area charts: smooth, straight or step. */
@@ -151,6 +157,10 @@ export interface EntityConfig extends EntityOptions {
   dots?: boolean;
   /** Line charts: draw this series above the others. */
   on_top?: boolean;
+  /** Work the value out from other entities ("a - b"), each named in `vars` (see formula.ts). */
+  formula?: string;
+  /** The entity each name in `formula` reads. */
+  vars?: Record<string, string>;
 }
 export interface ShowOptions {
   name: boolean;
@@ -183,6 +193,9 @@ export interface CardConfig extends EntityOptions {
 export interface MergedEntity extends EntityOptions {
   entity: string;
   attribute?: string;
+  formula?: string;
+  vars?: Record<string, string>;
+  state_map?: Record<string, number>;
   min: Limit;
   max: Limit;
   severity: Band[];
@@ -248,6 +261,12 @@ export interface HomeAssistant {
   formatEntityState?(stateObj: HassEntity, state?: string): string;
   /** Home Assistant's websocket call; charts load history and statistics with it. */
   callWS?<T>(msg: Record<string, unknown>): Promise<T>;
-  config?: { time_zone?: string };
+  /** Home Assistant's REST call (path after `/api/`); calendar annotations load events with it. */
+  callApi?<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    parameters?: Record<string, unknown>,
+  ): Promise<T>;
+  config?: { time_zone?: string; currency?: string };
   formatEntityAttributeValue?(stateObj: HassEntity, attribute: string, value?: unknown): string;
 }

@@ -37,7 +37,7 @@ import type { Point } from './types';
  */
 
 /** Every per-entity transform. Both transform files list them all, so neither rejects the other's. */
-export const TRANSFORMS = ['cumulative', 'derivative'] as const;
+export const TRANSFORMS = ['cumulative', 'derivative', 'rolling'] as const;
 export const DERIVATIVE_UNIT_TIMES = ['s', 'min', 'h', 'd'] as const;
 export type DerivativeUnitTime = (typeof DERIVATIVE_UNIT_TIMES)[number];
 const UNIT_MS: Record<DerivativeUnitTime, number> = { s: 1000, min: 60_000, h: 3_600_000, d: 86_400_000 };
@@ -70,6 +70,7 @@ export const DERIVATIVE_STYLES = [
   'spiral',
   'strip_plot',
   'cycle_plot',
+  'duration_curve',
 ];
 
 interface DerivativeConfig {
@@ -221,7 +222,8 @@ export function derivativeSeries(
   const own = entity.config as DerivativeConfig;
   if (own.transform !== 'derivative') return { entity, points };
   const time = (own.transform_unit_time as DerivativeUnitTime | undefined) ?? 'h';
-  const increasing = !entity.config.attribute && entity.stateObj?.attributes?.state_class === 'total_increasing';
+  const increasing =
+    !entity.formula && !entity.config.attribute && entity.stateObj?.attributes?.state_class === 'total_increasing';
   const smoothing = typeof own.transform_smoothing === 'number' ? own.transform_smoothing : 1;
   let out = rates(points, UNIT_MS[time], increasing, smoothing, parseWindow(own.transform_smoothing_time) ?? 0);
   const steady = out.every((p) => p.v === null) ? heldValue(points) : undefined;

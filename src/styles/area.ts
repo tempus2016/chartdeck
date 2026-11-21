@@ -1,6 +1,9 @@
 import { css, html, nothing, svg } from 'lit';
+import { SUMMARY_FIELDS, chartSummary, summarySchema, validateSummary } from '../chart/summary';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
 import { baseColor } from '../bands';
+import { costEditor } from '../editor/cost-editor';
+import { costEntities } from '../history/cost';
 import { validateAxisOptions } from '../chart/axes';
 import { downsample } from '../chart/downsample';
 import {
@@ -17,6 +20,23 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotScales } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import {
+  TABLE_VIEW_FIELDS,
+  dataTable,
+  tableVariant,
+  tableView,
+  tableViewSchema,
+  tableViewStyles,
+  validateTableView,
+} from '../chart/table-view';
+import {
+  KEYBOARD_NAV_FIELDS,
+  KEYBOARD_NAV_SCHEMA,
+  keyboardNav,
+  keyboardStyles,
+  stopKeyboard,
+  validateKeyboardNav,
+} from '../chart/keyboard';
 import { runPath, runs } from '../chart/paths';
 import type { Curve, XY } from '../chart/paths';
 import { extent } from '../chart/scale';
@@ -37,12 +57,15 @@ import {
   validateTooltipOptions,
 } from '../chart/tooltip';
 import type { TooltipOptions } from '../chart/tooltip';
+import { historyLink, historyLinkStyles, historyTap, validatePointAction } from '../chart/history-link';
 import {
   AXES_FIELDS,
   ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
+  pointActionSchema,
+  POINT_ACTION_FIELDS,
   cachedSchema,
   chartForm,
   choice,
@@ -57,6 +80,7 @@ import { CURVES } from '../chart/paths';
 import { localize } from '../localize';
 import { shownValue } from '../history/energy';
 import type { Point } from '../history/types';
+import { groupHeading } from './column';
 import type { ChartContext, ChartEditorContext, ChartStyleModule } from './index';
 import type { CardConfig, HomeAssistant } from '../types';
 
@@ -224,10 +248,16 @@ function render(ctx: ChartContext): TemplateResult {
   const frame: HistoryFrame = historyFrame(ctx, Date.now(), { ghost: mode === 'none' && ghostOn(ctx.raw) });
   const nav = periodNav(frame, ctx);
   const names = seriesHeader(frame, ctx);
-  const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}`;
+  // With `table_toggle`, the header ends in a Chart | Table switch, and the table can stand in for the plot.
+  const view = tableView(
+    ctx,
+    chartLayout(ctx.raw),
+    nav === nothing && names === nothing ? nothing : html`${nav}${names}`,
+  );
+  const { layout, header } = view;
   const message = frameMessage(frame, ctx);
-  const layout = chartLayout(ctx.raw);
   if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
+  if (view.table) return chartFrame(layout, header, dataTable(ctx, frame, { heading: groupHeading }));
   const thinned = frame.series.map((s) => ({ ...s, points: downsample(s.points, MAX_POINTS) }));
   let shown: ChartSeries[] = thinned;
   let drawn: AreaDrawing[];
@@ -282,6 +312,9 @@ function render(ctx: ChartContext): TemplateResult {
     style: localize(ctx.hass, 'editor_style_area'),
     names: frame.series.map((s) => s.entity.name).join(', '),
   });
+  // One Tab stop: arrow keys step through the readings, the tooltip follows (on a stack, the ring
+  // sits on top of the focused series' layer, as the tooltip's dot does).
+  const reader = keyboardNav(ctx, shown, axes.scales, frame.range, label, tip);
   return chartFrame(
     layout,
     header,
@@ -289,10 +322,12 @@ function render(ctx: ChartContext): TemplateResult {
       axes,
       ctx,
       content: svg`${ghosts}${drawn.map((d) => d.body)}`,
+      summary: chartSummary(ctx, frame.series, { range: frame.range, live: frame.live }),
       defs: svg`${drawn.map((d) => d.defs)}`,
       label,
       overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
-      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), tip) : nothing}`,
+      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), { ...tip, after: historyLink(ctx, shown, hoverTime(ctx.host)) }) : nothing}
+      ${reader.layer}`,
       hover: tooltip
         ? hoverHandlers(
             ctx,
@@ -300,7 +335,9 @@ function render(ctx: ChartContext): TemplateResult {
             shown.map((s) => s.points),
           )
         : undefined,
+      tap: historyTap(ctx, frame.range, shown),
       ...conditionStrip(ctx, frame, frame.range, axes.scales),
+      keys: reader.keys,
     }),
   );
 }
@@ -313,11 +350,15 @@ const AREA_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: AREA_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...POINT_ACTION_FIELDS,
+  ...KEYBOARD_NAV_FIELDS,
   ...LAYOUT_FIELDS,
+  ...SUMMARY_FIELDS,
+  ...TABLE_VIEW_FIELDS,
 ];
 
 export function areaEditor(ctx: ChartEditorContext): TemplateResult {
-  const schema = cachedSchema(`area|${historyVariant(ctx.config)}`, ctx.hass, () => [
+  const schema = cachedSchema(`area|${historyVariant(ctx.config)}|${tableVariant(ctx.config)}`, ctx.hass, () => [
     ...historySchema(ctx.hass, ctx.config),
     {
       type: 'grid',
@@ -336,9 +377,13 @@ export function areaEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     ...axesSchema(ctx.hass),
+    ...pointActionSchema(ctx.hass),
+    ...KEYBOARD_NAV_SCHEMA,
     ...layoutSchema(ctx.hass),
+    ...summarySchema(),
+    ...tableViewSchema(ctx.config),
   ]);
-  return chartForm(ctx, 'chart', schema, AREA_FIELDS);
+  return html`${chartForm(ctx, 'chart', schema, AREA_FIELDS)}${costEditor(ctx)}`;
 }
 
 const NEGATIVE_FIELD: FieldBinding = { name: 'negative_color', path: ['negative_color'] };
@@ -395,9 +440,12 @@ export const area: ChartStyleModule = {
     ${frameStyles}
     ${gridStyles}
     ${tooltipStyles}
+    ${historyLinkStyles}
     ${layoutStyles}
     ${areaStyles}
     ${conditionStyles}
+    ${tableViewStyles}
+    ${keyboardStyles}
   `,
   thumbnail: () => svg`
     <defs>
@@ -413,17 +461,23 @@ export const area: ChartStyleModule = {
     validateHistoryOptions(raw);
     validateAxisOptions(raw);
     validateTooltipOptions(raw);
+    validatePointAction(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
+    validateSummary(raw);
+    validateTableView(raw);
+    validateKeyboardNav(raw);
     validateStack(raw);
     validateNegativeColor(raw);
   },
   editor: areaEditor,
   entityFields: areaEntityFields,
+  watch: (raw) => costEntities(raw),
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);
     stopHover(host);
+    stopKeyboard(host);
   },
   render,
 };

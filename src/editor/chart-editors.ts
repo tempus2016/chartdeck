@@ -3,15 +3,19 @@ import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES, Y_SCALES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { LEGEND_TOGGLE_FIELDS, LEGEND_TOGGLE_SCHEMA } from '../chart/legend-toggle';
+import { TABLE_VIEW_FIELDS, tableVariant, tableViewSchema } from '../chart/table-view';
+import { KEYBOARD_NAV_FIELDS, KEYBOARD_NAV_SCHEMA } from '../chart/keyboard';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
 import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
 import { FORECAST_FIELDS, forecastSchema, forecastVariant } from '../chart/forecast';
 import { ANOMALY_FIELDS, anomalySchema, anomalyVariant } from '../chart/anomaly';
 import { COMPARE_FIELDS, compareSchema, compareVariant } from '../chart/compare-ghost';
+import { NORMAL_RANGE_FIELDS, normalRangeSchema, normalRangeVariant } from '../chart/normal-range';
 import { MAX_MULTIPLES_COLUMNS, MULTIPLES_SCALES } from '../chart/multiples';
 import { DEFAULT_LINE_WIDTH } from '../chart/series-style';
 import { SOURCES } from '../chart/frame';
+import { SUMMARY_FIELDS, summarySchema } from '../chart/summary';
 import {
   ENERGY_FLOWS,
   ENERGY_SPLIT_STYLES,
@@ -25,6 +29,8 @@ import { languageOf, localize } from '../localize';
 import type { ChartEditorContext } from '../styles/index';
 import type { CardConfig, HomeAssistant } from '../types';
 import { annotationsEditor } from './annotations-editor';
+import { costEditor } from './cost-editor';
+import { goalEditor } from './goal-editor';
 import { computeHelper } from './helper';
 import { NOW_MARKER_FIELDS, nowMarkerSchema } from './now-marker-editor';
 import { LINE_WIDTH_SELECTOR, applyFormData, formData } from './schemas';
@@ -227,6 +233,25 @@ export function axesSchema(hass?: HomeAssistant) {
   ];
 }
 
+/** Opening History at a tapped point (`point_action`), on the line, column and area charts. */
+export const POINT_ACTION_FIELDS: FieldBinding[] = [
+  { name: 'point_action', path: ['point_action', 'action'], default: 'none' },
+  { name: 'point_action_window', path: ['point_action', 'window'], default: '2h' },
+];
+
+export function pointActionSchema(hass?: HomeAssistant) {
+  return [
+    {
+      type: 'grid',
+      name: '',
+      schema: [
+        { name: 'point_action', selector: choice(hass, 'point_action', ['none', 'history']) },
+        { name: 'point_action_window', selector: { text: {} } },
+      ],
+    },
+  ];
+}
+
 /** Zoom gestures and the overview strip, shared by every history chart. */
 export const ZOOM_FIELDS: FieldBinding[] = [
   { name: 'zoom', path: ['zoom'], default: false },
@@ -366,11 +391,25 @@ const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
     'value_min',
     'value_max',
     'tooltip',
+    'point_action',
+    'keyboard_nav',
     'trend_y_',
     'trend_tooltip',
   ],
-  extras: ['zoom', 'overview', 'forecast_', 'zones', 'now_', 'show_now', 'extremes', 'anomalies', 'extrema', 'average'],
-  layout: ['sync', 'header', 'compact', 'legend_toggle', 'multiples'],
+  extras: [
+    'zoom',
+    'overview',
+    'forecast_',
+    'zones',
+    'now_',
+    'show_now',
+    'extremes',
+    'anomalies',
+    'extrema',
+    'average',
+    'normal_range',
+  ],
+  layout: ['sync', 'header', 'compact', 'legend_toggle', 'table_', 'multiples', 'summary_'],
 };
 
 /** Below this many fields a chart form stays one flat list: folding a short form only hides it. */
@@ -465,6 +504,8 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...POINT_ACTION_FIELDS,
+  ...KEYBOARD_NAV_FIELDS,
   { name: 'y_scale', path: ['y_scale'], default: DEFAULT_AXES.scale },
   ...ZOOM_FIELDS,
   ...FORECAST_FIELDS,
@@ -472,14 +513,17 @@ const LINE_FIELDS: FieldBinding[] = [
   ...NOW_MARKER_FIELDS,
   ...EXTREMES_FIELDS,
   ...ANOMALY_FIELDS,
+  ...NORMAL_RANGE_FIELDS,
   ...SYNC_FIELDS,
   ...LAYOUT_FIELDS,
+  ...TABLE_VIEW_FIELDS,
   ...MULTIPLES_FIELDS,
+  ...SUMMARY_FIELDS,
 ];
 
 export function lineEditor(ctx: ChartEditorContext): TemplateResult {
   const schema = cachedSchema(
-    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}`,
+    `line|${historyVariant(ctx.config)}|${labelsVariant(ctx.config)}|${multiplesVariant(ctx.config)}|${forecastVariant(ctx.config)}|${anomalyVariant(ctx.config)}|${compareVariant(ctx.config)}|${normalRangeVariant(ctx.config)}|${tableVariant(ctx.config)}`,
     ctx.hass,
     () => [
       ...historySchema(ctx.hass, ctx.config),
@@ -502,6 +546,8 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       },
       ...labelSchema(ctx.hass, ctx.config),
       ...axesSchema(ctx.hass),
+      ...pointActionSchema(ctx.hass),
+      ...KEYBOARD_NAV_SCHEMA,
       // Only the line chart draws on a log scale: columns and stacked areas stand on zero.
       { name: 'y_scale', selector: choice(ctx.hass, 'y_scale', Y_SCALES) },
       ...ZOOM_SCHEMA,
@@ -510,10 +556,13 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       ...nowMarkerSchema(ctx.hass),
       ...extremesSchema(ctx.hass),
       ...anomalySchema(ctx.config),
+      ...normalRangeSchema(ctx.hass, ctx.config),
       ...SYNC_SCHEMA,
       ...layoutSchema(ctx.hass),
+      ...tableViewSchema(ctx.config),
       ...multiplesSchema(ctx.hass, ctx.config),
+      ...summarySchema(),
     ],
   );
-  return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${annotationsEditor(ctx)}`;
+  return html`${chartForm(ctx, 'chart', schema, LINE_FIELDS)}${costEditor(ctx)}${goalEditor(ctx)}${annotationsEditor(ctx)}`;
 }

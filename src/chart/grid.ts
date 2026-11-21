@@ -6,9 +6,12 @@ import type { ChartContext } from '../styles/index';
 import { axisOptions, timeLabel, timeTicks, timeZoneOf, valueAxis, zoneOffset } from './axes';
 import type { AxisOptions, TimeUnit, ValueAxis } from './axes';
 import type { Hover } from './tooltip';
+import type { KeyHandlers } from './keyboard';
 import { VIEW_H, VIEW_W, plot } from './frame';
 import { linear } from './scale';
 import { logAxis, logScale, logTickText } from './log-scale';
+import { SUMMARY_ID, summaryBlock, summaryStyles } from './summary';
+import type { ChartSummary } from './summary';
 
 /** Gaps between value labels on a full-height plot: about one per 40 px. */
 const VALUE_GAPS = 4;
@@ -196,6 +199,12 @@ export interface ChartAreaOptions {
   /** Extra classes and inline style on the whole frame, for what `below` needs (its height). */
   wrapClasses?: string;
   wrapStyle?: string;
+  /** Opening History at a clicked point (`point_action`): a press, then the click that follows. */
+  tap?: { down(ev: PointerEvent): void; click(ev: MouseEvent): void };
+  /** The chart in words (see summary.ts): described by it, and shown under it when asked. */
+  summary?: ChartSummary;
+  /** Keyboard reading (`keyboard.ts`): the plot area becomes one Tab stop with these handlers. */
+  keys?: KeyHandlers;
 }
 
 /** Every pointer handler the plot area can take. */
@@ -230,6 +239,9 @@ export function chartArea({
   below = nothing,
   wrapClasses = '',
   wrapStyle = '',
+  tap,
+  summary,
+  keys,
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
@@ -256,28 +268,50 @@ export function chartArea({
   const rLabels = r
     ? html`<div class="y-axis right">${outside ? rSizer : nothing}${rightLabels(r, ctx)}</div>`
     : nothing;
+  const press = gestures?.down ?? hover?.move;
+  const down = tap
+    ? (ev: PointerEvent) => {
+        tap.down(ev);
+        press?.(ev);
+      }
+    : press;
   const wrap = `plot-wrap axes-${options.labels} ${y ? 'has-y' : ''} ${x ? 'has-x' : ''} ${r ? 'has-right' : ''} ${below === nothing ? '' : 'has-overview'} ${wrapClasses}`;
   return html`<div class=${wrap} style=${wrapStyle}>
-    ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
-    <div
-      class="plot-area ${hover ? 'hoverable' : ''} ${classes}"
-      @pointerdown=${gestures?.down ?? hover?.move}
-      @pointermove=${gestures?.move ?? hover?.move}
-      @pointerup=${gestures?.up}
-      @pointerleave=${gestures?.leave ?? hover?.leave}
-      @pointercancel=${gestures?.cancel ?? hover?.leave}
-      @wheel=${gestures?.wheel}
-      @dblclick=${gestures?.dblclick}
-    >
-      ${plot(content, label, defs, gridLines(axes))} ${outside ? nothing : html`${yLabels}${rLabels}${xLabels}`}
-      ${overlay}
+      ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
+      <div
+        class="plot-area ${hover ? 'hoverable' : ''} ${tap ? 'opens-history' : ''} ${classes}"
+        tabindex=${keys ? '0' : nothing}
+        role=${keys ? 'group' : nothing}
+        aria-label=${keys ? keys.label : nothing}
+        aria-describedby=${keys && summary ? SUMMARY_ID : nothing}
+        @keydown=${keys?.keydown}
+        @blur=${keys?.blur}
+        @pointerdown=${down}
+        @pointermove=${gestures?.move ?? hover?.move}
+        @pointerup=${gestures?.up}
+        @pointerleave=${gestures?.leave ?? hover?.leave}
+        @pointercancel=${gestures?.cancel ?? hover?.leave}
+        @wheel=${gestures?.wheel}
+        @dblclick=${gestures?.dblclick}
+        @click=${tap?.click}
+      >
+        ${
+          keys
+            ? // The focusable plot area carries the chart's name (and the summary): the drawing inside is not
+              // announced a second time.
+              plot(content, label, defs, gridLines(axes), undefined, true)
+            : plot(content, label, defs, gridLines(axes), summary ? SUMMARY_ID : undefined)
+        }
+        ${outside ? nothing : html`${yLabels}${rLabels}${xLabels}`} ${overlay}
+      </div>
+      ${outside ? html`${rLabels}${xLabels}` : nothing} ${below}
     </div>
-    ${outside ? html`${rLabels}${xLabels}` : nothing} ${below}
-  </div>`;
+    ${summaryBlock(summary)}`;
 }
 
 /** Shared look of the frame: the grid layout, gridlines and axis labels, light and dark. */
 export const gridStyles = css`
+  ${summaryStyles}
   .plot-wrap {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

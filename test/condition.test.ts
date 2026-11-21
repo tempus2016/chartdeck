@@ -268,8 +268,9 @@ describe('conditional series on a chart', () => {
     expect(runCount(lines[1])).toBe(1);
     // The 30 kW reading came while away, so the high mark is the 9 kW one.
     const marks = qa(card, '.extreme-label').map((e) => e.textContent!.replace(/\s+/g, ' ').trim());
-    expect(marks.join(' ')).toContain('9');
-    expect(marks.join(' ')).not.toContain('30');
+    // Match the value, not the time beside it: "High 9.0 kW · 8:30 AM" holds a 30 too.
+    expect(marks.join(' ')).toContain('9.0 kW');
+    expect(marks.join(' ')).not.toMatch(/\b30(\.\d)? kW/);
     const calls = (card.hass!.callWS as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].entity_ids);
     expect(calls).toContainEqual(['person.john']);
   });

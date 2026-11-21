@@ -33,7 +33,7 @@ import type { Point, Range } from './types';
  */
 
 /** Every per-entity transform. Both transform files list them all, so neither rejects the other's. */
-export const TRANSFORMS = ['cumulative', 'derivative'] as const;
+export const TRANSFORMS = ['cumulative', 'derivative', 'rolling'] as const;
 export const CUMULATIVE_RESETS = ['none', 'day', 'week', 'month', 'billing'] as const;
 /** Billing days stop at 28, so every month has one. */
 export const MAX_BILLING_DAY = 28;
@@ -64,6 +64,7 @@ export const CUMULATIVE_STYLES = [
   'spiral',
   'strip_plot',
   'cycle_plot',
+  'duration_curve',
 ];
 
 interface CumulativeConfig {
@@ -94,6 +95,8 @@ export function validateCumulative(raw: CardConfig): void {
 export type MeterKind = 'increasing' | 'total' | undefined;
 
 export function meterKind(entity: ResolvedEntity): MeterKind {
+  // A formula of meters can fall (energy in less energy out): every change counts.
+  if (entity.formula) return entity.formula === 'meter' ? 'total' : undefined;
   if (entity.config.attribute) return undefined;
   const cls = entity.stateObj?.attributes?.state_class;
   return cls === 'total_increasing' ? 'increasing' : cls === 'total' ? 'total' : undefined;

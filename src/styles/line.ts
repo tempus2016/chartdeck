@@ -1,4 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
+import { chartSummary, validateSummary } from '../chart/summary';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
 import { baseColor } from '../bands';
 import { downsample } from '../chart/downsample';
@@ -47,6 +48,7 @@ import {
   annotationLayers,
   annotationUnit,
   annotationStyles,
+  annotationTooltip,
   annotationValues,
   stopAnnotations,
   validateAnnotations,
@@ -79,6 +81,7 @@ import {
   withForecastFields,
 } from '../chart/forecast';
 import { anomalyLayer, anomalyStyles, validateAnomalies } from '../chart/anomaly';
+import { historyLink, historyLinkStyles, historyTap, validatePointAction } from '../chart/history-link';
 import {
   compareGhosts,
   compareKey,
@@ -87,7 +90,32 @@ import {
   stopCompare,
   validateCompare,
 } from '../chart/compare-ghost';
+import {
+  bandExtent,
+  normalBands,
+  normalRangeKey,
+  normalRangeLayer,
+  normalRangeStyles,
+  stopNormalRange,
+  validateNormalRange,
+} from '../chart/normal-range';
+import { keyboardNav, keyboardStyles, stopKeyboard, validateKeyboardNav } from '../chart/keyboard';
 import { lineEditor } from '../editor/chart-editors';
+import { costEntities } from '../history/cost';
+import {
+  goalBehind,
+  goalContext,
+  goalEntities,
+  goalExtent,
+  goalFront,
+  goalOverlay,
+  goalPill,
+  goalState,
+  goalStyles,
+  validateGoal,
+} from '../chart/goal';
+import { dataTable, tableView, tableViewStyles, validateTableView } from '../chart/table-view';
+import { groupHeading } from './column';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
 import type { ChartContext, ChartStyleModule } from './index';
@@ -236,7 +264,7 @@ function linePlot(
     label,
     defs,
     overlay: html`${over} ${labels ? pointLabels(frame, series, frame.range, scales, labels, true, ctx) : nothing}
-    ${tooltip ? tooltipLayer(ctx, series, scales, time, width) : nothing}`,
+    ${tooltip ? tooltipLayer(ctx, series, scales, time, width, { after: historyLink(ctx, series, time) }) : nothing}`,
     hover: tooltip
       ? hoverHandlers(
           ctx,
@@ -244,6 +272,7 @@ function linePlot(
           series.map((s) => s.points),
         )
       : undefined,
+    tap: historyTap(ctx, frame.range, series),
   });
 }
 
@@ -255,9 +284,11 @@ export const line: ChartStyleModule = {
     ${frameStyles}
     ${gridStyles}
     ${tooltipStyles}
+    ${historyLinkStyles}
     ${layoutStyles}
     ${zoomStyles}
     ${annotationStyles}
+    ${normalRangeStyles}
     ${dataLabelStyles}
     ${extremesStyles}
     ${multiplesStyles}
@@ -266,6 +297,9 @@ export const line: ChartStyleModule = {
     ${anomalyStyles}
     ${compareStyles}
     ${nowMarkerStyles}
+    ${goalStyles}
+    ${tableViewStyles}
+    ${keyboardStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -286,8 +320,10 @@ export const line: ChartStyleModule = {
     validateHistoryOptions(raw);
     validateAxisOptions(raw);
     validateTooltipOptions(raw);
+    validatePointAction(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
+    validateSummary(raw);
     validateZoomOptions(raw);
     validateAnnotations(raw);
     validateLabelOptions(raw);
@@ -298,6 +334,10 @@ export const line: ChartStyleModule = {
     validateAnomalies(raw);
     validateCompare(raw);
     validateNowMarker(raw);
+    validateGoal(raw);
+    validateNormalRange(raw);
+    validateTableView(raw);
+    validateKeyboardNav(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -312,7 +352,7 @@ export const line: ChartStyleModule = {
       : { schema, fields };
     return withForecastFields(hass, own);
   },
-  watch: (raw) => [...annotationEntities(raw), ...forecastEntities(raw)],
+  watch: (raw) => [...annotationEntities(raw), ...forecastEntities(raw), ...costEntities(raw), ...goalEntities(raw)],
   disconnect(host) {
     disconnectHistory(host);
     stopChartWidth(host);
@@ -323,10 +363,14 @@ export const line: ChartStyleModule = {
     stopForecast(host);
     stopCompare(host);
     stopNowMarker(host);
+    stopNormalRange(host);
+    stopKeyboard(host);
   },
-  render(ctx) {
+  render(card) {
+    // A goal reads its whole calendar period, the first entity as its running total.
+    const ctx = goalContext(card);
     // Forecasts carry series on past now, stretching the span to show them.
-    const ahead = forecastLayer(ctx, historyFrame(ctx, Date.now(), { ghost: ghostOn(ctx.raw) }));
+    const ahead = forecastLayer(ctx, historyFrame(ctx, Date.now(), { ghost: ghostOn(ctx.raw), raw: true }));
     const frame = ahead.frame;
     // Charts in a sync group share the pointer's time: another chart's shows here too.
     const own = hoverTime(ctx.host);
@@ -335,13 +379,25 @@ export const line: ChartStyleModule = {
     const names = seriesHeader(frame, ctx);
     // Earlier spans drawn faintly behind, moved over this one, named in a key under the header.
     const ghosts = compareGhosts(ctx, frame);
-    const key = ctx.config.show.name ? compareKey(ctx, ghosts) : nothing;
-    const header = nav === nothing && names === nothing ? nothing : html`${nav}${names}${key}`;
+    const goal = goalState(ctx, frame);
+    const pill = goalPill(goal, ctx.hass);
+    // The usual range for each time of day over the last weeks, shaded behind (with its own key).
+    const usual = normalBands(ctx, frame);
+    const key = ctx.config.show.name ? html`${compareKey(ctx, ghosts)}${normalRangeKey(ctx, usual)}` : nothing;
+    // With `table_toggle`, the header ends in a Chart | Table switch, and the table can stand in for the plot.
+    const table = tableView(
+      ctx,
+      chartLayout(ctx.raw),
+      nav === nothing && names === nothing && pill === nothing ? nothing : html`${nav}${names}${pill}${key}`,
+    );
+    const { layout, header } = table;
     const message = frameMessage(frame, ctx);
-    const layout = chartLayout(ctx.raw);
     if (message) return chartFrame(layout.header === 'over' ? { ...layout, header: 'above' } : layout, header, message);
+    if (table.table) return chartFrame(layout, header, dataTable(ctx, frame, { heading: groupHeading }));
     const multiples = multiplesOptions(ctx.raw);
     if (multiples) {
+      // Small multiples keep only the period buttons above (each chart has its own title), and the switch.
+      const top = tableView(ctx, { ...layout, header: 'above' }, nav);
       // A log axis has no place for zero or below: each small chart draws only the readings above it.
       const panels =
         ctx.raw.y_scale === 'log'
@@ -356,8 +412,8 @@ export const line: ChartStyleModule = {
           : frame;
       // One small chart per series: the period buttons stay above, each chart has its own title.
       return chartFrame(
-        { ...layout, header: 'above' },
-        nav,
+        top.layout,
+        top.header,
         multiplesGrid(ctx, panels, multiples, own ?? shared, (s, axes, width) =>
           linePlot(ctx, panels, [s], axes, width, `-${s.index}`, nothing, own ?? shared),
         ),
@@ -404,6 +460,8 @@ export const line: ChartStyleModule = {
       ...behind.map((s) => s.points),
       ...forecasts.map((s) => s.points),
       thresholds,
+      goalExtent(goal),
+      bandExtent(usual, view.start),
     ]);
     if (log && !data) {
       const empty = html`<div class="chart-message">${localize(ctx.hass, 'chart_log_nothing')}</div>`;
@@ -429,6 +487,7 @@ export const line: ChartStyleModule = {
         )
       : undefined;
     const notes = annotationLayers(ctx, frame, scales, plotWidth(ctx));
+    const normal = normalRangeLayer(ctx, usual, scales, frame.range);
     const labels = labelOptions(ctx.raw);
     const width = plotWidth(ctx);
     const marks = extremesLayer({
@@ -457,6 +516,8 @@ export const line: ChartStyleModule = {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
     });
+    // One Tab stop: arrow keys step through the readings on show, and the tooltip follows.
+    const reader = keyboardNav(ctx, shown, scales, view, label);
     const strip = conditionStrip(
       ctx,
       frame,
@@ -470,14 +531,14 @@ export const line: ChartStyleModule = {
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${compareLines(behind, scales)}${ghostLines(drawn, scales)}${anomalies.behind}${marks.lines}${forecastLines(forecasts, scales)}${lines}${notes.front}`,
+        content: svg`${notes.behind}${normal.behind}${compareLines(behind, scales)}${ghostLines(drawn, scales)}${anomalies.behind}${marks.lines}${goalBehind(goal, scales)}${forecastLines(forecasts, scales)}${lines}${goalFront(goal, scales)}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
-        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay}
-        ${nowMarkerLayer(ctx, frame, view, scales, width)}
-        ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing}
+        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay} ${normal.overlay}
+        ${nowMarkerLayer(ctx, frame, view, scales, width)} ${goalOverlay(goal, scales, ctx.hass)}
+        ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing} ${reader.layer}
         ${
           tooltip
             ? tooltipLayer(
@@ -486,12 +547,19 @@ export const line: ChartStyleModule = {
                 scales,
                 own ?? shared,
                 plotWidth(ctx),
+                {
+                  footer: () => annotationTooltip(ctx, frame, own ?? shared),
+                  after: historyLink(ctx, shown, own ?? shared),
+                },
               )
             : nothing
         }`,
         hover,
+        summary: chartSummary(ctx, frame.series, { range: frame.range, live: frame.live }),
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
+        tap: historyTap(ctx, view, shown, zoom.options.zoom),
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
+        keys: reader.keys,
         ...strip,
       }),
     );

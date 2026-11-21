@@ -58,8 +58,10 @@ export function setOption(config: CardConfig, path: Path, value: unknown): CardC
   return setIn(config, path, value) as CardConfig;
 }
 
+/** An entity row's id; a formula row written without one goes by the first entity its formula reads. */
 export function entityId(item: string | EntityConfig): string {
-  return typeof item === 'string' ? item : item.entity;
+  if (typeof item === 'string') return item;
+  return item.entity ?? Object.values(item.vars ?? {}).find((id) => typeof id === 'string' && id) ?? '';
 }
 
 /**
