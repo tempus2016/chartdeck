@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { AXIS_LABELS, DEFAULT_AXES, Y_SCALES } from '../chart/axes';
 import { HEADER_PLACES } from '../chart/layout';
 import { LEGEND_TOGGLE_FIELDS, LEGEND_TOGGLE_SCHEMA } from '../chart/legend-toggle';
+import { KEYBOARD_NAV_FIELDS, KEYBOARD_NAV_SCHEMA } from '../chart/keyboard';
 import { CURVES } from '../chart/paths';
 import { LABEL_POSITIONS, LABEL_SHOW } from '../chart/data-labels';
 import { EXTREMES_FIELDS, extremesSchema } from '../chart/extremes';
@@ -366,6 +367,7 @@ const GROUP_MATCH: Record<Exclude<ChartGroup, 'look'>, string[]> = {
     'value_min',
     'value_max',
     'tooltip',
+    'keyboard_nav',
     'trend_y_',
     'trend_tooltip',
   ],
@@ -465,6 +467,7 @@ const LINE_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: DEFAULT_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...KEYBOARD_NAV_FIELDS,
   { name: 'y_scale', path: ['y_scale'], default: DEFAULT_AXES.scale },
   ...ZOOM_FIELDS,
   ...FORECAST_FIELDS,
@@ -502,6 +505,7 @@ export function lineEditor(ctx: ChartEditorContext): TemplateResult {
       },
       ...labelSchema(ctx.hass, ctx.config),
       ...axesSchema(ctx.hass),
+      ...KEYBOARD_NAV_SCHEMA,
       // Only the line chart draws on a log scale: columns and stacked areas stand on zero.
       { name: 'y_scale', selector: choice(ctx.hass, 'y_scale', Y_SCALES) },
       ...ZOOM_SCHEMA,

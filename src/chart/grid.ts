@@ -6,6 +6,7 @@ import type { ChartContext } from '../styles/index';
 import { axisOptions, timeLabel, timeTicks, timeZoneOf, valueAxis, zoneOffset } from './axes';
 import type { AxisOptions, TimeUnit, ValueAxis } from './axes';
 import type { Hover } from './tooltip';
+import type { KeyHandlers } from './keyboard';
 import { VIEW_H, VIEW_W, plot } from './frame';
 import { linear } from './scale';
 import { logAxis, logScale, logTickText } from './log-scale';
@@ -196,6 +197,8 @@ export interface ChartAreaOptions {
   /** Extra classes and inline style on the whole frame, for what `below` needs (its height). */
   wrapClasses?: string;
   wrapStyle?: string;
+  /** Keyboard reading (`keyboard.ts`): the plot area becomes one Tab stop with these handlers. */
+  keys?: KeyHandlers;
 }
 
 /** Every pointer handler the plot area can take. */
@@ -230,6 +233,7 @@ export function chartArea({
   below = nothing,
   wrapClasses = '',
   wrapStyle = '',
+  keys,
 }: ChartAreaOptions) {
   const { options } = axes;
   const outside = options.labels === 'outside';
@@ -261,6 +265,11 @@ export function chartArea({
     ${outside && y ? html`<div class="y-axis">${sizer}${yTicks}</div>` : nothing}
     <div
       class="plot-area ${hover ? 'hoverable' : ''} ${classes}"
+      tabindex=${keys ? '0' : nothing}
+      role=${keys ? 'group' : nothing}
+      aria-label=${keys ? keys.label : nothing}
+      @keydown=${keys?.keydown}
+      @blur=${keys?.blur}
       @pointerdown=${gestures?.down ?? hover?.move}
       @pointermove=${gestures?.move ?? hover?.move}
       @pointerup=${gestures?.up}

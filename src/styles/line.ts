@@ -87,6 +87,7 @@ import {
   stopCompare,
   validateCompare,
 } from '../chart/compare-ghost';
+import { keyboardNav, keyboardStyles, stopKeyboard, validateKeyboardNav } from '../chart/keyboard';
 import { lineEditor } from '../editor/chart-editors';
 import { entitySeriesFields, entitySeriesSchema } from '../editor/schemas';
 import { localize } from '../localize';
@@ -266,6 +267,7 @@ export const line: ChartStyleModule = {
     ${anomalyStyles}
     ${compareStyles}
     ${nowMarkerStyles}
+    ${keyboardStyles}
     .style-line .line {
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -298,6 +300,7 @@ export const line: ChartStyleModule = {
     validateAnomalies(raw);
     validateCompare(raw);
     validateNowMarker(raw);
+    validateKeyboardNav(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -323,6 +326,7 @@ export const line: ChartStyleModule = {
     stopForecast(host);
     stopCompare(host);
     stopNowMarker(host);
+    stopKeyboard(host);
   },
   render(ctx) {
     // Forecasts carry series on past now, stretching the span to show them.
@@ -457,6 +461,8 @@ export const line: ChartStyleModule = {
       style: localize(ctx.hass, 'editor_style_line'),
       names: frame.series.map((s) => s.entity.name).join(', '),
     });
+    // One Tab stop: arrow keys step through the readings on show, and the tooltip follows.
+    const reader = keyboardNav(ctx, shown, scales, view, label);
     const strip = conditionStrip(
       ctx,
       frame,
@@ -477,7 +483,7 @@ export const line: ChartStyleModule = {
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
         ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay}
         ${nowMarkerLayer(ctx, frame, view, scales, width)}
-        ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing}
+        ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing} ${reader.layer}
         ${
           tooltip
             ? tooltipLayer(
@@ -492,6 +498,7 @@ export const line: ChartStyleModule = {
         hover,
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',
+        keys: reader.keys,
         ...strip,
       }),
     );

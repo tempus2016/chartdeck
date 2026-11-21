@@ -42,6 +42,14 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotAxes, PlotScales } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import {
+  KEYBOARD_NAV_FIELDS,
+  KEYBOARD_NAV_SCHEMA,
+  keyboardNav,
+  keyboardStyles,
+  stopKeyboard,
+  validateKeyboardNav,
+} from '../chart/keyboard';
 import { STACK_MODES, stackExtent, stackValues, totals, validateStack } from '../chart/stack';
 import type { Layer, StackMode } from '../chart/stack';
 import {
@@ -105,6 +113,7 @@ function validate(raw: CardConfig): void {
   validateAxisOptions(raw);
   validateTooltipOptions(raw);
   validateLayout(raw);
+  validateKeyboardNav(raw);
   validateStack(raw);
   validateErrorBars(raw);
   for (const k of ['range', 'rounded', 'labels']) {
@@ -427,6 +436,25 @@ function render(ctx0: ChartContext): TemplateResult {
     style: localize(ctx.hass, 'editor_style_column'),
     names: frame.series.map((s) => s.entity.name).join(', '),
   });
+  // One Tab stop: arrow keys step through the columns, the tooltip and slot highlight follow, and
+  // a ring marks the top of the focused series' column (or its slice of a stack).
+  const reader = keyboardNav(ctx, shown, scales, xRange, label, {
+    ...tip,
+    position: (s, p) => {
+      const i = slotOf.get(p.t);
+      const k = frame.series.findIndex((x) => x.index === s.index);
+      if (i === undefined || k < 0 || p.v === null) return null;
+      const x0 = scales.x(table.times[i]);
+      const x1 = scales.x(table.ends[i]);
+      if (layers) {
+        const layer = layers[k][i];
+        const [left, width] = columnBox(x0, x1, 0, 1);
+        return layer ? [left + width / 2, clampY(scales.y(layer[1]))] : null;
+      }
+      const [left, width] = columnBox(x0, x1, k, frame.series.length);
+      return [left + width / 2, clampY(scales.y(range ? (table.highs[k][i] ?? p.v) : p.v))];
+    },
+  });
   const radius = raw.rounded === false ? 0 : RADIUS_PX;
   return chartFrame(
     layout,
@@ -440,7 +468,7 @@ function render(ctx0: ChartContext): TemplateResult {
         <div class="point-labels">${drawn.labels}</div>
         ${layout.header === 'over' ? headerOver(header) : nothing}
         ${nowMarkerLayer(ctx, frame, xRange, scales, plotWidth(ctx))}
-        ${tooltip ? tooltipLayer(ctx, shown, scales, hovered, plotWidth(ctx), tip) : nothing}`,
+        ${tooltip ? tooltipLayer(ctx, shown, scales, hovered, plotWidth(ctx), tip) : nothing} ${reader.layer}`,
       hover: tooltip
         ? hoverHandlers(
             ctx,
@@ -448,6 +476,7 @@ function render(ctx0: ChartContext): TemplateResult {
             shown.map((s) => s.points),
           )
         : undefined,
+      keys: reader.keys,
     }),
   );
 }
@@ -470,6 +499,7 @@ const COLUMN_FIELDS: FieldBinding[] = [
   { name: 'rounded', path: ['rounded'], default: true },
   { name: 'error_bars', path: ['error_bars'], default: 'none' },
   ...AXES_FIELDS,
+  ...KEYBOARD_NAV_FIELDS,
   ...NOW_MARKER_FIELDS,
   ...LAYOUT_FIELDS,
 ];
@@ -519,6 +549,7 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
     // Whiskers need groups to spread within.
     ...(ungrouped ? [] : [{ name: 'error_bars', selector: choice(ctx.hass, 'error_bars', ERROR_BARS) }]),
     ...axesSchema(ctx.hass),
+    ...KEYBOARD_NAV_SCHEMA,
     ...nowMarkerSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
   ]);
@@ -601,6 +632,7 @@ export const columnChart: ChartStyleModule = {
     ${columnStyles}
     ${errorBarStyles}
     ${nowMarkerStyles}
+    ${keyboardStyles}
   `,
   thumbnail: () => svg`
     <path d="M7 36 V22 a2 2 0 0 1 2 -2 h4 a2 2 0 0 1 2 2 V36 Z" fill="var(--primary-color, #03a9f4)" />
@@ -620,6 +652,7 @@ export const columnChart: ChartStyleModule = {
     stopChartWidth(host);
     stopHover(host);
     stopNowMarker(host);
+    stopKeyboard(host);
   },
   render,
 };

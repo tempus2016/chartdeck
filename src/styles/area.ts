@@ -17,6 +17,14 @@ import type { ChartSeries, HistoryFrame } from '../chart/frame';
 import { chartArea, gridStyles, plotAxes, plotWidth, stopChartWidth } from '../chart/grid';
 import type { PlotScales } from '../chart/grid';
 import { chartFrame, chartLayout, headerOver, layoutStyles, validateLayout } from '../chart/layout';
+import {
+  KEYBOARD_NAV_FIELDS,
+  KEYBOARD_NAV_SCHEMA,
+  keyboardNav,
+  keyboardStyles,
+  stopKeyboard,
+  validateKeyboardNav,
+} from '../chart/keyboard';
 import { runPath, runs } from '../chart/paths';
 import type { Curve, XY } from '../chart/paths';
 import { extent } from '../chart/scale';
@@ -282,6 +290,9 @@ function render(ctx: ChartContext): TemplateResult {
     style: localize(ctx.hass, 'editor_style_area'),
     names: frame.series.map((s) => s.entity.name).join(', '),
   });
+  // One Tab stop: arrow keys step through the readings, the tooltip follows (on a stack, the ring
+  // sits on top of the focused series' layer, as the tooltip's dot does).
+  const reader = keyboardNav(ctx, shown, axes.scales, frame.range, label, tip);
   return chartFrame(
     layout,
     header,
@@ -292,7 +303,8 @@ function render(ctx: ChartContext): TemplateResult {
       defs: svg`${drawn.map((d) => d.defs)}`,
       label,
       overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
-      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), tip) : nothing}`,
+      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), tip) : nothing}
+      ${reader.layer}`,
       hover: tooltip
         ? hoverHandlers(
             ctx,
@@ -301,6 +313,7 @@ function render(ctx: ChartContext): TemplateResult {
           )
         : undefined,
       ...conditionStrip(ctx, frame, frame.range, axes.scales),
+      keys: reader.keys,
     }),
   );
 }
@@ -313,6 +326,7 @@ const AREA_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: AREA_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...KEYBOARD_NAV_FIELDS,
   ...LAYOUT_FIELDS,
 ];
 
@@ -336,6 +350,7 @@ export function areaEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     ...axesSchema(ctx.hass),
+    ...KEYBOARD_NAV_SCHEMA,
     ...layoutSchema(ctx.hass),
   ]);
   return chartForm(ctx, 'chart', schema, AREA_FIELDS);
@@ -398,6 +413,7 @@ export const area: ChartStyleModule = {
     ${layoutStyles}
     ${areaStyles}
     ${conditionStyles}
+    ${keyboardStyles}
   `,
   thumbnail: () => svg`
     <defs>
@@ -415,6 +431,7 @@ export const area: ChartStyleModule = {
     validateTooltipOptions(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
+    validateKeyboardNav(raw);
     validateStack(raw);
     validateNegativeColor(raw);
   },
@@ -424,6 +441,7 @@ export const area: ChartStyleModule = {
     disconnectHistory(host);
     stopChartWidth(host);
     stopHover(host);
+    stopKeyboard(host);
   },
   render,
 };

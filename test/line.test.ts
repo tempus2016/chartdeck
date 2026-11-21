@@ -290,6 +290,7 @@ describe('line chart editor', () => {
       grid_vertical: false,
       y_scale: 'linear',
       tooltip: true,
+      keyboard_nav: true,
       zoom: false,
       overview: false,
       forecast_hours: 24,
