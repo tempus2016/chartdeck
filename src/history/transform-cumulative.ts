@@ -33,7 +33,7 @@ import type { Point, Range } from './types';
  */
 
 /** Every per-entity transform. Both transform files list them all, so neither rejects the other's. */
-export const TRANSFORMS = ['cumulative', 'derivative'] as const;
+export const TRANSFORMS = ['cumulative', 'derivative', 'rolling'] as const;
 export const CUMULATIVE_RESETS = ['none', 'day', 'week', 'month', 'billing'] as const;
 /** Billing days stop at 28, so every month has one. */
 export const MAX_BILLING_DAY = 28;
