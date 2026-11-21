@@ -542,14 +542,20 @@ export function plot(
   background: SVGTemplateResult | typeof nothing = nothing,
   /** The id of the text describing the chart in words (its summary), if any. */
   describedBy?: string,
+  /**
+   * The drawing is inside an element that already carries its name (the keyboard's focusable plot
+   * area): hidden from screen readers so the chart is not announced twice.
+   */
+  decorative = false,
 ) {
   return html`<svg
     class="plot"
     viewBox="0 0 ${VIEW_W} ${VIEW_H}"
     preserveAspectRatio="none"
-    role="img"
-    aria-label=${label}
-    aria-describedby=${describedBy ?? nothing}
+    role=${decorative ? nothing : 'img'}
+    aria-label=${decorative ? nothing : label}
+    aria-describedby=${decorative ? nothing : (describedBy ?? nothing)}
+    aria-hidden=${decorative ? 'true' : nothing}
   >
     <defs>
       <clipPath id="cd-draw-in">

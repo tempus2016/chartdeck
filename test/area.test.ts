@@ -163,7 +163,9 @@ describe('area chart', () => {
     expect(fills[0].getAttribute('fill')).toBe('url(#cd-area-0)');
     expect(qa(card, 'linearGradient')).toHaveLength(2);
     expect(qa(card, 'path.line')).toHaveLength(2);
-    expect(q(card, 'svg.plot')!.getAttribute('aria-label')).toBe('Area chart of Solar, Grid');
+    // The focusable plot area (keyboard reading) carries the chart's name; the drawing isn't announced again.
+    expect(q(card, '.plot-area')!.getAttribute('aria-label')).toMatch(/^Area\ chart\ of\ Solar,\ Grid\. /);
+    expect(q(card, 'svg.plot')!.getAttribute('aria-hidden')).toBe('true');
     // Readings either side of zero: the axis spans both.
     const values = qa(card, '.y-axis .axis-label').map((e) => Number(e.textContent!.replace(/,/g, '')));
     expect(Math.min(...values)).toBeLessThan(0);

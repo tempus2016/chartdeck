@@ -84,7 +84,9 @@ describe('line chart', () => {
     expect(lines[1].getAttribute('stroke')).toContain('--warning-color');
     const header = qa(card, '.series-item').map((e) => e.textContent!.replace(/\s+/g, ' ').trim());
     expect(header).toEqual(['Inside 21.0 °C', 'Outside 9.0 °C']);
-    expect(q(card, 'svg.plot')!.getAttribute('aria-label')).toBe('Line chart of Inside, Outside');
+    // The focusable plot area (keyboard reading) carries the chart's name; the drawing isn't announced again.
+    expect(q(card, '.plot-area')!.getAttribute('aria-label')).toMatch(/^Line\ chart\ of\ Inside,\ Outside\. /);
+    expect(q(card, 'svg.plot')!.getAttribute('aria-hidden')).toBe('true');
     expect(card.hass!.callWS).toHaveBeenCalledTimes(1);
   });
 

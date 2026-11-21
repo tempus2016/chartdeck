@@ -175,7 +175,9 @@ describe('column chart', () => {
     expect(qa(card, '.col-label').some((l) => l.textContent === '10.0')).toBe(true);
     // A label under every day, or every other one on a narrow card.
     expect(qa(card, '.x-axis .axis-label').length).toBeGreaterThanOrEqual(4);
-    expect(q(card, 'svg.plot')!.getAttribute('aria-label')).toBe('Column chart of Energy');
+    // The focusable plot area (keyboard reading) carries the chart's name; the drawing isn't announced again.
+    expect(q(card, '.plot-area')!.getAttribute('aria-label')).toMatch(/^Column\ chart\ of\ Energy\. /);
+    expect(q(card, 'svg.plot')!.getAttribute('aria-hidden')).toBe('true');
     const area = q(card, '.plot-area')!;
     pointAt(area, 'pointermove', 0.5);
     await card.updateComplete;

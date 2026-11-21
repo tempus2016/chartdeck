@@ -138,9 +138,18 @@ afterEach(() => {
 describe('summary on charts', () => {
   it('describes a line chart for screen readers, hidden until asked to show', async () => {
     const card = await mount({ style: 'line' });
-    const plot = q(card, '.plot')!;
+    // One labelled element: the focusable plot area (keyboard reading), described by the summary.
+    const area = q(card, '.plot-area')!;
+    expect(area.getAttribute('role')).toBe('group');
+    expect(area.getAttribute('aria-describedby')).toBe('cd-summary');
+    expect(q(card, '.plot')!.getAttribute('aria-hidden')).toBe('true');
+    expect(q(card, '.plot')!.hasAttribute('role')).toBe(false);
+    // Without keyboard reading the drawing itself is the labelled image.
+    const still = await mount({ style: 'line', keyboard_nav: false });
+    const plot = q(still, '.plot')!;
     expect(plot.getAttribute('role')).toBe('img');
     expect(plot.getAttribute('aria-describedby')).toBe('cd-summary');
+    expect(q(still, '.plot-area')!.hasAttribute('role')).toBe(false);
     const text = q(card, '#cd-summary')!;
     expect(text.classList.contains('sr-only')).toBe(true);
     expect(text.textContent).toMatch(
@@ -154,6 +163,7 @@ describe('summary on charts', () => {
     const off = await mount({ style: 'area', summary: 'off' });
     expect(q(off, '#cd-summary')).toBeNull();
     expect(q(off, '.plot')!.hasAttribute('aria-describedby')).toBe(false);
+    expect(q(off, '.plot-area')!.hasAttribute('aria-describedby')).toBe(false);
     const own = await mount({ style: 'area', summary: 'Warm all day.', entities: ['sensor.temp', 'sensor.hum'] });
     expect(q(own, '#cd-summary')!.textContent).toBe('Warm all day.');
     const auto = await mount({ style: 'area', entities: ['sensor.temp', 'sensor.hum'] });

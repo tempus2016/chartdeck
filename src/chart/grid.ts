@@ -283,6 +283,7 @@ export function chartArea({
         tabindex=${keys ? '0' : nothing}
         role=${keys ? 'group' : nothing}
         aria-label=${keys ? keys.label : nothing}
+        aria-describedby=${keys && summary ? SUMMARY_ID : nothing}
         @keydown=${keys?.keydown}
         @blur=${keys?.blur}
         @pointerdown=${down}
@@ -294,7 +295,13 @@ export function chartArea({
         @dblclick=${gestures?.dblclick}
         @click=${tap?.click}
       >
-        ${plot(content, label, defs, gridLines(axes), summary ? SUMMARY_ID : undefined)}
+        ${
+          keys
+            ? // The focusable plot area carries the chart's name (and the summary): the drawing inside is not
+              // announced a second time.
+              plot(content, label, defs, gridLines(axes), undefined, true)
+            : plot(content, label, defs, gridLines(axes), summary ? SUMMARY_ID : undefined)
+        }
         ${outside ? nothing : html`${yLabels}${rLabels}${xLabels}`} ${overlay}
       </div>
       ${outside ? html`${rLabels}${xLabels}` : nothing} ${below}
