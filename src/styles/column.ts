@@ -56,12 +56,15 @@ import {
   validateTooltipOptions,
 } from '../chart/tooltip';
 import type { TooltipOptions } from '../chart/tooltip';
+import { historyLink, historyLinkStyles, historyTap, validatePointAction } from '../chart/history-link';
 import {
   AXES_FIELDS,
   ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
+  pointActionSchema,
+  POINT_ACTION_FIELDS,
   cachedSchema,
   chartForm,
   choice,
@@ -107,6 +110,7 @@ function validate(raw: CardConfig): void {
   validateHistoryOptions(shared as CardConfig);
   validateAxisOptions(raw);
   validateTooltipOptions(raw);
+  validatePointAction(raw);
   validateLayout(raw);
   validateStack(raw);
   validateErrorBars(raw);
@@ -450,6 +454,12 @@ function render(ctx0: ChartContext): TemplateResult {
   }
   const tooltip = tooltipEnabled(raw);
   const hovered = tooltip ? hoverTime(ctx.host) : undefined;
+  // A column opens History over its whole group (or its stretch between readings, ungrouped).
+  const slotAt = (t: number) => {
+    const i = slotOf.get(t);
+    return i === undefined ? undefined : { start: table.times[i], end: table.ends[i] };
+  };
+  tip.after = historyLink(ctx, shown, hovered, slotAt);
   const at = hovered === undefined ? undefined : slotOf.get(hovered);
   const highlight =
     at === undefined
@@ -486,6 +496,7 @@ function render(ctx0: ChartContext): TemplateResult {
             shown.map((s) => s.points),
           )
         : undefined,
+      tap: historyTap(ctx, xRange, shown, false, slotAt),
     }),
   );
 }
@@ -508,6 +519,7 @@ const COLUMN_FIELDS: FieldBinding[] = [
   { name: 'rounded', path: ['rounded'], default: true },
   { name: 'error_bars', path: ['error_bars'], default: 'none' },
   ...AXES_FIELDS,
+  ...POINT_ACTION_FIELDS,
   ...NOW_MARKER_FIELDS,
   ...LAYOUT_FIELDS,
 ];
@@ -557,6 +569,7 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
     // Whiskers need groups to spread within.
     ...(ungrouped ? [] : [{ name: 'error_bars', selector: choice(ctx.hass, 'error_bars', ERROR_BARS) }]),
     ...axesSchema(ctx.hass),
+    ...pointActionSchema(ctx.hass),
     ...nowMarkerSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
   ]);
@@ -638,6 +651,7 @@ export const columnChart: ChartStyleModule = {
     ${frameStyles}
     ${gridStyles}
     ${tooltipStyles}
+    ${historyLinkStyles}
     ${layoutStyles}
     ${columnStyles}
     ${errorBarStyles}

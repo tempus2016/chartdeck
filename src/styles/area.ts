@@ -39,12 +39,15 @@ import {
   validateTooltipOptions,
 } from '../chart/tooltip';
 import type { TooltipOptions } from '../chart/tooltip';
+import { historyLink, historyLinkStyles, historyTap, validatePointAction } from '../chart/history-link';
 import {
   AXES_FIELDS,
   ENERGY_SPLIT_FIELD,
   HISTORY_FIELDS,
   LAYOUT_FIELDS,
   axesSchema,
+  pointActionSchema,
+  POINT_ACTION_FIELDS,
   cachedSchema,
   chartForm,
   choice,
@@ -294,7 +297,7 @@ function render(ctx: ChartContext): TemplateResult {
       defs: svg`${drawn.map((d) => d.defs)}`,
       label,
       overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
-      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), tip) : nothing}`,
+      ${tooltip ? tooltipLayer(ctx, shown, axes.scales, hoverTime(ctx.host), plotWidth(ctx), { ...tip, after: historyLink(ctx, shown, hoverTime(ctx.host)) }) : nothing}`,
       hover: tooltip
         ? hoverHandlers(
             ctx,
@@ -302,6 +305,7 @@ function render(ctx: ChartContext): TemplateResult {
             shown.map((s) => s.points),
           )
         : undefined,
+      tap: historyTap(ctx, frame.range, shown),
       ...conditionStrip(ctx, frame, frame.range, axes.scales),
     }),
   );
@@ -315,6 +319,7 @@ const AREA_FIELDS: FieldBinding[] = [
   { name: 'line_width', path: ['line_width'], default: AREA_LINE_WIDTH },
   { name: 'dots', path: ['dots'], default: false },
   ...AXES_FIELDS,
+  ...POINT_ACTION_FIELDS,
   ...LAYOUT_FIELDS,
 ];
 
@@ -338,6 +343,7 @@ export function areaEditor(ctx: ChartEditorContext): TemplateResult {
       ],
     },
     ...axesSchema(ctx.hass),
+    ...pointActionSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
   ]);
   return html`${chartForm(ctx, 'chart', schema, AREA_FIELDS)}${costEditor(ctx)}`;
@@ -397,6 +403,7 @@ export const area: ChartStyleModule = {
     ${frameStyles}
     ${gridStyles}
     ${tooltipStyles}
+    ${historyLinkStyles}
     ${layoutStyles}
     ${areaStyles}
     ${conditionStyles}
@@ -415,6 +422,7 @@ export const area: ChartStyleModule = {
     validateHistoryOptions(raw);
     validateAxisOptions(raw);
     validateTooltipOptions(raw);
+    validatePointAction(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
     validateStack(raw);
