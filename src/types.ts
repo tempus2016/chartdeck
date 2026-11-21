@@ -46,6 +46,7 @@ export type StyleName =
   | 'sankey'
   | 'chord'
   | 'timeline'
+  | 'state_duration'
   | 'climate'
   | 'wind_rose'
   | 'day_clock'
@@ -98,6 +99,7 @@ export const STYLE_NAMES: StyleName[] = [
   'sankey',
   'chord',
   'timeline',
+  'state_duration',
   'climate',
   'wind_rose',
   'day_clock',

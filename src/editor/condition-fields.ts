@@ -23,6 +23,7 @@ export const CONDITION_STYLES = [
   'trend',
   'waterfall',
   'timeline',
+  'state_duration',
   'box',
   'candlestick',
   'day_clock',

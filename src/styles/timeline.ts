@@ -83,7 +83,7 @@ function validate(raw: CardConfig): void {
   validateLayout(raw);
 }
 
-function checkColors(v: unknown, where: string): void {
+export function checkColors(v: unknown, where: string): void {
   if (v === undefined) return;
   if (typeof v !== 'object' || v === null || Array.isArray(v)) {
     throw new Error(`${where} must map states to colours, like "on: amber"`);
@@ -101,7 +101,7 @@ export function ownColors(raw: CardConfig): Record<string, string> | undefined {
 }
 
 /** A state as Home Assistant words it ("Heat", "Away"), or as recorded when it can't say. */
-function stateText(hass: HomeAssistant, s: ChartSeries, state: string): string {
+export function stateText(hass: HomeAssistant, s: ChartSeries, state: string): string {
   const stateObj: HassEntity = s.entity.stateObj ?? { entity_id: s.entity.entityId, state, attributes: {} };
   const attribute = s.entity.config.attribute;
   try {
