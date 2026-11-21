@@ -455,6 +455,27 @@ describe('cost on the card', () => {
     expect(calls.some(([m]) => (m.entity_ids as string[]).includes('sensor.rate'))).toBe(true);
   });
 
+  it('keeps the running cost to the span when another series loads early for a rolling window', async () => {
+    const now = Date.now();
+    const sec = (ago: number) => (now - ago) / 1000;
+    // One kWh an hour for 30 hours; a 6 h rolling window on the other series loads 6 h early.
+    const rows = (start: number) =>
+      Array.from({ length: 30 }, (_, i) => ({ s: String(start + i), lu: sec((30 - i) * H) }));
+    const hass = meterHass({ 'sensor.import': rows(980), 'sensor.other': rows(10) });
+    hass.states['sensor.other'] = {
+      entity_id: 'sensor.other',
+      state: '39',
+      attributes: { friendly_name: 'Other', unit_of_measurement: '°C' },
+    } as unknown as HomeAssistant['states'][string];
+    const config = { style: 'line', period: { last: 12, unit: 'hour' }, cost: { price: 0.3 } };
+    const header = (el: Card) => el.shadowRoot!.querySelector('.series-item')!.textContent!.replace(/\s+/g, ' ').trim();
+    const alone = header(await mount({ ...config, entities: ['sensor.import'] }, hass));
+    const rolled = { entity: 'sensor.other', cost: false, transform: 'rolling', transform_window: '6h' };
+    const beside = header(await mount({ ...config, entities: ['sensor.import', rolled] }, hass));
+    expect(alone).toBe('Import £3.30');
+    expect(beside).toBe(alone);
+  });
+
   it('stacks each column by tariff band, with a key of the bands', async () => {
     const now = Date.now();
     const sec = (ago: number) => (now - ago) / 1000;

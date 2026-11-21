@@ -151,6 +151,23 @@ afterEach(() => {
 });
 
 describe('opening History from a chart', () => {
+  it('leaves Enter to keyboard reading (more-info) while a click opens History', async () => {
+    const card = await mount();
+    const paths = heard(card);
+    const info: string[] = [];
+    card.addEventListener('hass-more-info', (e) => info.push((e as CustomEvent).detail.entityId));
+    const area = q(card, '.plot-area') as HTMLElement;
+    for (const key of ['End', 'Enter']) {
+      area.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, composed: true }));
+      await card.updateComplete;
+    }
+    expect(info).toEqual(['sensor.in']);
+    expect(paths).toEqual([]);
+    point(area, 'pointerdown', 0.49);
+    point(area, 'click', 0.49);
+    expect(paths).toEqual([at12h]);
+  });
+
   it('opens History round the clicked reading on a mouse click', async () => {
     const card = await mount();
     const paths = heard(card);
