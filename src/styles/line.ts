@@ -88,6 +88,15 @@ import {
   stopCompare,
   validateCompare,
 } from '../chart/compare-ghost';
+import {
+  bandExtent,
+  normalBands,
+  normalRangeKey,
+  normalRangeLayer,
+  normalRangeStyles,
+  stopNormalRange,
+  validateNormalRange,
+} from '../chart/normal-range';
 import { lineEditor } from '../editor/chart-editors';
 import { costEntities } from '../history/cost';
 import {
@@ -272,6 +281,7 @@ export const line: ChartStyleModule = {
     ${layoutStyles}
     ${zoomStyles}
     ${annotationStyles}
+    ${normalRangeStyles}
     ${dataLabelStyles}
     ${extremesStyles}
     ${multiplesStyles}
@@ -314,6 +324,7 @@ export const line: ChartStyleModule = {
     validateCompare(raw);
     validateNowMarker(raw);
     validateGoal(raw);
+    validateNormalRange(raw);
     if (raw.color_by !== undefined && !COLOR_BY.includes(raw.color_by as (typeof COLOR_BY)[number])) {
       throw new Error(`"color_by" must be one of: ${COLOR_BY.join(', ')}`);
     }
@@ -339,6 +350,7 @@ export const line: ChartStyleModule = {
     stopForecast(host);
     stopCompare(host);
     stopNowMarker(host);
+    stopNormalRange(host);
   },
   render(card) {
     // A goal reads its whole calendar period, the first entity as its running total.
@@ -353,9 +365,11 @@ export const line: ChartStyleModule = {
     const names = seriesHeader(frame, ctx);
     // Earlier spans drawn faintly behind, moved over this one, named in a key under the header.
     const ghosts = compareGhosts(ctx, frame);
-    const key = ctx.config.show.name ? compareKey(ctx, ghosts) : nothing;
     const goal = goalState(ctx, frame);
     const pill = goalPill(goal, ctx.hass);
+    // The usual range for each time of day over the last weeks, shaded behind (with its own key).
+    const usual = normalBands(ctx, frame);
+    const key = ctx.config.show.name ? html`${compareKey(ctx, ghosts)}${normalRangeKey(ctx, usual)}` : nothing;
     const header =
       nav === nothing && names === nothing && pill === nothing ? nothing : html`${nav}${names}${pill}${key}`;
     const message = frameMessage(frame, ctx);
@@ -426,6 +440,7 @@ export const line: ChartStyleModule = {
       ...forecasts.map((s) => s.points),
       thresholds,
       goalExtent(goal),
+      bandExtent(usual, view.start),
     ]);
     if (log && !data) {
       const empty = html`<div class="chart-message">${localize(ctx.hass, 'chart_log_nothing')}</div>`;
@@ -451,6 +466,7 @@ export const line: ChartStyleModule = {
         )
       : undefined;
     const notes = annotationLayers(ctx, frame, scales, plotWidth(ctx));
+    const normal = normalRangeLayer(ctx, usual, scales, frame.range);
     const labels = labelOptions(ctx.raw);
     const width = plotWidth(ctx);
     const marks = extremesLayer({
@@ -492,12 +508,12 @@ export const line: ChartStyleModule = {
       chartArea({
         axes,
         ctx,
-        content: svg`${notes.behind}${compareLines(behind, scales)}${ghostLines(drawn, scales)}${anomalies.behind}${marks.lines}${goalBehind(goal, scales)}${forecastLines(forecasts, scales)}${lines}${goalFront(goal, scales)}${notes.front}`,
+        content: svg`${notes.behind}${normal.behind}${compareLines(behind, scales)}${ghostLines(drawn, scales)}${anomalies.behind}${marks.lines}${goalBehind(goal, scales)}${forecastLines(forecasts, scales)}${lines}${goalFront(goal, scales)}${notes.front}`,
         label,
         defs,
         overlay: html`${layout.header === 'over' ? headerOver(header) : nothing}
         ${labels ? pointLabels(frame, drawn, view, scales, labels, layout.compact, ctx) : nothing}
-        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay}
+        ${zoomLayer(ctx, zoom)} ${notes.overlay} ${marks.overlay} ${anomalies.overlay} ${normal.overlay}
         ${nowMarkerLayer(ctx, frame, view, scales, width)} ${goalOverlay(goal, scales, ctx.hass)}
         ${forecasts.length ? forecastLabel(ctx, forecasts, scales) : nothing}
         ${

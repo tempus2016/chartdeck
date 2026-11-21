@@ -300,6 +300,14 @@ describe('line chart editor', () => {
       legend_toggle: false,
       multiples: false,
       multiples_scale: 'auto',
+      normal_range: false,
+      normal_range_days: 'every_day',
+      normal_range_weeks: 4,
+      normal_range_low: 10,
+      normal_range_high: 90,
+      normal_range_median: true,
+      normal_range_marks: true,
+      normal_range_color: 'amber',
     });
     form.dispatchEvent(
       new CustomEvent('value-changed', {
