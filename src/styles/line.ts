@@ -1,4 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
+import { chartSummary, validateSummary } from '../chart/summary';
 import type { SVGTemplateResult, TemplateResult } from 'lit';
 import { baseColor } from '../bands';
 import { downsample } from '../chart/downsample';
@@ -317,6 +318,7 @@ export const line: ChartStyleModule = {
     validatePointAction(raw);
     validateSeriesStyle(raw);
     validateLayout(raw);
+    validateSummary(raw);
     validateZoomOptions(raw);
     validateAnnotations(raw);
     validateLabelOptions(raw);
@@ -536,6 +538,7 @@ export const line: ChartStyleModule = {
             : nothing
         }`,
         hover,
+        summary: chartSummary(ctx, frame.series, { range: frame.range, live: frame.live }),
         gestures: zoom.options.zoom ? zoomGestures(ctx, zoom, hover) : undefined,
         tap: historyTap(ctx, view, shown, zoom.options.zoom),
         classes: zoom.options.zoom ? `zoomable ${zoom.zoomed ? 'zoomed' : ''}` : '',

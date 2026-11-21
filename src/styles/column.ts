@@ -1,4 +1,5 @@
 import { css, html, nothing, svg } from 'lit';
+import { SUMMARY_FIELDS, chartSummary, summarySchema, validateSummary } from '../chart/summary';
 import { nowMarkerLayer, nowMarkerStyles, stopNowMarker, validateNowMarker } from '../chart/now-marker';
 import { NOW_MARKER_FIELDS, nowMarkerSchema } from '../editor/now-marker-editor';
 import type { TemplateResult } from 'lit';
@@ -112,6 +113,7 @@ function validate(raw: CardConfig): void {
   validateTooltipOptions(raw);
   validatePointAction(raw);
   validateLayout(raw);
+  validateSummary(raw);
   validateStack(raw);
   validateErrorBars(raw);
   for (const k of ['range', 'rounded', 'labels']) {
@@ -484,6 +486,12 @@ function render(ctx0: ChartContext): TemplateResult {
       ctx,
       content: svg``,
       label,
+      // Grouped, a peak is a column: name it by its group ("Tue 18 Nov"), and "now" means little.
+      summary: chartSummary(ctx, frame.series, {
+        range: xRange,
+        live: frame.live && !group,
+        when: group ? (t) => groupHeading(t, table.ends[table.times.indexOf(t)] ?? t, group.unit, ctx.hass) : undefined,
+      }),
       overlay: html`<div class="columns" style="--r:${radius}px">${highlight}${drawn.columns}${drawn.targets}</div>
         <div class="point-labels">${drawn.labels}</div>
         ${layout.header === 'over' ? headerOver(header) : nothing}
@@ -522,6 +530,7 @@ const COLUMN_FIELDS: FieldBinding[] = [
   ...POINT_ACTION_FIELDS,
   ...NOW_MARKER_FIELDS,
   ...LAYOUT_FIELDS,
+  ...SUMMARY_FIELDS,
 ];
 
 /**
@@ -572,6 +581,7 @@ export function columnEditor(ctx: ChartEditorContext): TemplateResult {
     ...pointActionSchema(ctx.hass),
     ...nowMarkerSchema(ctx.hass),
     ...layoutSchema(ctx.hass),
+    ...summarySchema(),
   ]);
   return html`${chartForm({ ...ctx, commit: (c) => ctx.commit(fullPeriod(c)) }, 'chart', schema, COLUMN_FIELDS)}${costEditor(
     ctx,
