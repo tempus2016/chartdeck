@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Zeitraum entfernen",
   "editor_cost_period_add": "Tarifzeit hinzufügen",
   "editor_cost_entity_on": "Kosten mitzählen",
-  "editor_cost_entity_price": "Eigene Preis-Entität"
+  "editor_cost_entity_price": "Eigene Preis-Entität",
+  "section_empty": "In {area} gibt es noch keine Sensoren mit Zahlen.",
+  "section_no_area": "Wähle einen Bereich für diesen Chartdeck-Abschnitt.",
+  "editor_section_area": "Bereich"
 }

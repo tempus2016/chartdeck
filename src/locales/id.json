@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Hapus periode",
   "editor_cost_period_add": "Tambah periode tarif",
   "editor_cost_entity_on": "Hitung biayanya",
-  "editor_cost_entity_price": "Entitas harga sendiri"
+  "editor_cost_entity_price": "Entitas harga sendiri",
+  "section_empty": "Belum ada sensor dengan angka di {area}.",
+  "section_no_area": "Pilih area untuk bagian Chartdeck ini.",
+  "editor_section_area": "Area"
 }

@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "删除时段",
   "editor_cost_period_add": "添加电价时段",
   "editor_cost_entity_on": "计入费用",
-  "editor_cost_entity_price": "自己的单价实体"
+  "editor_cost_entity_price": "自己的单价实体",
+  "section_empty": "{area} 中还没有数值传感器。",
+  "section_no_area": "为此 Chartdeck 区块选择一个区域。",
+  "editor_section_area": "区域"
 }

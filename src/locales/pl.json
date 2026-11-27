@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Usuń okres",
   "editor_cost_period_add": "Dodaj okres taryfy",
   "editor_cost_entity_on": "Licz jej koszt",
-  "editor_cost_entity_price": "Własna encja ceny"
+  "editor_cost_entity_price": "Własna encja ceny",
+  "section_empty": "W {area} nie ma jeszcze czujników z liczbami.",
+  "section_no_area": "Wybierz obszar dla tej sekcji Chartdeck.",
+  "editor_section_area": "Obszar"
 }

@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Dönemi kaldır",
   "editor_cost_period_add": "Tarife dönemi ekle",
   "editor_cost_entity_on": "Maliyetini say",
-  "editor_cost_entity_price": "Kendi fiyat varlığı"
+  "editor_cost_entity_price": "Kendi fiyat varlığı",
+  "section_empty": "{area} içinde henüz sayı gösteren sensör yok.",
+  "section_no_area": "Bu Chartdeck bölümü için bir alan seçin.",
+  "editor_section_area": "Alan"
 }
