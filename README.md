@@ -15,12 +15,14 @@
   <a href="https://community.home-assistant.io/t/chartdeck-bars-and-gauges-for-your-dashboard-all-set-up-from-the-visual-editor/1030685"><img src="https://img.shields.io/badge/community-forum-41BDF5?logo=home-assistant&logoColor=white" alt="Community Forum"></a>
 </p>
 
+<!-- ha-marketplace:exclude-start -->
 <p align="center">
   <a href="https://github.com/tempus2016/chartdeck/actions/workflows/build.yml"><img src="https://github.com/tempus2016/chartdeck/actions/workflows/build.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/tempus2016/chartdeck/actions/workflows/hacs.yml"><img src="https://github.com/tempus2016/chartdeck/actions/workflows/hacs.yml/badge.svg" alt="Marketplace validation"></a>
   <a href="https://github.com/tempus2016/chartdeck/actions/workflows/codeql.yml"><img src="https://github.com/tempus2016/chartdeck/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <a href="https://github.com/tempus2016/chartdeck/commits/main"><img src="https://img.shields.io/github/commit-activity/y/tempus2016/chartdeck" alt="Commit activity"></a>
 </p>
+<!-- ha-marketplace:exclude-end -->
 
 > **2.0 adds the rest of the roadmap: parts of a total, distributions, comparisons, flows, hierarchies, and zoom, annotations and more on the line chart.** Ideas for what comes next are on the
 > [roadmap board][roadmap].
@@ -115,7 +117,9 @@ Chartdeck is in the Home Assistant Marketplace:
 1. Go to **Settings → Marketplace** and search for *Chartdeck*.
 2. Choose **Install**, then reload your browser.
 
+<!-- ha-marketplace:exclude-start -->
 [![Open your Home Assistant instance and show Chartdeck in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=tempus2016&repository=chartdeck)
+<!-- ha-marketplace:exclude-end -->
 
 On Home Assistant older than 2026.11, the Marketplace is still HACS: open HACS, search for
 *Chartdeck* and choose **Download**.
