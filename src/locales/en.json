@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Remove period",
   "editor_cost_period_add": "Add a tariff period",
   "editor_cost_entity_on": "Count its cost",
-  "editor_cost_entity_price": "Its own price entity"
+  "editor_cost_entity_price": "Its own price entity",
+  "section_empty": "No sensors with numbers in {area} yet.",
+  "section_no_area": "Choose an area for this Chartdeck section.",
+  "editor_section_area": "Area"
 }

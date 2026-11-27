@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Periode verwijderen",
   "editor_cost_period_add": "Tariefperiode toevoegen",
   "editor_cost_entity_on": "Kosten meetellen",
-  "editor_cost_entity_price": "Eigen prijsentiteit"
+  "editor_cost_entity_price": "Eigen prijsentiteit",
+  "section_empty": "Nog geen sensoren met getallen in {area}.",
+  "section_no_area": "Kies een ruimte voor deze Chartdeck-sectie.",
+  "editor_section_area": "Ruimte"
 }

@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Quitar periodo",
   "editor_cost_period_add": "Añadir un periodo de tarifa",
   "editor_cost_entity_on": "Contar su coste",
-  "editor_cost_entity_price": "Su propia entidad de precio"
+  "editor_cost_entity_price": "Su propia entidad de precio",
+  "section_empty": "Todavía no hay sensores con números en {area}.",
+  "section_no_area": "Elige un área para esta sección de Chartdeck.",
+  "editor_section_area": "Área"
 }

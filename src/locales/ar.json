@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "إزالة الفترة",
   "editor_cost_period_add": "إضافة فترة تعرفة",
   "editor_cost_entity_on": "احتساب تكلفته",
-  "editor_cost_entity_price": "كيان سعر خاص به"
+  "editor_cost_entity_price": "كيان سعر خاص به",
+  "section_empty": "لا توجد مستشعرات بأرقام في {area} بعد.",
+  "section_no_area": "اختر منطقة لقسم Chartdeck هذا.",
+  "editor_section_area": "المنطقة"
 }

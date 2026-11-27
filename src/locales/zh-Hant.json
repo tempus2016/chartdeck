@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "刪除時段",
   "editor_cost_period_add": "新增電價時段",
   "editor_cost_entity_on": "計入費用",
-  "editor_cost_entity_price": "自己的單價實體"
+  "editor_cost_entity_price": "自己的單價實體",
+  "section_empty": "{area} 中還沒有數值感測器。",
+  "section_no_area": "為此 Chartdeck 區塊選擇一個區域。",
+  "editor_section_area": "區域"
 }

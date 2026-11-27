@@ -21,6 +21,7 @@ import { VERSION } from './version';
 import { LanguageController } from './language-controller';
 // The badge (custom:chartdeck-badge) ships in the same file and registers itself.
 import './badge';
+import './section-strategy';
 // The tile card feature (custom:chartdeck-feature) too.
 import './feature';
 
