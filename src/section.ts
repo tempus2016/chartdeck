@@ -1,6 +1,6 @@
 import { matchEntities } from './fill';
 import { localize } from './localize';
-import type { HomeAssistant, StyleName } from './types';
+import type { HassEntity, HomeAssistant, StyleName } from './types';
 
 /** The `strategy` block of a Chartdeck area section. */
 export interface AreaSectionConfig {
@@ -30,18 +30,41 @@ export function styleFor(deviceClass: string): StyleName {
   return STYLE_FOR[deviceClass] ?? 'bar';
 }
 
-/** The area's numeric sensors (the same ones a card's include rule would find), by device class. */
-function sensorClasses(area: string, hass: HomeAssistant): { classes: string[]; unclassified: boolean } {
-  const found = new Set<string>();
+/** A sensor that has, or is meant to have, a number: numeric now, or with a unit or state class. */
+function measures(state: HassEntity): boolean {
+  const n = state.state.trim();
+  return (
+    (n !== '' && Number.isFinite(Number(n))) ||
+    !!state.attributes?.unit_of_measurement ||
+    !!state.attributes?.state_class
+  );
+}
+
+/**
+ * The area's sensors (the ones a card's include rule would find), by device class. `classes` are
+ * the types with a sensor that measures something, which get a card; `others` are the types
+ * that don't (a date that is "unknown" today), which the no-type card must leave out.
+ */
+function sensorClasses(
+  area: string,
+  hass: HomeAssistant,
+): { classes: string[]; others: string[]; unclassified: boolean } {
+  const measured = new Set<string>();
+  const seen = new Set<string>();
   let unclassified = false;
   for (const id of matchEntities({ area: [area], domain: ['sensor'] }, undefined, hass)) {
-    const cls = hass.states[id]?.attributes?.device_class;
-    if (typeof cls === 'string' && cls) found.add(cls);
-    else unclassified = true;
+    const state = hass.states[id];
+    const cls = state?.attributes?.device_class;
+    const counts = !!state && measures(state);
+    if (typeof cls === 'string' && cls) {
+      seen.add(cls);
+      if (counts) measured.add(cls);
+    } else if (counts) unclassified = true;
   }
   const rank = (c: string) => (LEADING.includes(c) ? LEADING.indexOf(c) : LEADING.length);
-  const classes = [...found].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
-  return { classes, unclassified };
+  const classes = [...measured].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  const others = [...seen].filter((c) => !measured.has(c)).sort((a, b) => a.localeCompare(b));
+  return { classes, others, unclassified };
 }
 
 /**
@@ -57,7 +80,7 @@ export function areaSection(config: AreaSectionConfig, hass: HomeAssistant): Sec
   }
   const name = entry.name || area;
   const heading: CardConfig = { type: 'heading', heading: name };
-  const { classes, unclassified } = sensorClasses(area, hass);
+  const { classes, others, unclassified } = sensorClasses(area, hass);
   if (!classes.length && !unclassified) {
     return {
       type: 'grid',
@@ -75,7 +98,8 @@ export function areaSection(config: AreaSectionConfig, hass: HomeAssistant): Sec
       style: 'bar',
       include: { area: [area], domain: ['sensor'] },
     };
-    if (classes.length) card.exclude = { device_class: classes };
+    const leaveOut = [...classes, ...others];
+    if (leaveOut.length) card.exclude = { device_class: leaveOut };
     cards.push(card);
   }
   return { type: 'grid', cards: [heading, ...cards] };

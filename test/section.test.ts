@@ -41,7 +41,7 @@ describe('area section', () => {
       type: 'custom:chartdeck-card',
       style: 'bar',
       include: { area: ['kitchen'], domain: ['sensor'] },
-      exclude: { device_class: ['temperature', 'humidity', 'power', 'battery', 'energy'] },
+      exclude: { device_class: ['temperature', 'humidity', 'power', 'battery', 'energy', 'date'] },
     });
   });
 
@@ -50,6 +50,22 @@ describe('area section', () => {
     delete h.states['sensor.kitchen_count'];
     const charts = areaSection(kitchen, h).cards.filter((c) => c.type === 'custom:chartdeck-card');
     expect(charts.every((c) => 'device_class' in (c.include as object))).toBe(true);
+  });
+
+  it('gives no card to a type whose sensors have no number, unit or state class', () => {
+    const classes = areaSection(kitchen, hass).cards.map(
+      (c) => (c.include as { device_class?: string[] })?.device_class?.[0],
+    );
+    expect(classes).not.toContain('date');
+  });
+
+  it('treats an area with only non-number sensors as empty', () => {
+    const h = kitchenHass();
+    h.entities!['sensor.filter_changed'] = { entity_id: 'sensor.filter_changed', area_id: 'loft', labels: [] };
+    expect(areaSection({ type: 'custom:chartdeck-area', area: 'loft' }, h).cards[1]).toEqual({
+      type: 'markdown',
+      content: localize(h, 'section_empty', { area: 'Loft' }),
+    });
   });
 
   it('ignores hidden and non-sensor entities', () => {

@@ -13,6 +13,8 @@ export function kitchenHass(): HomeAssistant {
     'sensor.kitchen_mode': ['eco', { friendly_name: 'Kitchen mode' }],
     'input_number.kitchen_target': ['20', { device_class: 'temperature', friendly_name: 'Kitchen target' }],
     'sensor.hidden_co2': ['400', { device_class: 'carbon_dioxide', friendly_name: 'Hidden CO2' }],
+    'sensor.filter_changed': ['unknown', { device_class: 'date', friendly_name: 'Filter changed' }],
+    'sensor.kettle_power': ['unknown', { device_class: 'power', unit_of_measurement: 'W', friendly_name: 'Kettle' }],
     'light.loft': ['on', { friendly_name: 'Loft light' }],
   });
   const inKitchen = { area_id: 'kitchen', labels: [] };
@@ -26,6 +28,8 @@ export function kitchenHass(): HomeAssistant {
     'sensor.kitchen_mode': { entity_id: 'sensor.kitchen_mode', ...inKitchen },
     'input_number.kitchen_target': { entity_id: 'input_number.kitchen_target', ...inKitchen },
     'sensor.hidden_co2': { entity_id: 'sensor.hidden_co2', ...inKitchen, hidden: true },
+    'sensor.filter_changed': { entity_id: 'sensor.filter_changed', ...inKitchen },
+    'sensor.kettle_power': { entity_id: 'sensor.kettle_power', ...inKitchen },
     'light.loft': { entity_id: 'light.loft', area_id: 'loft', labels: [] },
   };
   hass.devices = { dev_k: { id: 'dev_k', area_id: 'kitchen', labels: [] } };
