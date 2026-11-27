@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Удалить период",
   "editor_cost_period_add": "Добавить период тарифа",
   "editor_cost_entity_on": "Учитывать его стоимость",
-  "editor_cost_entity_price": "Собственный объект цены"
+  "editor_cost_entity_price": "Собственный объект цены",
+  "section_empty": "В {area} пока нет датчиков с числами.",
+  "section_no_area": "Выберите пространство для этого раздела Chartdeck.",
+  "editor_section_area": "Пространство"
 }

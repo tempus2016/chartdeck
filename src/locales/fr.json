@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Retirer la période",
   "editor_cost_period_add": "Ajouter une période tarifaire",
   "editor_cost_entity_on": "Compter son coût",
-  "editor_cost_entity_price": "Sa propre entité de prix"
+  "editor_cost_entity_price": "Sa propre entité de prix",
+  "section_empty": "Aucun capteur numérique dans {area} pour l'instant.",
+  "section_no_area": "Choisissez une pièce pour cette section Chartdeck.",
+  "editor_section_area": "Pièce"
 }

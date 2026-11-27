@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "Xóa khung giờ",
   "editor_cost_period_add": "Thêm khung giờ biểu giá",
   "editor_cost_entity_on": "Tính chi phí của nó",
-  "editor_cost_entity_price": "Thực thể giá riêng"
+  "editor_cost_entity_price": "Thực thể giá riêng",
+  "section_empty": "Chưa có cảm biến dạng số nào trong {area}.",
+  "section_no_area": "Chọn một khu vực cho mục Chartdeck này.",
+  "editor_section_area": "Khu vực"
 }

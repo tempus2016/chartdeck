@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "अवधि हटाएँ",
   "editor_cost_period_add": "टैरिफ़ अवधि जोड़ें",
   "editor_cost_entity_on": "इसकी लागत गिनें",
-  "editor_cost_entity_price": "इसकी अपनी कीमत एंटिटी"
+  "editor_cost_entity_price": "इसकी अपनी कीमत एंटिटी",
+  "section_empty": "{area} में अभी तक संख्या वाला कोई सेंसर नहीं है।",
+  "section_no_area": "इस Chartdeck सेक्शन के लिए एक क्षेत्र चुनें।",
+  "editor_section_area": "क्षेत्र"
 }

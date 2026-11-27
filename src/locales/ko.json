@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "시간대 삭제",
   "editor_cost_period_add": "요금 시간대 추가",
   "editor_cost_entity_on": "비용에 포함",
-  "editor_cost_entity_price": "자체 단가 엔티티"
+  "editor_cost_entity_price": "자체 단가 엔티티",
+  "section_empty": "{area}에 아직 숫자 센서가 없습니다.",
+  "section_no_area": "이 Chartdeck 섹션의 영역을 선택하세요.",
+  "editor_section_area": "영역"
 }

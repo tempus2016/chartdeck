@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "وقت ہٹائیں",
   "editor_cost_period_add": "ٹیرف کا وقت شامل کریں",
   "editor_cost_entity_on": "اس کی لاگت گنیں",
-  "editor_cost_entity_price": "اپنی قیمت کی اینٹیٹی"
+  "editor_cost_entity_price": "اپنی قیمت کی اینٹیٹی",
+  "section_empty": "{area} میں ابھی تک نمبروں والا کوئی سینسر نہیں ہے۔",
+  "section_no_area": "اس Chartdeck حصے کے لیے ایک علاقہ منتخب کریں۔",
+  "editor_section_area": "علاقہ"
 }

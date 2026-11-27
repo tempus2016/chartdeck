@@ -246,7 +246,7 @@ export interface HomeAssistant {
     }
   >;
   devices?: Record<string, { id: string; area_id?: string | null; labels?: string[] }>;
-  areas?: Record<string, { area_id: string; floor_id?: string | null }>;
+  areas?: Record<string, { area_id: string; name?: string; floor_id?: string | null }>;
   locale?: {
     language: string;
     number_format?: string;

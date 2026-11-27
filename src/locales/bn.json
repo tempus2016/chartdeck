@@ -1210,5 +1210,8 @@
   "editor_cost_period_remove": "সময় সরান",
   "editor_cost_period_add": "ট্যারিফের সময় যোগ করুন",
   "editor_cost_entity_on": "এর খরচ ধরুন",
-  "editor_cost_entity_price": "নিজস্ব দামের এনটিটি"
+  "editor_cost_entity_price": "নিজস্ব দামের এনটিটি",
+  "section_empty": "{area}-এ এখনও সংখ্যাসহ কোনো সেন্সর নেই।",
+  "section_no_area": "এই Chartdeck বিভাগের জন্য একটি এলাকা বেছে নিন।",
+  "editor_section_area": "এলাকা"
 }
