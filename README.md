@@ -108,6 +108,10 @@ A Chartdeck tile feature (`custom:chartdeck-feature`, 2.4) draws a small sparkli
 or a bar under a tile card, for the tile's entity or another one, such as a plug's power under
 the tile of its switch.
 
+A Chartdeck area section (`custom:chartdeck-area`, 2.5) builds a whole section for a room on
+Home Assistant 2026.11+: pick the area under **Create section → Automatic section**, and you
+get a card for each type of sensor in it, kept up to date as you add sensors.
+
 ## Installation
 
 Chartdeck is in the Home Assistant Marketplace:
